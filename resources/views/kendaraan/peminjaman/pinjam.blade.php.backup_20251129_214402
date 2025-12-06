@@ -1,0 +1,360 @@
+@extends('layouts.app')
+@section('titlepage', 'Form Peminjaman Kendaraan')
+
+@section('navigasi')
+    <span>Fasilitas & Asset / Manajemen Kendaraan / Peminjaman</span>
+@endsection
+
+@section('content')
+<style>
+    .signature-pad {
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        background-color: white;
+        cursor: crosshair;
+        display: block;
+        width: 100%;
+        height: 200px;
+        touch-action: none;
+    }
+</style>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <a href="{{ route('kendaraan.index') }}" class="btn btn-secondary">
+            <i class="ti ti-arrow-left me-2"></i>Kembali
+        </a>
+    </div>
+</div>
+
+<div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="card-title text-white"><i class="ti ti-hand-grab me-2"></i>Form Peminjaman</h3>
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ route('kendaraan.peminjaman.prosesPinjam', $kendaraan_id) }}" method="POST" id="formPeminjaman" enctype="multipart/form-data">
+                            @csrf
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <x-input-with-icon icon="ti ti-user" label="Nama Peminjam" name="nama_peminjam" />
+                                </div>
+                                <div class="col-md-6">
+                                    <x-input-with-icon icon="ti ti-phone" label="No. HP Peminjam" name="no_hp_peminjam" type="text" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <x-input-with-icon icon="ti ti-mail" label="Email Peminjam" name="email_peminjam" type="email" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">
+                                            <i class="ti ti-id me-2"></i>Foto KTP/Identitas <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="file" name="foto_identitas" class="form-control" accept="image/*" required>
+                                        <small class="text-muted">Upload foto KTP, SIM, atau identitas lainnya (Max: 2MB, Format: JPG/PNG)</small>
+                                        <div class="mt-2">
+                                            <img id="preview_identitas" src="" alt="Preview" style="max-width: 200px; display: none;" class="img-thumbnail">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Keperluan <span class="text-danger">*</span></label>
+                                        <textarea name="keperluan" class="form-control" rows="3" placeholder="Masukkan keperluan peminjaman"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">
+                                            <i class="ti ti-calendar-time me-2"></i>Waktu Pinjam <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="datetime-local" name="waktu_pinjam" class="form-control" 
+                                               value="{{ date('Y-m-d\TH:i') }}" required>
+                                        <small class="text-muted">Tentukan tanggal dan jam peminjaman kendaraan</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">
+                                            <i class="ti ti-calendar-event me-2"></i>Estimasi Waktu Kembali <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="datetime-local" name="estimasi_kembali" class="form-control" 
+                                               id="estimasi_kembali" required>
+                                        <small class="text-muted">Tentukan perkiraan tanggal dan jam pengembalian kendaraan</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <x-input-with-icon icon="ti ti-gauge" label="KM Awal" name="km_awal" type="number" />
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Status BBM</label>
+                                        <select name="status_bbm_pinjam" class="form-select">
+                                            <option value="Penuh">Penuh</option>
+                                            <option value="3/4">3/4</option>
+                                            <option value="1/2">1/2</option>
+                                            <option value="1/4">1/4</option>
+                                            <option value="Kosong">Kosong</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Keterangan</label>
+                                        <textarea name="keterangan" class="form-control" rows="2" placeholder="Keterangan tambahan (opsional)"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Lokasi GPS Saat Ini</label>
+                                        <input type="text" id="lokasi_display" class="form-control" readonly placeholder="Mencari lokasi...">
+                                        <input type="hidden" name="latitude_pinjam" id="latitude_pinjam">
+                                        <input type="hidden" name="longitude_pinjam" id="longitude_pinjam">
+                                        <small class="text-muted">GPS akan otomatis terdeteksi</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Tanda Tangan Digital Peminjam <span class="text-danger">*</span></label>
+                                        <div class="border rounded p-2 bg-white" style="background-color: white !important;">
+                                            <canvas id="signature-pad" class="signature-pad"></canvas>
+                                        </div>
+                                        <input type="hidden" name="ttd_peminjam" id="ttd_peminjam">
+                                        <div class="mt-2">
+                                            <button type="button" class="btn btn-sm btn-warning" id="btnClearSignature">
+                                                <i class="ti ti-eraser me-1"></i>Hapus Tanda Tangan
+                                            </button>
+                                            <small class="text-muted ms-3">✍️ Tanda tangan di kotak putih di atas</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="ti ti-hand-grab me-2"></i>Proses Peminjaman
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h3 class="card-title text-white"><i class="ti ti-car me-2"></i>Informasi Kendaraan</h3>
+                    </div>
+                    <div class="card-body">
+                        @if($kendaraan->foto)
+                            <img src="{{ asset('storage/kendaraan/' . $kendaraan->foto) }}" class="img-fluid rounded mb-3" alt="Foto Kendaraan">
+                        @endif
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Kode</strong></td>
+                                <td>{{ $kendaraan->kode_kendaraan }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Nama</strong></td>
+                                <td>{{ $kendaraan->nama_kendaraan }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>No. Polisi</strong></td>
+                                <td><span class="badge bg-primary">{{ $kendaraan->no_polisi }}</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Jenis</strong></td>
+                                <td>{{ $kendaraan->jenis_kendaraan }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Merk/Model</strong></td>
+                                <td>{{ $kendaraan->merk ?? '-' }} / {{ $kendaraan->model ?? '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status</strong></td>
+                                <td><span class="badge bg-success">{{ ucfirst($kendaraan->status) }}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@endsection
+
+@push('myscript')
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Preview Foto Identitas
+        $('input[name="foto_identitas"]').change(function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validasi ukuran file (max 2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'File Terlalu Besar!',
+                        text: 'Ukuran file maksimal 2MB',
+                        confirmButtonText: 'OK'
+                    });
+                    $(this).val('');
+                    $('#preview_identitas').hide();
+                    return;
+                }
+
+                // Validasi tipe file
+                if (!file.type.match('image.*')) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'File Tidak Valid!',
+                        text: 'Hanya file gambar yang diperbolehkan',
+                        confirmButtonText: 'OK'
+                    });
+                    $(this).val('');
+                    $('#preview_identitas').hide();
+                    return;
+                }
+
+                // Preview gambar
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#preview_identitas').attr('src', e.target.result).show();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Initialize Signature Pad
+        const canvas = document.getElementById('signature-pad');
+        
+        // Function to resize canvas properly
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext("2d").scale(ratio, ratio);
+            signaturePad.clear(); // Clear on resize to avoid artifacts
+        }
+        
+        const signaturePad = new SignaturePad(canvas, {
+            backgroundColor: 'rgb(255, 255, 255)',
+            penColor: 'rgb(0, 0, 0)',
+            minWidth: 1,
+            maxWidth: 3
+        });
+        
+        // Resize canvas on init
+        resizeCanvas();
+        
+        // Resize canvas on window resize
+        window.addEventListener('resize', resizeCanvas);
+
+        // Clear button
+        $('#btnClearSignature').click(function() {
+            signaturePad.clear();
+        });
+
+        // Set minimum datetime untuk estimasi kembali
+        $('input[name="waktu_pinjam"]').on('change', function() {
+            const waktuPinjam = $(this).val();
+            if (waktuPinjam) {
+                $('input[name="estimasi_kembali"]').attr('min', waktuPinjam);
+            }
+        });
+
+        // Trigger change on page load to set initial min
+        $('input[name="waktu_pinjam"]').trigger('change');
+
+        // Get GPS Location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                var latitude = position.coords.latitude;
+                var longitude = position.coords.longitude;
+                
+                $('#latitude_pinjam').val(latitude);
+                $('#longitude_pinjam').val(longitude);
+                $('#lokasi_display').val(latitude + ', ' + longitude);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Lokasi Terdeteksi!',
+                    text: 'GPS berhasil mendapatkan koordinat',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }, function(error) {
+                $('#lokasi_display').val('GPS tidak dapat diakses');
+            });
+        }
+
+        // Form Submit
+        $('#formPeminjaman').submit(function(e) {
+            e.preventDefault();
+
+            if (signaturePad.isEmpty()) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tanda Tangan Belum Diisi!',
+                    text: 'Silakan tanda tangan terlebih dahulu',
+                    confirmButtonText: 'OK'
+                });
+                return false;
+            }
+
+            // Validate estimasi kembali
+            const waktuPinjam = new Date($('input[name="waktu_pinjam"]').val());
+            const estimasiKembali = new Date($('input[name="estimasi_kembali"]').val());
+            
+            if (estimasiKembali <= waktuPinjam) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Waktu Tidak Valid!',
+                    text: 'Estimasi waktu kembali harus lebih dari waktu pinjam',
+                    confirmButtonText: 'OK'
+                });
+                return false;
+            }
+
+            // Save signature as base64
+            const dataURL = signaturePad.toDataURL();
+            $('#ttd_peminjam').val(dataURL);
+
+            // Submit form
+            this.submit();
+        });
+    });
+</script>
+@endpush

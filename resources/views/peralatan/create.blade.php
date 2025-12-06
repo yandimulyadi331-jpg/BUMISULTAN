@@ -1,0 +1,168 @@
+@extends('layouts.app')
+@section('titlepage', 'Tambah Peralatan BS')
+
+@section('content')
+@section('navigasi')
+    <span><a href="{{ route('peralatan.index') }}">PERALATAN BS</a> / Tambah</span>
+@endsection
+
+<div class="row">
+    <div class="col-lg-8 col-md-10 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="ti ti-plus me-2"></i> Tambah Peralatan Baru</h4>
+            </div>
+            <form action="{{ route('peralatan.store') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Kode Peralatan <span class="text-danger">*</span></label>
+                            <input type="text" name="kode_peralatan" class="form-control @error('kode_peralatan') is-invalid @enderror" 
+                                value="{{ old('kode_peralatan') }}" placeholder="Contoh: PRL-001" required>
+                            @error('kode_peralatan')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nama Peralatan <span class="text-danger">*</span></label>
+                            <input type="text" name="nama_peralatan" class="form-control @error('nama_peralatan') is-invalid @enderror" 
+                                value="{{ old('nama_peralatan') }}" placeholder="Contoh: Sapu Lidi" required>
+                            @error('nama_peralatan')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Kategori <span class="text-danger">*</span></label>
+                            <select name="kategori" class="form-select @error('kategori') is-invalid @enderror" required>
+                                <option value="">Pilih Kategori</option>
+                                @foreach($kategoris as $kat)
+                                    <option value="{{ $kat }}" {{ old('kategori') == $kat ? 'selected' : '' }}>{{ $kat }}</option>
+                                @endforeach
+                            </select>
+                            @error('kategori')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Kondisi <span class="text-danger">*</span></label>
+                            <select name="kondisi" class="form-select @error('kondisi') is-invalid @enderror" required>
+                                <option value="baik" {{ old('kondisi') == 'baik' ? 'selected' : '' }}>Baik</option>
+                                <option value="rusak ringan" {{ old('kondisi') == 'rusak ringan' ? 'selected' : '' }}>Rusak Ringan</option>
+                                <option value="rusak berat" {{ old('kondisi') == 'rusak berat' ? 'selected' : '' }}>Rusak Berat</option>
+                            </select>
+                            @error('kondisi')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Stok Awal <span class="text-danger">*</span></label>
+                            <input type="number" name="stok_awal" class="form-control @error('stok_awal') is-invalid @enderror" 
+                                value="{{ old('stok_awal', 0) }}" min="0" required>
+                            @error('stok_awal')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Satuan <span class="text-danger">*</span></label>
+                            <input type="text" name="satuan" class="form-control @error('satuan') is-invalid @enderror" 
+                                value="{{ old('satuan') }}" placeholder="pcs, unit, set" required>
+                            @error('satuan')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Stok Minimum</label>
+                            <input type="number" name="stok_minimum" class="form-control @error('stok_minimum') is-invalid @enderror" 
+                                value="{{ old('stok_minimum', 0) }}" min="0">
+                            @error('stok_minimum')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Lokasi Penyimpanan</label>
+                            <input type="text" name="lokasi_penyimpanan" class="form-control @error('lokasi_penyimpanan') is-invalid @enderror" 
+                                value="{{ old('lokasi_penyimpanan') }}" placeholder="Contoh: Gudang Lantai 1">
+                            @error('lokasi_penyimpanan')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Harga Satuan</label>
+                            <input type="number" name="harga_satuan" class="form-control @error('harga_satuan') is-invalid @enderror" 
+                                value="{{ old('harga_satuan') }}" min="0" step="0.01" placeholder="0">
+                            @error('harga_satuan')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tanggal Pembelian</label>
+                            <input type="date" name="tanggal_pembelian" class="form-control @error('tanggal_pembelian') is-invalid @enderror" 
+                                value="{{ old('tanggal_pembelian') }}">
+                            @error('tanggal_pembelian')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Supplier</label>
+                            <input type="text" name="supplier" class="form-control @error('supplier') is-invalid @enderror" 
+                                value="{{ old('supplier') }}" placeholder="Nama supplier">
+                            @error('supplier')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Deskripsi</label>
+                            <textarea name="deskripsi" class="form-control @error('deskripsi') is-invalid @enderror" 
+                                rows="3" placeholder="Deskripsi detail peralatan...">{{ old('deskripsi') }}</textarea>
+                            @error('deskripsi')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Foto Peralatan</label>
+                            <input type="file" name="foto" class="form-control @error('foto') is-invalid @enderror" 
+                                accept="image/jpeg,image/png,image/jpg">
+                            <small class="text-muted">Format: JPG, PNG. Maks: 2MB</small>
+                            @error('foto')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Catatan</label>
+                            <textarea name="catatan" class="form-control @error('catatan') is-invalid @enderror" 
+                                rows="2" placeholder="Catatan tambahan...">{{ old('catatan') }}</textarea>
+                            @error('catatan')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ route('peralatan.index') }}" class="btn btn-secondary">
+                            <i class="ti ti-arrow-left me-1"></i> Kembali
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-device-floppy me-1"></i> Simpan
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endsection

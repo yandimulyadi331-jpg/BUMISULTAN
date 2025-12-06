@@ -1,0 +1,650 @@
+@extends('layouts.mobile.app')
+@section('content')
+<style>
+    :root {
+        --bg-body: #f8fafc;
+        --primary: #667eea;
+        --primary-dark: #764ba2;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #06b6d4;
+    }
+
+    body {
+        background: linear-gradient(180deg, #e3f4f9 0%, #f8fbfc 100%);
+        min-height: 100vh;
+    }
+
+    /* Header Section */
+    #header-section {
+        padding: 25px 20px;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        border-radius: 0 0 35px 35px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        margin-bottom: 20px;
+    }
+
+    .back-btn {
+        color: #ffffff;
+        font-size: 28px;
+        text-decoration: none;
+    }
+
+    #header-title h3 {
+        color: #ffffff;
+        font-weight: 900;
+        margin: 15px 0 5px 0;
+        font-size: 1.8rem;
+        text-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    #header-title p {
+        color: rgba(255, 255, 255, 0.95);
+        font-size: 0.95rem;
+        margin: 0;
+    }
+
+    /* Content Section */
+    #content-section {
+        padding: 0 0 100px 0;
+    }
+
+    /* Vertical Card Container */
+    .kendaraan-list-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 0 15px;
+    }
+
+    /* Card Kendaraan - Vertical Stack */
+    .kendaraan-card {
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .kendaraan-card:hover {
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        transform: translateY(-2px);
+    }
+
+    /* Card Header dengan Foto */
+    .card-header-section {
+        display: flex;
+        padding: 15px;
+        gap: 15px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .card-photo {
+        width: 80px;
+        height: 80px;
+        border-radius: 12px;
+        object-fit: cover;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-info {
+        flex: 1;
+    }
+
+    .card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 3px;
+    }
+
+    .card-subtitle {
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-bottom: 8px;
+    }
+
+    .card-meta {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .meta-item {
+        font-size: 0.75rem;
+        padding: 3px 10px;
+        background: #f3f4f6;
+        border-radius: 6px;
+        color: #4b5563;
+    }
+
+    /* Status Badge */
+    .status-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-tersedia { background: #d1fae5; color: #065f46; }
+    .badge-keluar { background: #fef3c7; color: #92400e; }
+    .badge-dipinjam { background: #dbeafe; color: #1e40af; }
+    .badge-service { background: #e9d5ff; color: #6b21a8; }
+
+    /* Action Bar */
+    .action-bar {
+        display: flex;
+        justify-content: space-around;
+        padding: 12px 15px;
+        background: #f9fafb;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        padding: 8px 12px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-radius: 10px;
+    }
+
+    .action-btn:hover {
+        background: rgba(102, 126, 234, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .action-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    .action-btn:disabled:hover {
+        transform: none;
+        background: transparent;
+    }
+
+    .action-icon {
+        font-size: 24px;
+        transition: transform 0.3s ease;
+    }
+
+    .action-btn:hover .action-icon {
+        transform: scale(1.1);
+    }
+
+    .action-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #4b5563;
+    }
+
+    /* Icon Colors */
+    .btn-detail .action-icon { color: #667eea; }
+    .btn-keluar .action-icon { color: #10b981; }
+    .btn-pinjam .action-icon { color: #06b6d4; }
+    .btn-service .action-icon { color: #8b5cf6; }
+
+    /* Workflow Section */
+    .workflow-section {
+        padding: 15px;
+        background: linear-gradient(135deg, #f0f9ff 0%, #fef3c7 100%);
+        border-top: 2px dashed #cbd5e1;
+    }
+
+    .workflow-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .workflow-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .workflow-code {
+        font-size: 0.75rem;
+        padding: 3px 10px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 6px;
+        font-weight: 600;
+        color: #6b7280;
+    }
+
+    /* Workflow Timeline */
+    .workflow-timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .workflow-line {
+        position: absolute;
+        left: 12px;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: linear-gradient(180deg, #667eea, #10b981);
+        border-radius: 3px;
+    }
+
+    .workflow-stage {
+        position: relative;
+        margin-bottom: 15px;
+        padding-left: 15px;
+    }
+
+    .workflow-stage:last-child {
+        margin-bottom: 0;
+    }
+
+    .stage-node {
+        position: absolute;
+        left: -18px;
+        top: 3px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: #ffffff;
+        font-weight: 700;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        z-index: 2;
+    }
+
+    .node-pending { background: #9ca3af; }
+    .node-in_progress { background: #f59e0b; }
+    .node-completed { background: #10b981; }
+    .node-rejected { background: #ef4444; }
+
+    .stage-content {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 10px 12px;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .stage-name {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 3px;
+    }
+
+    .stage-info {
+        font-size: 0.7rem;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .stage-badge {
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+    }
+
+    .badge-status-pending { background: #e5e7eb; color: #4b5563; }
+    .badge-status-in_progress { background: #fef3c7; color: #92400e; }
+    .badge-status-completed { background: #d1fae5; color: #065f46; }
+    .badge-status-rejected { background: #fee2e2; color: #991b1b; }
+
+    /* Return Button */
+    .btn-return {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 15px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        transition: all 0.3s ease;
+        margin-top: 15px;
+    }
+
+    .btn-return:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4);
+    }
+
+    /* Animated Vehicle Icon */
+    .animated-vehicle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 15px 0;
+    }
+
+    .vehicle-icon {
+        font-size: 32px;
+        animation: vehicleMove 3s ease-in-out infinite;
+    }
+
+    @keyframes vehicleMove {
+        0%, 100% { transform: translateX(-10px); }
+        50% { transform: translateX(10px); }
+    }
+
+    /* Alert Banner */
+    .alert-banner {
+        padding: 10px 15px;
+        background: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-size: 0.85rem;
+        color: #92400e;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .alert-icon {
+        font-size: 20px;
+    }
+
+    /* Loading State */
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #ffffff;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 80px;
+        color: #cbd5e1;
+        margin-bottom: 15px;
+    }
+
+    .empty-text {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #6b7280;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 576px) {
+        .action-bar {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .workflow-timeline {
+            font-size: 0.85rem;
+        }
+    }
+</style>
+
+<!-- Header Section -->
+<div id="header-section">
+    <div id="section-back">
+        <a href="{{ route('fasilitas.dashboard.karyawan') }}" class="back-btn">
+            <ion-icon name="arrow-back-outline"></ion-icon>
+        </a>
+    </div>
+    <div id="header-title">
+        <h3>Manajemen Kendaraan</h3>
+        <p>Kelola kendaraan, peminjaman & service</p>
+    </div>
+</div>
+
+<!-- Content Section -->
+<div id="content-section">
+    <div class="kendaraan-list-container">
+        @forelse($kendaraan as $item)
+            <div class="kendaraan-card" data-kendaraan-id="{{ $item->id }}">
+                <!-- Status Badge -->
+                <span class="status-badge badge-{{ $item->status }}">
+                    @if($item->status == 'tersedia') Tersedia
+                    @elseif($item->status == 'keluar') Keluar
+                    @elseif($item->status == 'dipinjam') Dipinjam
+                    @elseif($item->status == 'service') Service
+                    @else {{ ucfirst($item->status) }}
+                    @endif
+                </span>
+
+                <!-- Card Header -->
+                <div class="card-header-section">
+                    <img src="{{ $item->foto ? asset('storage/kendaraan/' . $item->foto) : asset('assets/img/no-image.png') }}" 
+                         alt="{{ $item->nama_kendaraan }}" 
+                         class="card-photo">
+                    
+                    <div class="card-info">
+                        <div class="card-title">{{ $item->nama_kendaraan }}</div>
+                        <div class="card-subtitle">{{ $item->no_polisi }}</div>
+                        <div class="card-meta">
+                            <span class="meta-item">{{ $item->jenis_kendaraan }}</span>
+                            <span class="meta-item">{{ $item->merk ?? '-' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflow Section (if active) -->
+                @if($item->hasActiveProcess())
+                    @php
+                        $prosesDetails = $item->getActiveProcessDetails();
+                        $stages = $item->getWorkflowStages();
+                    @endphp
+                    
+                    <div class="workflow-section">
+                        <!-- Workflow Header -->
+                        <div class="workflow-header">
+                            <span class="workflow-title">
+                                <ion-icon name="analytics-outline"></ion-icon>
+                                Proses: {{ ucfirst($prosesDetails['jenis_proses']) }}
+                            </span>
+                            <span class="workflow-code">{{ $prosesDetails['kode_proses'] }}</span>
+                        </div>
+
+                        <!-- Alert if vehicle is in use by someone else -->
+                        @if($prosesDetails['user_name'] != auth()->user()->name)
+                            <div class="alert-banner">
+                                <ion-icon name="alert-circle-outline" class="alert-icon"></ion-icon>
+                                <span>Sedang digunakan oleh: <strong>{{ $prosesDetails['user_name'] }}</strong></span>
+                            </div>
+                        @endif
+
+                        <!-- Animated Vehicle -->
+                        @if($prosesDetails['jenis_proses'] == 'keluar')
+                            <div class="animated-vehicle">
+                                <ion-icon name="car-outline" class="vehicle-icon"></ion-icon>
+                            </div>
+                        @endif
+
+                        <!-- Workflow Timeline -->
+                        <div class="workflow-timeline">
+                            <div class="workflow-line"></div>
+                            
+                            @foreach($stages as $stage)
+                                <div class="workflow-stage">
+                                    <div class="stage-node node-{{ $stage['status'] }}">
+                                        @if($stage['status'] == 'completed')
+                                            <ion-icon name="checkmark-outline"></ion-icon>
+                                        @elseif($stage['status'] == 'in_progress')
+                                            <ion-icon name="hourglass-outline"></ion-icon>
+                                        @elseif($stage['status'] == 'rejected')
+                                            <ion-icon name="close-outline"></ion-icon>
+                                        @else
+                                            {{ $stage['urutan'] }}
+                                        @endif
+                                    </div>
+                                    
+                                    <div class="stage-content">
+                                        <div class="stage-name">{{ $stage['nama'] }}</div>
+                                        <div class="stage-info">
+                                            <span class="stage-badge badge-status-{{ $stage['status'] }}">
+                                                {{ $stage['status_text'] }}
+                                            </span>
+                                            @if($stage['updated_by'])
+                                                <span>oleh {{ $stage['updated_by'] }}</span>
+                                            @endif
+                                            @if($stage['duration'] && $stage['status'] != 'pending')
+                                                <span>{{ $stage['duration'] }}</span>
+                                            @endif
+                                        </div>
+                                        @if($stage['catatan'])
+                                            <div style="font-size: 0.7rem; color: #6b7280; margin-top: 5px;">
+                                                {{ $stage['catatan'] }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <!-- Return Button (if user can return) -->
+                        @if($prosesDetails['user_name'] == auth()->user()->name && in_array($prosesDetails['jenis_proses'], ['keluar', 'pinjam']))
+                            <button class="btn-return" onclick="openReturnModal({{ $item->id }}, {{ $prosesDetails['id'] }}, '{{ $prosesDetails['jenis_proses'] }}')">
+                                <ion-icon name="arrow-undo-outline"></ion-icon>
+                                <span>Klik Kembali</span>
+                            </button>
+                        @endif
+                    </div>
+                @endif
+
+                <!-- Action Bar -->
+                <div class="action-bar">
+                    <!-- Detail Button -->
+                    <button class="action-btn btn-detail" onclick="openDetailModal({{ $item->id }})">
+                        <ion-icon name="eye-outline" class="action-icon"></ion-icon>
+                        <span class="action-label">Detail</span>
+                    </button>
+
+                    <!-- Keluar Button -->
+                    <button class="action-btn btn-keluar" 
+                            onclick="openKeluarModal({{ $item->id }})"
+                            @if(!$item->canPerformAction('keluar')) disabled @endif>
+                        <ion-icon name="exit-outline" class="action-icon"></ion-icon>
+                        <span class="action-label">Keluar</span>
+                    </button>
+
+                    <!-- Service Button -->
+                    <button class="action-btn btn-service" 
+                            onclick="openServiceModal({{ $item->id }})"
+                            @if(!$item->canPerformAction('service')) disabled @endif>
+                        <ion-icon name="construct-outline" class="action-icon"></ion-icon>
+                        <span class="action-label">Service</span>
+                    </button>
+                </div>
+            </div>
+        @empty
+            <div class="empty-state">
+                <ion-icon name="car-outline" class="empty-icon"></ion-icon>
+                <div class="empty-text">Belum ada kendaraan tersedia</div>
+            </div>
+        @endforelse
+    </div>
+
+    <!-- Pagination -->
+    @if($kendaraan->hasPages())
+        <div style="padding: 20px 15px;">
+            {{ $kendaraan->links() }}
+        </div>
+    @endif
+</div>
+
+<!-- Modals will be included here -->
+@include('kendaraan.karyawan.modals.detail')
+@include('kendaraan.karyawan.modals.keluar')
+@include('kendaraan.karyawan.modals.return')
+@include('kendaraan.karyawan.modals.pinjam')
+@include('kendaraan.karyawan.modals.service')
+
+<script>
+// Get user location
+let userLocation = { latitude: null, longitude: null };
+
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            userLocation.latitude = position.coords.latitude;
+            userLocation.longitude = position.coords.longitude;
+        },
+        (error) => {
+            console.warn('Geolocation error:', error);
+        }
+    );
+}
+
+// Modal Functions
+function openDetailModal(kendaraanId) {
+    // Implementation in modal file
+    $('#modalDetail').modal('show');
+    loadDetailKendaraan(kendaraanId);
+}
+
+function openKeluarModal(kendaraanId) {
+    $('#modalKeluar').modal('show');
+    $('#keluarKendaraanId').val(kendaraanId);
+}
+
+function openReturnModal(kendaraanId, prosesId, jenisProses) {
+    $('#modalReturn').modal('show');
+    $('#returnKendaraanId').val(kendaraanId);
+    $('#returnProsesId').val(prosesId);
+    $('#returnJenisProses').val(jenisProses);
+}
+
+function openPinjamModal(kendaraanId) {
+    $('#modalPinjam').modal('show');
+    $('#pinjamKendaraanId').val(kendaraanId);
+}
+
+function openServiceModal(kendaraanId) {
+    $('#modalService').modal('show');
+    $('#serviceKendaraanId').val(kendaraanId);
+}
+
+// Show toast notification
+function showToast(message, type = 'success') {
+    const bgColor = type === 'success' ? '#10b981' : '#ef4444';
+    Toastify({
+        text: message,
+        duration: 3000,
+        gravity: "top",
+        position: "center",
+        backgroundColor: bgColor,
+        stopOnFocus: true,
+    }).showToast();
+}
+</script>
+@endsection

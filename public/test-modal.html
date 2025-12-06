@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Modal Tugas Luar</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Test Modal Tugas Luar</h2>
+        
+        <!-- Card yang bisa diklik -->
+        <div class="card card-border-shadow-info h-100" style="cursor: pointer; width: 300px;" onclick="showTugasLuarModal()">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="avatar me-4">
+                        <span class="avatar-initial rounded bg-label-info"><i class="ti ti-briefcase"></i></span>
+                    </div>
+                    <h4 class="mb-0">3</h4>
+                </div>
+                <p class="mb-1">Karyawan Tugas Luar</p>
+                <small class="text-muted"><i class="ti ti-click"></i> Klik untuk lihat detail</small>
+            </div>
+        </div>
+        
+        <!-- Modal untuk menampilkan tugas luar -->
+        <div class="modal fade" id="modalTugasLuar" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="ti ti-briefcase text-info"></i> Karyawan Tugas Luar
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="modalTugasLuarContent"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Data tugas luar sample
+        const dataTugasLuar = [
+            {
+                "kode_tugas": "TL202511280003",
+                "karyawan_list": [
+                    "NIK004",
+                    "NIK005", 
+                    "NIK006"
+                ],
+                "tujuan": "Toko Bangunan Mitra Jaya",
+                "keterangan": "Beli material untuk renovasi gedung",
+                "waktu_keluar": "10:00:00",
+                "status": "keluar"
+            },
+            {
+                "kode_tugas": "TL202511280002",
+                "karyawan_list": [
+                    "NIK003"
+                ],
+                "tujuan": "Kantor Pos Sukabumi",
+                "keterangan": "Kirim dokumen penting ke Jakarta",
+                "waktu_keluar": "09:15:00",
+                "status": "keluar"
+            },
+            {
+                "kode_tugas": "TL202511280001",
+                "karyawan_list": [
+                    "NIK001",
+                    "NIK002"
+                ],
+                "tujuan": "Bank BNI Cabang Sukabumi", 
+                "keterangan": "Ambil uang untuk pembayaran supplier",
+                "waktu_keluar": "08:30:00",
+                "status": "keluar"
+            }
+        ];
+
+        // Fungsi untuk menampilkan modal tugas luar
+        function showTugasLuarModal() {
+            console.log('showTugasLuarModal called');
+            console.log('dataTugasLuar:', dataTugasLuar);
+            
+            let content = '';
+            
+            if (dataTugasLuar && dataTugasLuar.length > 0) {
+                content = '<div class="table-responsive"><table class="table table-hover">';
+                content += '<thead><tr>';
+                content += '<th>No</th>';
+                content += '<th>Kode Tugas</th>';
+                content += '<th>Karyawan</th>';
+                content += '<th>Tujuan</th>';
+                content += '<th>Waktu Keluar</th>';
+                content += '<th>Status</th>';
+                content += '</tr></thead><tbody>';
+                
+                dataTugasLuar.forEach((item, index) => {
+                    // Ambil data karyawan dari karyawan_list
+                    const karyawanList = item.karyawan_list || [];
+                    let karyawanHTML = '<small>';
+                    karyawanList.forEach((nik, idx) => {
+                        if (idx > 0) karyawanHTML += '<br>';
+                        karyawanHTML += nik;
+                    });
+                    karyawanHTML += `</small><br><span class="badge bg-label-info">${karyawanList.length} orang</span>`;
+                    
+                    content += '<tr>';
+                    content += `<td>${index + 1}</td>`;
+                    content += `<td><strong>${item.kode_tugas}</strong></td>`;
+                    content += `<td>${karyawanHTML}</td>`;
+                    content += `<td>${item.tujuan || '-'}<br><small class="text-muted">${item.keterangan || ''}</small></td>`;
+                    content += `<td><small><i class="ti ti-clock"></i> ${item.waktu_keluar}</small></td>`;
+                    content += `<td><span class="badge bg-danger"><i class="ti ti-briefcase ti-xs"></i> Sedang Keluar</span></td>`;
+                    content += '</tr>';
+                });
+                
+                content += '</tbody></table></div>';
+                content += `<div class="mt-3 text-center"><small class="text-muted">Total: ${dataTugasLuar.length} tugas</small></div>`;
+            } else {
+                content = `
+                    <div class="text-center py-4">
+                        <i class="ti ti-briefcase-off" style="font-size: 48px; color: #ccc;"></i>
+                        <p class="text-muted mt-2">Tidak ada karyawan yang sedang tugas luar</p>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('modalTugasLuarContent').innerHTML = content;
+            
+            // Show modal
+            try {
+                const modalElement = document.getElementById('modalTugasLuar');
+                if (modalElement) {
+                    const modal = new bootstrap.Modal(modalElement);
+                    modal.show();
+                    console.log('Modal shown successfully');
+                } else {
+                    console.error('Modal element modalTugasLuar tidak ditemukan');
+                }
+            } catch (error) {
+                console.error('Error showing modal:', error);
+                alert('Terjadi kesalahan saat menampilkan modal tugas luar');
+            }
+        }
+    </script>
+</body>
+</html>

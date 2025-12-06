@@ -1,0 +1,2266 @@
+@extends('layouts.mobile.app')
+@section('content')
+    <style>
+        /* PREMIUM ID CARD DESIGN v2.0 - Updated: 2025-11-30 10:30 */
+        :root {
+            --primary-color: #2F5D62;
+            --bg-main: #e8f0f2;
+            --shadow-light: #ffffff;
+            --shadow-dark: #c5d3d5;
+            --primary-gradient-start: #2F5D62;
+            --primary-gradient-end: #1e3d42;
+            
+            /* Light Mode Colors */
+            --bg-body-light: #ecf0f3;
+            --bg-primary-light: #ecf0f3;
+            --shadow-dark-light: #d1d9e6;
+            --shadow-light-light: #ffffff;
+            --text-primary-light: #2c3e50;
+            --text-secondary-light: #6c7a89;
+            --border-light: rgba(0, 0, 0, 0.05);
+
+            /* Dark Mode Colors */
+            --bg-body-dark: #1a202c;
+            --bg-primary-dark: #2d3748;
+            --shadow-dark-dark: #141923;
+            --shadow-light-dark: #3a4555;
+            --text-primary-dark: #f7fafc;
+            --text-secondary-dark: #a0aec0;
+            --border-dark: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Apply light mode by default */
+        body {
+            --bg-body: var(--bg-body-light);
+            --bg-primary: var(--bg-primary-light);
+            --shadow-dark: var(--shadow-dark-light);
+            --shadow-light: var(--shadow-light-light);
+            --text-primary: var(--text-primary-light);
+            --text-secondary: var(--text-secondary-light);
+            --border-color: var(--border-light);
+        }
+
+        /* Dark mode */
+        body.dark-mode {
+            --bg-body: var(--bg-body-dark);
+            --bg-primary: var(--bg-primary-dark);
+            --shadow-dark: var(--shadow-dark-dark);
+            --shadow-light: var(--shadow-light-dark);
+            --text-primary: var(--text-primary-dark);
+            --text-secondary: var(--text-secondary-dark);
+            --border-color: var(--border-dark);
+            --bg-main: var(--bg-body-dark);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-body);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background 0.3s ease;
+        }
+
+        /* Header Section */
+        #header-section {
+            background: var(--bg-primary);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 12px var(--shadow-dark),
+                       0 -2px 8px var(--shadow-light);
+            transition: all 0.3s ease;
+        }
+
+        .logo-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+            letter-spacing: -0.5px;
+            text-shadow: 2px 2px 4px var(--shadow-dark);
+        }
+
+        .logo-subtitle {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .back-btn {
+            background: var(--bg-body);
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 8px 8px 16px var(--shadow-dark),
+                       -8px -8px 16px var(--shadow-light);
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .back-btn:active {
+            box-shadow: inset 4px 4px 8px var(--shadow-dark),
+                       inset -4px -4px 8px var(--shadow-light);
+        }
+
+        .back-btn ion-icon {
+            font-size: 24px;
+            color: var(--text-primary);
+        }
+
+        #content-section {
+            padding: 20px;
+            padding-bottom: 120px;
+        }
+
+        /* Search and Filter Container */
+        .search-filter-container {
+            background: var(--bg-primary);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 8px 8px 16px var(--shadow-dark),
+                       -8px -8px 16px var(--shadow-light);
+        }
+
+        .search-wrapper {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 18px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            background: var(--bg-body);
+            color: var(--text-primary);
+            box-shadow: inset 4px 4px 8px var(--shadow-dark),
+                       inset -4px -4px 8px var(--shadow-light);
+            transition: all 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+        }
+
+        .search-box input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .search-btn {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-body);
+            border: none;
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex-shrink: 0;
+            box-shadow: 6px 6px 12px var(--shadow-dark),
+                       -6px -6px 12px var(--shadow-light);
+        }
+
+        .search-btn:active {
+            box-shadow: inset 3px 3px 6px var(--shadow-dark),
+                       inset -3px -3px 6px var(--shadow-light);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .filter-icon {
+            color: var(--text-primary);
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .filter-select {
+            flex: 1;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            background: var(--bg-body);
+            color: var(--text-primary);
+            cursor: pointer;
+            box-shadow: inset 3px 3px 6px var(--shadow-dark),
+                       inset -3px -3px 6px var(--shadow-light);
+        }
+
+        .filter-select:focus {
+            outline: none;
+        }
+
+        /* Table Container */
+        .table-container {
+            background: var(--bg-primary);
+            border-radius: 20px;
+            box-shadow: 8px 8px 16px var(--shadow-dark),
+                       -8px -8px 16px var(--shadow-light);
+            overflow: hidden;
+        }
+
+        /* Table Header */
+        .table-header {
+            display: grid;
+            grid-template-columns: 40px 1fr 180px 100px 100px 100px 50px;
+            padding: 15px 20px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .table-header div {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .header-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+        }
+
+        /* Table Row */
+        .table-row {
+            display: grid;
+            grid-template-columns: 40px 1fr 180px 100px 100px 100px 50px;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s;
+            align-items: center;
+            background: var(--bg-primary);
+        }
+
+        .table-row:hover {
+            background: var(--bg-body);
+            box-shadow: inset 4px 4px 8px var(--shadow-dark),
+                       inset -4px -4px 8px var(--shadow-light);
+        }
+
+        .table-row:last-child {
+            border-bottom: none;
+        }
+
+        /* Checkbox */
+        .row-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+        }
+
+        /* Customer Info */
+        .customer-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .customer-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+            overflow: hidden;
+            box-shadow: 4px 4px 8px var(--shadow-dark),
+                       -2px -2px 6px var(--shadow-light);
+        }
+
+        .customer-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .customer-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .customer-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .customer-email {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin: 2px 0 0 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Location */
+        .location-cell {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* Orders */
+        .orders-cell {
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        /* Registered Date */
+        .date-cell {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-badge.active {
+            background: linear-gradient(135deg, #27ae60 0%, #52c77a 100%);
+            color: white;
+            box-shadow: 0 2px 6px rgba(39, 174, 96, 0.25);
+        }
+
+        .status-badge.inactive {
+            background: linear-gradient(135deg, #e74c3c 0%, #ec7063 100%);
+            color: white;
+            box-shadow: 0 2px 6px rgba(231, 76, 60, 0.25);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        /* More Options */
+        .more-options {
+            color: var(--text-primary);
+            font-size: 22px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .more-options:hover {
+            background: var(--bg-body);
+            transform: scale(1.1);
+            box-shadow: 4px 4px 8px var(--shadow-dark),
+                       -4px -4px 8px var(--shadow-light);
+        }
+
+        /* Pagination */
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border-color);
+            margin-top: 0;
+        }
+
+        .pagination-info {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .page-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 8px;
+            background: var(--bg-body);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 4px 4px 8px var(--shadow-dark),
+                       -4px -4px 8px var(--shadow-light);
+        }
+
+        .page-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .page-btn.active {
+            background: linear-gradient(135deg, #2F5D62 0%, #1e3d42 100%);
+            color: white;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.2),
+                       0 4px 8px rgba(47, 93, 98, 0.4);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Loading State */
+        .loading-skeleton {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(47, 93, 98, 0.08);
+        }
+
+        .skeleton-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .skeleton-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(90deg, var(--shadow-dark) 25%, var(--shadow-light) 50%, var(--shadow-dark) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        .skeleton-line {
+            height: 10px;
+            background: linear-gradient(90deg, var(--shadow-dark) 25%, var(--shadow-light) 50%, var(--shadow-dark) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 4px;
+            flex: 1;
+        }
+
+        @keyframes loading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        /* Hide Duplicate Elements - Cleanup */
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state ion-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .filter-row {
+                flex-wrap: wrap;
+            }
+
+            .filter-select {
+                min-width: calc(50% - 15px);
+            }
+
+            .filter-icon {
+                width: 100%;
+                margin-bottom: 8px;
+            }
+
+            .table-header,
+            .table-row {
+                grid-template-columns: 30px 1fr 80px 40px;
+            }
+
+            .location-cell,
+            .orders-cell,
+            .date-cell {
+                display: none;
+            }
+
+            .customer-email {
+                display: none;
+            }
+
+            .pagination-controls {
+                gap: 4px;
+            }
+
+            .page-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 0.8rem;
+            }
+        }
+
+        .empty-state ion-icon {
+            font-size: 64px;
+            opacity: 0.3;
+            margin-bottom: 15px;
+        }
+
+        /* Modal ID Card */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, 
+                rgba(26, 10, 46, 0.95) 0%, 
+                rgba(10, 10, 31, 0.97) 50%, 
+                rgba(0, 0, 0, 0.98) 100%);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(20px) saturate(180%);
+        }
+        
+        .modal-overlay::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(138, 43, 226, 0.03) 2px,
+                rgba(138, 43, 226, 0.03) 4px
+            ),
+            repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 2px,
+                rgba(255, 215, 0, 0.02) 2px,
+                rgba(255, 215, 0, 0.02) 4px
+            );
+            pointer-events: none;
+            animation: overlayShimmer 10s linear infinite;
+        }
+        
+        @keyframes overlayShimmer {
+            0% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+            100% { opacity: 0.3; }
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeIn {
+            from { 
+                opacity: 0;
+                backdrop-filter: blur(0);
+            }
+            to { 
+                opacity: 1;
+                backdrop-filter: blur(20px) saturate(180%);
+            }
+        }
+
+        .id-card {
+            background: linear-gradient(160deg, 
+                #1a1c2e 0%, 
+                #2d1f3d 20%, 
+                #1e1529 40%, 
+                #2a1a35 60%, 
+                #1c1430 80%, 
+                #0f0a1e 100%);
+            border-radius: 32px;
+            width: 100%;
+            max-width: 440px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 40px 120px rgba(0, 0, 0, 0.9),
+                       0 20px 60px rgba(0, 0, 0, 0.8),
+                       0 10px 30px rgba(138, 43, 226, 0.3),
+                       inset 0 2px 2px rgba(255, 215, 0, 0.15),
+                       inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                       0 0 80px rgba(186, 85, 211, 0.4),
+                       0 0 40px rgba(138, 43, 226, 0.3);
+            animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), holographicShine 8s ease-in-out infinite;
+            position: relative;
+            border: 3px solid transparent;
+            background-clip: padding-box;
+            transform-style: preserve-3d;
+            backdrop-filter: blur(20px);
+        }
+        
+        .id-card::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 32px;
+            background: linear-gradient(45deg, 
+                #FFD700 0%, 
+                #FFA500 10%,
+                #FF69B4 20%,
+                #8A2BE2 30%,
+                #4169E1 40%,
+                #00CED1 50%,
+                #00FF7F 60%,
+                #FFD700 70%,
+                #FF1493 80%,
+                #8A2BE2 90%,
+                #FFD700 100%);
+            background-size: 300% 300%;
+            animation: borderGlow 6s ease infinite;
+            z-index: -1;
+            filter: blur(8px);
+            opacity: 0.8;
+        }
+        
+        .id-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 32px;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 2px,
+                rgba(255, 215, 0, 0.03) 2px,
+                rgba(255, 215, 0, 0.03) 4px
+            ),
+            repeating-linear-gradient(
+                -45deg,
+                transparent,
+                transparent 2px,
+                rgba(138, 43, 226, 0.03) 2px,
+                rgba(138, 43, 226, 0.03) 4px
+            );
+            pointer-events: none;
+            opacity: 0.6;
+        }
+        
+        @keyframes borderGlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        @keyframes holographicShine {
+            0%, 100% {
+                box-shadow: 0 40px 120px rgba(0, 0, 0, 0.9),
+                           0 20px 60px rgba(0, 0, 0, 0.8),
+                           0 10px 30px rgba(138, 43, 226, 0.3),
+                           inset 0 2px 2px rgba(255, 215, 0, 0.15),
+                           inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                           0 0 80px rgba(186, 85, 211, 0.4),
+                           0 0 40px rgba(138, 43, 226, 0.3);
+            }
+            50% {
+                box-shadow: 0 40px 120px rgba(0, 0, 0, 0.9),
+                           0 20px 60px rgba(0, 0, 0, 0.8),
+                           0 10px 30px rgba(255, 215, 0, 0.5),
+                           inset 0 2px 2px rgba(255, 215, 0, 0.25),
+                           inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                           0 0 100px rgba(255, 215, 0, 0.6),
+                           0 0 50px rgba(255, 165, 0, 0.5);
+            }
+        }
+
+        .id-card::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .id-card::-webkit-scrollbar-track {
+            background: linear-gradient(180deg, #1a1c2e 0%, #2d1f3d 100%);
+            border-radius: 10px;
+            border: 1px solid rgba(138, 43, 226, 0.2);
+        }
+
+        .id-card::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #FFD700 0%, #FF69B4 50%, #8A2BE2 100%);
+            border-radius: 10px;
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3),
+                       0 0 10px rgba(138, 43, 226, 0.6);
+        }
+
+        .id-card::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #FFA500 0%, #FF1493 50%, #9370DB 100%);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4),
+                       0 0 15px rgba(255, 215, 0, 0.8);
+        }
+
+        @keyframes slideUp {
+            from { 
+                transform: translateY(100px) scale(0.9) rotateX(10deg);
+                opacity: 0;
+            }
+            to { 
+                transform: translateY(0) scale(1) rotateX(0);
+                opacity: 1;
+            }
+        }
+
+        .id-card-header {
+            background: linear-gradient(160deg, 
+                #0a0a1f 0%,
+                #1a0a2e 15%,
+                #2d1b4e 30%,
+                #3d2667 45%,
+                #2d1b4e 60%,
+                #1a0a2e 80%,
+                #0a0a1f 100%);
+            padding: 0;
+            position: relative;
+            text-align: center;
+            border-radius: 30px 30px 0 0;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8),
+                       inset 0 2px 4px rgba(255, 215, 0, 0.25),
+                       inset 0 -3px 12px rgba(0, 0, 0, 0.6),
+                       0 0 40px rgba(138, 43, 226, 0.4);
+            overflow: hidden;
+            height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 3px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .id-card-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-conic-gradient(
+                from 0deg at 50% 50%,
+                rgba(255, 215, 0, 0.15) 0deg,
+                transparent 20deg,
+                rgba(138, 43, 226, 0.2) 40deg,
+                transparent 60deg,
+                rgba(255, 105, 180, 0.15) 80deg,
+                transparent 100deg,
+                rgba(255, 215, 0, 0.15) 120deg
+            );
+            animation: rotateGradient 20s linear infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes rotateGradient {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .id-card-header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(255, 215, 0, 0.2) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(138, 43, 226, 0.25) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(255, 105, 180, 0.15) 0%, transparent 60%);
+            animation: pulseGlow 4s ease-in-out infinite;
+        }
+        
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        .id-card-header-photo {
+            display: none !important;
+        }
+
+        .id-card-header-placeholder {
+            display: none !important;
+        }
+
+        .id-card-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, 
+                rgba(10, 10, 31, 0.95) 0%, 
+                rgba(26, 10, 46, 0.95) 100%);
+            backdrop-filter: blur(15px);
+            border: 3px solid rgba(255, 215, 0, 0.4);
+            color: #FFD700;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.8),
+                       0 3px 8px rgba(138, 43, 226, 0.5),
+                       inset 0 2px 4px rgba(255, 215, 0, 0.3),
+                       0 0 20px rgba(138, 43, 226, 0.4);
+            font-weight: bold;
+        }
+
+        .id-card-close:hover {
+            background: linear-gradient(135deg, 
+                rgba(239, 68, 68, 0.95) 0%, 
+                rgba(220, 38, 38, 0.95) 100%);
+            border-color: rgba(255, 255, 255, 0.6);
+            color: white;
+            transform: rotate(180deg) scale(1.15);
+            box-shadow: 0 8px 28px rgba(239, 68, 68, 0.8),
+                       0 4px 12px rgba(239, 68, 68, 0.6),
+                       inset 0 2px 4px rgba(255, 255, 255, 0.4),
+                       0 0 40px rgba(239, 68, 68, 0.7);
+        }
+
+        .id-card-close:active {
+            transform: rotate(180deg) scale(1.05);
+            box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.6);
+        }
+
+        .id-card-logo,
+        .id-card-title {
+            display: none;
+        }
+
+        .id-card-photo-container {
+            position: relative;
+            width: 190px;
+            height: 190px;
+            border-radius: 50%;
+            border: 10px solid transparent;
+            background: linear-gradient(#1a1c2e, #1a1c2e) padding-box,
+                       linear-gradient(45deg, 
+                           #FFD700 0%, 
+                           #FFA500 20%, 
+                           #FF69B4 40%, 
+                           #8A2BE2 60%, 
+                           #00CED1 80%, 
+                           #FFD700 100%) border-box;
+            background-size: 100% 100%, 200% 200%;
+            animation: borderRotate 4s linear infinite;
+            overflow: visible;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.6),
+                       0 0 30px rgba(138, 43, 226, 0.5),
+                       0 20px 60px rgba(0, 0, 0, 0.8),
+                       inset 0 2px 4px rgba(255, 215, 0, 0.3),
+                       0 0 0 4px rgba(138, 43, 226, 0.3),
+                       0 0 0 8px rgba(255, 215, 0, 0.2);
+            z-index: 10;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        
+        @keyframes borderRotate {
+            0%, 100% { background-position: 0% 0%, 0% 50%; }
+            50% { background-position: 0% 0%, 100% 50%; }
+        }
+        
+        .id-card-photo-container::before {
+            content: '';
+            position: absolute;
+            inset: -15px;
+            border-radius: 50%;
+            background: radial-gradient(circle, 
+                rgba(255, 215, 0, 0.4) 0%, 
+                rgba(138, 43, 226, 0.3) 30%,
+                transparent 70%);
+            z-index: -1;
+            animation: pulseRing 3s ease-in-out infinite;
+        }
+        
+        @keyframes pulseRing {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.6;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+        }
+
+        .photo-expand-icon {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF69B4 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.7),
+                       0 3px 10px rgba(255, 165, 0, 0.5),
+                       inset 0 2px 4px rgba(255, 255, 255, 0.4),
+                       0 0 20px rgba(255, 215, 0, 0.6);
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            z-index: 10;
+            animation: iconPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes iconPulse {
+            0%, 100% {
+                box-shadow: 0 6px 20px rgba(255, 215, 0, 0.7),
+                           0 3px 10px rgba(255, 165, 0, 0.5),
+                           inset 0 2px 4px rgba(255, 255, 255, 0.4),
+                           0 0 20px rgba(255, 215, 0, 0.6);
+            }
+            50% {
+                box-shadow: 0 8px 30px rgba(255, 215, 0, 0.9),
+                           0 4px 15px rgba(255, 165, 0, 0.7),
+                           inset 0 2px 4px rgba(255, 255, 255, 0.5),
+                           0 0 30px rgba(255, 215, 0, 0.8);
+            }
+        }
+
+        .photo-expand-icon ion-icon {
+            color: white;
+            font-size: 26px;
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+            font-weight: bold;
+        }
+
+        .id-card-photo-container:hover .photo-expand-icon {
+            opacity: 1;
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        .id-card-photo-container:hover {
+            transform: scale(1.12);
+            box-shadow: 0 0 70px rgba(255, 215, 0, 0.8),
+                       0 0 40px rgba(138, 43, 226, 0.7),
+                       0 25px 80px rgba(0, 0, 0, 0.9),
+                       0 0 0 6px rgba(138, 43, 226, 0.5),
+                       0 0 0 12px rgba(255, 215, 0, 0.3);
+            filter: brightness(1.15) saturate(1.2);
+        }
+
+        .id-card-photo-container:active {
+            transform: scale(1.05);
+        }
+
+        .id-card-photo,
+        .id-card-photo-placeholder {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.3s ease;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        .id-card-photo-container:hover .id-card-photo,
+        .id-card-photo-container:hover .id-card-photo-placeholder {
+            transform: scale(1.1);
+            filter: brightness(1.1);
+        }
+
+        .id-card-photo-placeholder {
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, 
+                #2d1b4e 0%, 
+                #3d2667 30%, 
+                #4d3177 60%, 
+                #3d2667 100%);
+            color: #FFD700;
+            font-size: 80px;
+            font-weight: 900;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.8),
+                        0 0 40px rgba(255, 165, 0, 0.6),
+                        0 5px 15px rgba(0, 0, 0, 0.8);
+            border-radius: 50%;
+            overflow: hidden;
+        }
+        
+        .id-card-photo-placeholder::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 10px,
+                rgba(255, 215, 0, 0.05) 10px,
+                rgba(255, 215, 0, 0.05) 20px
+            );
+        }
+
+        .id-card-photo-placeholder.show {
+            display: flex;
+        }
+
+        .id-card-body {
+            padding: 38px 32px 35px;
+            background: linear-gradient(160deg, 
+                #1a1c2e 0%, 
+                #2d1f3d 30%, 
+                #1e1529 60%, 
+                #1a1c2e 100%);
+            position: relative;
+        }
+        
+        .id-card-body::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 3px,
+                rgba(255, 215, 0, 0.02) 3px,
+                rgba(255, 215, 0, 0.02) 6px
+            ),
+            repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 3px,
+                rgba(138, 43, 226, 0.02) 3px,
+                rgba(138, 43, 226, 0.02) 6px
+            );
+            pointer-events: none;
+        }
+        
+        .id-card-body::after {
+            content: 'PREMIUM';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-20deg);
+            font-size: 120px;
+            font-weight: 900;
+            background: linear-gradient(135deg, 
+                rgba(255, 215, 0, 0.03) 0%, 
+                rgba(138, 43, 226, 0.05) 50%, 
+                rgba(255, 215, 0, 0.03) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 40px rgba(255, 215, 0, 0.1);
+            letter-spacing: 8px;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.6;
+        }
+
+        .id-card-name {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 900;
+            background: linear-gradient(135deg, 
+                #FFD700 0%, 
+                #FFA500 30%, 
+                #FFD700 60%, 
+                #FFED4E 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            letter-spacing: -0.3px;
+            text-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+            line-height: 1.2;
+            filter: drop-shadow(0 4px 8px rgba(255, 215, 0, 0.5))
+                   drop-shadow(0 0 20px rgba(255, 165, 0, 0.4));
+            animation: textShimmer 3s ease-in-out infinite;
+            position: relative;
+            z-index: 1;
+        }
+        
+        @keyframes textShimmer {
+            0%, 100% {
+                filter: drop-shadow(0 4px 8px rgba(255, 215, 0, 0.5))
+                       drop-shadow(0 0 20px rgba(255, 165, 0, 0.4));
+            }
+            50% {
+                filter: drop-shadow(0 4px 12px rgba(255, 215, 0, 0.7))
+                       drop-shadow(0 0 30px rgba(255, 165, 0, 0.6));
+            }
+        }
+
+        .id-card-number {
+            text-align: center;
+            background: linear-gradient(135deg, 
+                #C0C0C0 0%, 
+                #E8E8E8 30%, 
+                #FFFFFF 50%, 
+                #E8E8E8 70%, 
+                #C0C0C0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 16px;
+            margin-bottom: 30px;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+            font-weight: 800;
+            filter: drop-shadow(0 2px 6px rgba(192, 192, 192, 0.6))
+                   drop-shadow(0 0 15px rgba(255, 255, 255, 0.3));
+            position: relative;
+            z-index: 1;
+        }
+
+        .id-card-info {
+            display: grid;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .id-card-info-item {
+            display: flex;
+            align-items: start;
+            gap: 16px;
+            padding: 18px 16px;
+            background: linear-gradient(135deg, 
+                rgba(42, 26, 53, 0.7) 0%, 
+                rgba(61, 38, 103, 0.6) 50%, 
+                rgba(42, 26, 53, 0.7) 100%);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: inset 0 1px 2px rgba(255, 215, 0, 0.1),
+                       inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+                       0 4px 12px rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(138, 43, 226, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .id-card-info-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 215, 0, 0.15), 
+                rgba(138, 43, 226, 0.15),
+                transparent);
+            transition: left 0.6s ease;
+        }
+
+        .id-card-info-item:hover {
+            background: linear-gradient(135deg, 
+                rgba(61, 38, 103, 0.8) 0%, 
+                rgba(77, 49, 119, 0.7) 50%, 
+                rgba(61, 38, 103, 0.8) 100%);
+            transform: translateX(8px) translateZ(10px) scale(1.02);
+            box-shadow: 0 8px 24px rgba(138, 43, 226, 0.4),
+                       0 4px 12px rgba(255, 215, 0, 0.3),
+                       inset 0 1px 2px rgba(255, 215, 0, 0.2);
+            border-color: rgba(255, 215, 0, 0.5);
+        }
+
+        .id-card-info-item:hover::before {
+            left: 100%;
+        }
+
+        .id-card-info-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, 
+                #FFD700 0%, 
+                #FFA500 30%, 
+                #FF69B4 70%, 
+                #8A2BE2 100%);
+            border-radius: 14px;
+            color: white;
+            font-size: 24px;
+            flex-shrink: 0;
+            box-shadow: 0 8px 20px rgba(255, 215, 0, 0.5),
+                       0 4px 10px rgba(138, 43, 226, 0.4),
+                       inset 0 2px 4px rgba(255, 255, 255, 0.4),
+                       inset 0 -2px 4px rgba(0, 0, 0, 0.3),
+                       0 0 25px rgba(255, 215, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .id-card-info-item:hover .id-card-info-icon {
+            transform: rotate(10deg) scale(1.1);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.7),
+                       0 5px 15px rgba(138, 43, 226, 0.6),
+                       inset 0 2px 4px rgba(255, 255, 255, 0.5),
+                       0 0 35px rgba(255, 215, 0, 0.6);
+        }
+
+        .id-card-info-content {
+            flex: 1;
+        }
+
+        .id-card-info-label {
+            font-size: 11px;
+            background: linear-gradient(135deg, 
+                #C0C0C0 0%, 
+                #E8E8E8 50%, 
+                #C0C0C0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            margin-bottom: 6px;
+            filter: drop-shadow(0 1px 3px rgba(192, 192, 192, 0.4));
+        }
+
+        .id-card-info-value {
+            font-size: 16px;
+            color: #FFFFFF;
+            font-weight: 700;
+            line-height: 1.4;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3),
+                        0 3px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        .id-card-badges {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 24px;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+
+        .id-card-badge {
+            padding: 10px 22px;
+            border-radius: 28px;
+            font-size: 14px;
+            font-weight: 900;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4),
+                       inset 0 2px 4px rgba(255, 255, 255, 0.3),
+                       inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+                       0 0 30px rgba(138, 43, 226, 0.3);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 0 3px 6px rgba(0, 0, 0, 0.4),
+                        0 0 15px rgba(0, 0, 0, 0.3);
+            letter-spacing: 0.8px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .id-card-badge::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, 
+                transparent 30%, 
+                rgba(255, 255, 255, 0.2) 50%, 
+                transparent 70%);
+            transform: rotate(45deg);
+            animation: badgeShine 3s ease-in-out infinite;
+        }
+        
+        @keyframes badgeShine {
+            0%, 100% { transform: translateX(-100%) rotate(45deg); }
+            50% { transform: translateX(100%) rotate(45deg); }
+        }
+
+        .id-card-badge ion-icon {
+            font-size: 18px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+        }
+
+        .id-card-badge:hover {
+            transform: translateY(-3px) scale(1.08);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5),
+                       inset 0 2px 4px rgba(255, 255, 255, 0.4),
+                       0 0 40px rgba(138, 43, 226, 0.5);
+        }
+
+        .id-card-badge.active {
+            background: linear-gradient(135deg, 
+                #10b981 0%, 
+                #059669 50%, 
+                #047857 100%);
+            color: white;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.6),
+                       inset 0 2px 4px rgba(255, 255, 255, 0.4),
+                       0 0 30px rgba(16, 185, 129, 0.5);
+        }
+
+        .id-card-badge.inactive {
+            background: linear-gradient(135deg, 
+                #ef4444 0%, 
+                #dc2626 50%, 
+                #b91c1c 100%);
+            color: white;
+            box-shadow: 0 8px 24px rgba(239, 68, 68, 0.6),
+                       inset 0 2px 4px rgba(255, 255, 255, 0.4),
+                       0 0 30px rgba(239, 68, 68, 0.5);
+        }
+
+        .id-card-badge.umroh {
+            background: linear-gradient(135deg, 
+                #3b82f6 0%, 
+                #2563eb 50%, 
+                #1d4ed8 100%);
+            color: white;
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.6),
+                       inset 0 2px 4px rgba(255, 255, 255, 0.4),
+                       0 0 30px rgba(59, 130, 246, 0.5);
+        }
+
+        .id-card-badge.no-umroh {
+            background: linear-gradient(135deg, 
+                #6b7280 0%, 
+                #4b5563 50%, 
+                #374151 100%);
+            color: white;
+            box-shadow: 0 8px 24px rgba(107, 114, 128, 0.6),
+                       inset 0 2px 4px rgba(255, 255, 255, 0.3),
+                       0 0 30px rgba(107, 114, 128, 0.4);
+        }
+
+        .id-card-footer {
+            padding: 26px 32px;
+            background: linear-gradient(160deg, 
+                #0a0a1f 0%,
+                #1a0a2e 50%,
+                #0a0a1f 100%);
+            display: flex;
+            gap: 14px;
+            border-radius: 0 0 30px 30px;
+            border-top: 3px solid rgba(138, 43, 226, 0.3);
+            box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.5),
+                       0 -4px 20px rgba(138, 43, 226, 0.2);
+        }
+            box-shadow: inset 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .id-card-btn {
+            flex: 1;
+            padding: 16px 18px;
+            border: none;
+            border-radius: 16px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 16px;
+            letter-spacing: 0.8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .id-card-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .id-card-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .id-card-btn ion-icon {
+            font-size: 22px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+            position: relative;
+            z-index: 1;
+        }
+        
+        .id-card-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .id-card-btn-primary {
+            background: linear-gradient(135deg, 
+                #FFD700 0%, 
+                #FFA500 30%, 
+                #FF69B4 70%, 
+                #8A2BE2 100%);
+            color: white;
+            box-shadow: 0 8px 24px rgba(255, 215, 0, 0.6),
+                       0 4px 12px rgba(138, 43, 226, 0.5),
+                       inset 0 2px 4px rgba(255, 255, 255, 0.4),
+                       inset 0 -2px 4px rgba(0, 0, 0, 0.3),
+                       0 0 30px rgba(255, 215, 0, 0.4);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 0 3px 6px rgba(0, 0, 0, 0.5),
+                        0 0 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .id-card-btn-primary:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 12px 36px rgba(255, 215, 0, 0.8),
+                       0 6px 18px rgba(138, 43, 226, 0.7),
+                       inset 0 2px 4px rgba(255, 255, 255, 0.5),
+                       0 0 50px rgba(255, 215, 0, 0.6);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .id-card-btn-primary:active {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: inset 0 4px 16px rgba(0, 0, 0, 0.5);
+        }
+
+        .id-card-btn-secondary {
+            background: linear-gradient(135deg, 
+                rgba(42, 26, 53, 0.9) 0%, 
+                rgba(61, 38, 103, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            color: #E8E8E8;
+            border: 3px solid rgba(138, 43, 226, 0.5);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6),
+                       inset 0 2px 4px rgba(255, 215, 0, 0.1),
+                       0 0 20px rgba(138, 43, 226, 0.3);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .id-card-btn-secondary:hover {
+            background: linear-gradient(135deg, 
+                rgba(61, 38, 103, 0.95) 0%, 
+                rgba(77, 49, 119, 0.95) 100%);
+            border-color: rgba(255, 215, 0, 0.6);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 10px 28px rgba(138, 43, 226, 0.6),
+                       inset 0 2px 4px rgba(255, 215, 0, 0.2),
+                       0 0 35px rgba(138, 43, 226, 0.5);
+            color: #FFFFFF;
+        }
+
+        .id-card-btn-secondary:active {
+            transform: translateY(0) scale(1.02);
+            box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Fullscreen Photo Modal */
+        .fullscreen-photo-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: zoomIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes zoomIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .fullscreen-photo-container img {
+            max-width: 95%;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: 16px;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6),
+                       0 10px 40px rgba(0, 0, 0, 0.5),
+                       inset 0 1px 0 rgba(255,255,255,0.1);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .fullscreen-photo-container img:hover {
+            transform: scale(1.02);
+        }
+
+        .fullscreen-initials {
+            width: 450px;
+            height: 450px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2F5D62 0%, #1e3d42 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 140px;
+            font-weight: 900;
+            color: white;
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6),
+                       inset 0 4px 8px rgba(255,255,255,0.2),
+                       inset 0 -4px 8px rgba(0,0,0,0.3);
+            text-transform: uppercase;
+            text-shadow: 0 6px 16px rgba(0,0,0,0.5);
+            border: 4px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .close-fullscreen {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 14px;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
+                       inset 0 1px 0 rgba(255,255,255,0.5);
+        }
+
+        .close-fullscreen:hover {
+            background: rgba(239, 68, 68, 0.95);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: 0 12px 32px rgba(239, 68, 68, 0.6);
+        }
+
+        .close-fullscreen:active {
+            transform: rotate(90deg) scale(0.95);
+            box-shadow: inset 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .close-fullscreen ion-icon {
+            font-size: 32px;
+            color: #1e293b;
+            transition: color 0.3s ease;
+        }
+
+        .close-fullscreen:hover ion-icon {
+            color: white;
+        }
+
+        .photo-caption {
+            margin-top: 24px;
+            padding: 16px 28px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            color: #1e293b;
+            font-size: 18px;
+            font-weight: 800;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
+                       inset 0 1px 0 rgba(255,255,255,0.6);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Dark mode support for photo caption */
+        body.dark-mode .photo-caption {
+            background: rgba(45, 55, 72, 0.95);
+            color: #f7fafc;
+            border-color: rgba(255, 255, 255, 0.1);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        body.dark-mode .close-fullscreen {
+            background: rgba(45, 55, 72, 0.95);
+        }
+
+        body.dark-mode .close-fullscreen ion-icon {
+            color: #f7fafc;
+        }
+    </style>
+
+    <!-- Header -->
+    <div id="header-section">
+        <div class="logo-wrapper">
+            <span class="logo-title">Data Jamaah</span>
+            <span class="logo-subtitle">MASAR</span>
+        </div>
+        <a href="{{ route('masar.karyawan.index') }}" class="back-btn">
+            <ion-icon name="arrow-back-outline"></ion-icon>
+        </a>
+    </div>
+
+    <div id="content-section">
+        <!-- Search and Filter -->
+        <div class="search-filter-container">
+            <!-- Search Box with Button -->
+            <div class="search-wrapper">
+                <div class="search-box">
+                    <input type="text" id="searchJamaah" placeholder="Cari nama atau nomor jamaah...">
+                </div>
+                <button class="search-btn" id="btnSearch">
+                    <ion-icon name="search-outline"></ion-icon>
+                </button>
+            </div>
+
+            <!-- Filter Row -->
+            <div class="filter-row">
+                <ion-icon name="filter-outline" class="filter-icon"></ion-icon>
+                <select class="filter-select" id="filterTahun">
+                    <option value="">Semua Tahun Masuk</option>
+                    @for($i = date('Y'); $i >= 2015; $i--)
+                        <option value="{{ $i }}">Tahun {{ $i }}</option>
+                    @endfor
+                </select>
+                <select class="filter-select" id="filterStatus">
+                    <option value="">Semua Status</option>
+                    <option value="aktif">Aktif</option>
+                    <option value="non_aktif">Non Aktif</option>
+                </select>
+                <select class="filter-select" id="filterUmroh">
+                    <option value="">Status Umroh</option>
+                    <option value="1">Sudah Umroh</option>
+                    <option value="0">Belum Umroh</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="table-container">
+            <!-- Table Header -->
+            <div class="table-header">
+                <div>
+                    <input type="checkbox" class="header-checkbox" id="selectAll">
+                </div>
+                <div>Nama Jamaah</div>
+                <div>Alamat</div>
+                <div>Kehadiran</div>
+                <div>Tahun Masuk</div>
+                <div>Status</div>
+                <div></div>
+            </div>
+
+            <!-- Table Body -->
+            <div id="jamaahList">
+                <!-- Loading skeleton -->
+                <div class="loading-skeleton">
+                    <div class="skeleton-row">
+                        <div class="skeleton-avatar"></div>
+                        <div class="skeleton-text"></div>
+                    </div>
+                </div>
+                <div class="loading-skeleton">
+                    <div class="skeleton-row">
+                        <div class="skeleton-avatar"></div>
+                        <div class="skeleton-text"></div>
+                    </div>
+                </div>
+                <div class="loading-skeleton">
+                    <div class="skeleton-row">
+                        <div class="skeleton-avatar"></div>
+                        <div class="skeleton-text"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Showing <span id="showingStart">0</span> to <span id="showingEnd">0</span> of <span id="totalItems">0</span> items
+                </div>
+                <div class="pagination-controls">
+                    <button class="page-btn" id="prevBtn" disabled>
+                        <ion-icon name="chevron-back-outline"></ion-icon>
+                    </button>
+                    <button class="page-btn active" data-page="1">1</button>
+                    <button class="page-btn" data-page="2">2</button>
+                    <button class="page-btn" data-page="3">3</button>
+                    <span style="color: #94a3b8;">...</span>
+                    <button class="page-btn" id="lastPageBtn">10</button>
+                    <button class="page-btn" id="nextBtn">
+                        <ion-icon name="chevron-forward-outline"></ion-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div style="height: 30px;"></div>
+    </div>
+
+    <!-- Modal ID Card -->
+    <div class="modal-overlay" id="modalIdCard">
+        <div class="id-card">
+            <div class="id-card-header">
+                <img src="" alt="Foto Jamaah" class="id-card-header-photo" id="modalHeaderPhoto">
+                <div class="id-card-header-placeholder" id="modalHeaderPlaceholder">YM</div>
+                <button class="id-card-close" onclick="closeModal()">
+                    <ion-icon name="close-outline"></ion-icon>
+                </button>
+                <div class="id-card-logo">Masar Saung Ar-Rohmah</div>
+                <div class="id-card-title">ID CARD JAMAAH</div>
+                <div class="id-card-photo-container" onclick="openFullscreenPhoto()" title="Klik untuk memperbesar">
+                    <img src="" alt="Foto Jamaah" class="id-card-photo" id="modalPhoto">
+                    <div class="id-card-photo-placeholder" id="modalPhotoPlaceholder">YM</div>
+                    <div class="photo-expand-icon">
+                        <ion-icon name="expand-outline"></ion-icon>
+                    </div>
+                </div>
+            </div>
+            <div class="id-card-body">
+                <div class="id-card-name" id="modalName">-</div>
+                <div class="id-card-number" id="modalNumber">-</div>
+                
+                <div class="id-card-info">
+                    <div class="id-card-info-item">
+                        <div class="id-card-info-icon">
+                            <ion-icon name="card-outline"></ion-icon>
+                        </div>
+                        <div class="id-card-info-content">
+                            <div class="id-card-info-label">NIK</div>
+                            <div class="id-card-info-value" id="modalNik">-</div>
+                        </div>
+                    </div>
+                    <div class="id-card-info-item">
+                        <div class="id-card-info-icon">
+                            <ion-icon name="call-outline"></ion-icon>
+                        </div>
+                        <div class="id-card-info-content">
+                            <div class="id-card-info-label">No. Telepon</div>
+                            <div class="id-card-info-value" id="modalPhone">-</div>
+                        </div>
+                    </div>
+                    <div class="id-card-info-item">
+                        <div class="id-card-info-icon">
+                            <ion-icon name="location-outline"></ion-icon>
+                        </div>
+                        <div class="id-card-info-content">
+                            <div class="id-card-info-label">Alamat</div>
+                            <div class="id-card-info-value" id="modalAddress">-</div>
+                        </div>
+                    </div>
+                    <div class="id-card-info-item">
+                        <div class="id-card-info-icon">
+                            <ion-icon name="calendar-outline"></ion-icon>
+                        </div>
+                        <div class="id-card-info-content">
+                            <div class="id-card-info-label">Tahun Masuk</div>
+                            <div class="id-card-info-value" id="modalYear">-</div>
+                        </div>
+                    </div>
+                    <div class="id-card-info-item">
+                        <div class="id-card-info-icon">
+                            <ion-icon name="people-outline"></ion-icon>
+                        </div>
+                        <div class="id-card-info-content">
+                            <div class="id-card-info-label">Kehadiran</div>
+                            <div class="id-card-info-value" id="modalKehadiran">0 kali</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="id-card-badges">
+                    <span class="id-card-badge active" id="modalStatusBadge">
+                        <ion-icon name="checkmark-circle"></ion-icon>
+                        Active
+                    </span>
+                    <span class="id-card-badge umroh" id="modalUmrohBadge">
+                        <ion-icon name="airplane"></ion-icon>
+                        Sudah Umroh
+                    </span>
+                </div>
+            </div>
+            <div class="id-card-footer">
+                <button class="id-card-btn id-card-btn-primary" onclick="closeModal()" style="width: 100%;">
+                    <ion-icon name="close-circle-outline"></ion-icon>
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Fullscreen Photo -->
+    <div id="modalFullscreenPhoto" class="modal-overlay" style="display: none;">
+        <div class="fullscreen-photo-container">
+            <button class="close-fullscreen" onclick="closeFullscreenPhoto()">
+                <ion-icon name="close"></ion-icon>
+            </button>
+            <img id="fullscreenPhotoImg" src="" alt="Foto Jamaah" />
+            <div id="fullscreenInitialsPlaceholder" class="fullscreen-initials" style="display: none;"></div>
+            <div class="photo-caption" id="fullscreenPhotoCaption"></div>
+        </div>
+    </div>
+@endsection
+
+@section('scripts')
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    let jamaahData = [];
+    let currentPage = 1;
+    let itemsPerPage = 10;
+
+    // Load data
+    function loadJamaah() {
+        $.ajax({
+            url: '{{ route("masar.karyawan.jamaah.index") }}',
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                jamaahData = response.data;
+                renderJamaah(jamaahData);
+                updatePagination();
+            },
+            error: function() {
+                $('#jamaahList').html(`
+                    <div class="empty-state">
+                        <ion-icon name="alert-circle-outline"></ion-icon>
+                        <p>Gagal memuat data jamaah</p>
+                    </div>
+                `);
+            }
+        });
+    }
+
+    // Get initials from name
+    function getInitials(name) {
+        return name.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase();
+    }
+
+    // Get truncated location
+    function truncateLocation(address) {
+        if (!address) return '-';
+        const parts = address.split(',');
+        return parts.length > 1 ? parts[parts.length - 1].trim() : address.substring(0, 20);
+    }
+
+    // Render jamaah table
+    function renderJamaah(data) {
+        if (data.length === 0) {
+            $('#jamaahList').html(`
+                <div class="empty-state">
+                    <ion-icon name="people-outline"></ion-icon>
+                    <p>Tidak ada data jamaah</p>
+                </div>
+            `);
+            $('#totalItems').text('0');
+            $('#showingStart').text('0');
+            $('#showingEnd').text('0');
+            return;
+        }
+
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = Math.min(startIndex + itemsPerPage, data.length);
+        const pageData = data.slice(startIndex, endIndex);
+
+        let html = '';
+        pageData.forEach(function(jamaah) {
+            const initials = getInitials(jamaah.nama_jamaah);
+            const location = truncateLocation(jamaah.alamat);
+            const statusClass = jamaah.status_aktif == 'aktif' ? 'active' : 'inactive';
+            const statusText = jamaah.status_aktif == 'aktif' ? 'Active' : 'Inactive';
+            const kehadiran = jamaah.jumlah_kehadiran || 0;
+            
+            // Check if photo exists
+            let avatarHtml = '';
+            console.log('Jamaah foto_jamaah:', jamaah.foto_jamaah); // Debug
+            if (jamaah.foto_jamaah && jamaah.foto_jamaah !== '' && jamaah.foto_jamaah !== null && jamaah.foto_jamaah !== 'null') {
+                // Build photo URL - always use /storage/jamaah/ path
+                let photoUrl = '/storage/jamaah/' + jamaah.foto_jamaah;
+                console.log('Photo URL:', photoUrl); // Debug
+                avatarHtml = `<img src="${photoUrl}" alt="${jamaah.nama_jamaah}" style="width: 100%; height: 100%; object-fit: cover;" onerror="console.error('Failed to load:', this.src); this.style.display='none'; this.parentElement.innerHTML='${initials}';">`;
+            } else {
+                console.log('No photo, showing initials'); // Debug
+                avatarHtml = initials;
+            }
+            
+            html += `
+                <div class="table-row" data-id="${jamaah.encrypted_id}">
+                    <div>
+                        <input type="checkbox" class="row-checkbox" value="${jamaah.encrypted_id}">
+                    </div>
+                    <div class="customer-info">
+                        <div class="customer-avatar">${avatarHtml}</div>
+                        <div class="customer-details">
+                            <p class="customer-name">${jamaah.nama_jamaah}</p>
+                            <p class="customer-email">${jamaah.nomor_jamaah}</p>
+                        </div>
+                    </div>
+                    <div class="location-cell">${location}</div>
+                    <div class="orders-cell">${kehadiran}</div>
+                    <div class="date-cell">${jamaah.tahun_masuk}</div>
+                    <div>
+                        <span class="status-badge ${statusClass}">
+                            <span class="status-dot"></span>
+                            ${statusText}
+                        </span>
+                    </div>
+                    <div>
+                        <ion-icon name="eye-outline" class="more-options" data-jamaah='${JSON.stringify(jamaah)}'></ion-icon>
+                    </div>
+                </div>
+            `;
+        });
+
+        $('#jamaahList').html(html);
+        $('#totalItems').text(data.length);
+        $('#showingStart').text(startIndex + 1);
+        $('#showingEnd').text(endIndex);
+
+        // Add click handler for more options to show modal
+        $('.more-options').on('click', function(e) {
+            e.stopPropagation();
+            const jamaahDataStr = $(this).attr('data-jamaah');
+            const jamaah = JSON.parse(jamaahDataStr);
+            showIdCardModal(jamaah);
+        });
+
+        // Add click handler for rows - show modal
+        $('.table-row').on('click', function(e) {
+            // Jangan trigger jika yang diklik adalah checkbox atau avatar
+            if (!$(e.target).is('input[type="checkbox"]') && !$(e.target).closest('.customer-avatar').length) {
+                const jamaahDataStr = $(this).find('.more-options').attr('data-jamaah');
+                const jamaah = JSON.parse(jamaahDataStr);
+                showIdCardModal(jamaah);
+            }
+        });
+        
+        // Add click handler for avatar - show fullscreen photo or initials
+        $('.customer-avatar').on('click', function(e) {
+            e.stopPropagation();
+            const jamaahDataStr = $(this).closest('.table-row').find('.more-options').attr('data-jamaah');
+            const jamaah = JSON.parse(jamaahDataStr);
+            
+            // Check if has photo
+            if (jamaah.foto_jamaah && jamaah.foto_jamaah !== '' && jamaah.foto_jamaah !== null && jamaah.foto_jamaah !== 'null') {
+                const photoUrl = '/storage/jamaah/' + jamaah.foto_jamaah;
+                showFullscreenPhoto(photoUrl, jamaah.nama_jamaah);
+            } else {
+                // Show fullscreen with initials
+                showFullscreenInitials(jamaah.nama_jamaah);
+            }
+        });
+    }
+
+    // Show ID Card Modal
+    function showIdCardModal(jamaah) {
+        console.log('Jamaah data:', jamaah); // Debug
+        
+        // Set name and number
+        $('#modalName').text(jamaah.nama_jamaah);
+        $('#modalNumber').text(jamaah.nomor_jamaah);
+        
+        // Set photo or initials
+        const initials = getInitials(jamaah.nama_jamaah);
+        
+        // Reset display for avatar
+        $('#modalPhoto').hide().off('load error');
+        $('#modalPhotoPlaceholder').removeClass('show').text(initials);
+        
+        console.log('Modal - Jamaah foto_jamaah:', jamaah.foto_jamaah); // Debug
+        
+        if (jamaah.foto_jamaah && jamaah.foto_jamaah !== '' && jamaah.foto_jamaah !== null && jamaah.foto_jamaah !== 'null') {
+            // Build photo URL - always use /storage/jamaah/ path  
+            let photoUrl = '/storage/jamaah/' + jamaah.foto_jamaah;
+            
+            console.log('Modal - Photo URL:', photoUrl); // Debug
+            
+            // Try to load image for avatar
+            $('#modalPhoto')
+                .attr('src', photoUrl)
+                .on('load', function() {
+                    console.log('Photo loaded successfully');
+                    $(this).show();
+                    $('#modalPhotoPlaceholder').removeClass('show');
+                })
+                .on('error', function() {
+                    console.log('Photo failed to load, showing initials');
+                    $(this).hide();
+                    $('#modalPhotoPlaceholder').addClass('show');
+                });
+        } else {
+            console.log('No photo available, showing initials');
+            $('#modalPhotoPlaceholder').addClass('show');
+        }
+        
+        // Set info
+        $('#modalNik').text(jamaah.nik || '-');
+        $('#modalPhone').html(jamaah.no_hp ? `<a href="tel:${jamaah.no_hp}" style="color: inherit;">${jamaah.no_hp}</a>` : '-');
+        $('#modalAddress').text(jamaah.alamat || '-');
+        $('#modalYear').text(jamaah.tahun_masuk || '-');
+        $('#modalKehadiran').text((jamaah.jumlah_kehadiran || 0) + ' kali');
+        
+        // Set status badge
+        if (jamaah.status_aktif == 'aktif') {
+            $('#modalStatusBadge').removeClass('inactive').addClass('active')
+                .html('<ion-icon name="checkmark-circle"></ion-icon> Active');
+        } else {
+            $('#modalStatusBadge').removeClass('active').addClass('inactive')
+                .html('<ion-icon name="close-circle"></ion-icon> Inactive');
+        }
+        
+        // Set umroh badge
+        if (jamaah.status_umroh == 1) {
+            $('#modalUmrohBadge').removeClass('no-umroh').addClass('umroh')
+                .html('<ion-icon name="airplane"></ion-icon> Sudah Umroh').show();
+        } else {
+            $('#modalUmrohBadge').removeClass('umroh').addClass('no-umroh')
+                .html('<ion-icon name="close-circle-outline"></ion-icon> Belum Umroh').show();
+        }
+        
+        // Show modal
+        $('#modalIdCard').addClass('show');
+        $('body').css('overflow', 'hidden');
+    }
+
+    // Update pagination
+    function updatePagination() {
+        const totalPages = Math.ceil(jamaahData.length / itemsPerPage);
+        
+        // Update prev/next buttons
+        $('#prevBtn').prop('disabled', currentPage === 1);
+        $('#nextBtn').prop('disabled', currentPage === totalPages);
+        
+        // Highlight active page
+        $('.page-btn[data-page]').removeClass('active');
+        $(`.page-btn[data-page="${currentPage}"]`).addClass('active');
+        
+        $('#lastPageBtn').text(totalPages).data('page', totalPages);
+    }
+
+    // Pagination controls
+    $('#prevBtn').on('click', function() {
+        if (currentPage > 1) {
+            currentPage--;
+            renderJamaah(jamaahData);
+            updatePagination();
+        }
+    });
+
+    $('#nextBtn').on('click', function() {
+        const totalPages = Math.ceil(jamaahData.length / itemsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            renderJamaah(jamaahData);
+            updatePagination();
+        }
+    });
+
+    $(document).on('click', '.page-btn[data-page]', function() {
+        currentPage = parseInt($(this).data('page'));
+        renderJamaah(jamaahData);
+        updatePagination();
+    });
+
+    // Select all checkbox
+    $('#selectAll').on('change', function() {
+        $('.row-checkbox').prop('checked', $(this).is(':checked'));
+    });
+
+    // Search function
+    function performSearch() {
+        let search = $('#searchJamaah').val().toLowerCase();
+        let filtered = jamaahData.filter(function(jamaah) {
+            return jamaah.nama_jamaah.toLowerCase().includes(search) || 
+                   jamaah.nomor_jamaah.toLowerCase().includes(search);
+        });
+        currentPage = 1;
+        renderJamaah(filtered);
+        updatePagination();
+    }
+
+    // Search button click
+    $('#btnSearch').on('click', function() {
+        performSearch();
+    });
+
+    // Search on Enter key
+    $('#searchJamaah').on('keypress', function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            performSearch();
+        }
+    });
+
+    // Real-time search on input (optional)
+    $('#searchJamaah').on('input', function() {
+        performSearch();
+    });
+
+    // Filter functionality
+    $('#filterTahun, #filterStatus, #filterUmroh').on('change', function() {
+        let tahun = $('#filterTahun').val();
+        let status = $('#filterStatus').val();
+        let umroh = $('#filterUmroh').val();
+
+        let filtered = jamaahData.filter(function(jamaah) {
+            let matchTahun = !tahun || jamaah.tahun_masuk == tahun;
+            let matchStatus = !status || jamaah.status_aktif == status;
+            let matchUmroh = umroh === '' || jamaah.status_umroh == umroh;
+            return matchTahun && matchStatus && matchUmroh;
+        });
+
+        currentPage = 1;
+        renderJamaah(filtered);
+        updatePagination();
+    });
+
+    // Initial load
+    loadJamaah();
+});
+
+// Close Modal Function (global)
+function closeModal() {
+    $('#modalIdCard').removeClass('show');
+    $('body').css('overflow', 'auto');
+}
+
+// Open fullscreen photo from modal
+function openFullscreenPhoto() {
+    const photoSrc = $('#modalPhoto').attr('src');
+    const name = $('#modalName').text();
+    const hasPhoto = $('#modalPhoto').is(':visible') && photoSrc && photoSrc !== '';
+    
+    if (hasPhoto) {
+        showFullscreenPhoto(photoSrc, name);
+    } else {
+        showFullscreenInitials(name);
+    }
+}
+
+// Show fullscreen photo
+function showFullscreenPhoto(photoUrl, caption) {
+    if (photoUrl && photoUrl !== '' && photoUrl !== 'null') {
+        $('#fullscreenPhotoImg').attr('src', photoUrl).show();
+        $('#fullscreenInitialsPlaceholder').hide();
+        $('#fullscreenPhotoCaption').text(caption);
+        $('#modalFullscreenPhoto').fadeIn(300);
+        $('body').css('overflow', 'hidden');
+    }
+}
+
+// Show fullscreen initials for jamaah without photo
+function showFullscreenInitials(name) {
+    const initials = name.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase();
+    $('#fullscreenPhotoImg').hide();
+    $('#fullscreenInitialsPlaceholder').text(initials).show();
+    $('#fullscreenPhotoCaption').text(name);
+    $('#modalFullscreenPhoto').fadeIn(300);
+    $('body').css('overflow', 'hidden');
+}
+
+// Close fullscreen photo
+function closeFullscreenPhoto() {
+    $('#modalFullscreenPhoto').fadeOut(300);
+    $('body').css('overflow', 'auto');
+}
+
+// Close modal when clicking overlay
+$(document).on('click', '#modalIdCard', function(e) {
+    if (e.target.id === 'modalIdCard') {
+        closeModal();
+    }
+});
+
+// Close fullscreen on background click
+$(document).on('click', '#modalFullscreenPhoto', function(e) {
+    if (e.target.id === 'modalFullscreenPhoto') {
+        closeFullscreenPhoto();
+    }
+});
+
+// Close modal with ESC key
+$(document).on('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+});
+</script>
+@endsection
+

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Tambah Device Fonnte</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h2>🚀 Test Tambah Device WhatsApp - Fonnte</h2>
+    
+    <div class="form-group">
+        <label>Nama Device:</label>
+        <input type="text" id="device_name" value="WhatsApp HRD" placeholder="Contoh: WhatsApp HRD">
+    </div>
+
+    <div class="form-group">
+        <label>API Key Fonnte:</label>
+        <input type="text" id="api_key" placeholder="Paste API Key Anda di sini">
+        <small style="color: #666;">Dapatkan dari dashboard Fonnte: <a href="https://fonnte.com" target="_blank">fonnte.com</a></small>
+    </div>
+
+    <button onclick="submitDevice()">Tambah Device</button>
+    <button onclick="testMode()" style="background: #6c757d;">Test Mode (Tanpa API Key Asli)</button>
+
+    <div id="result"></div>
+
+    <hr style="margin: 30px 0;">
+    
+    <h3>📊 Devices yang Sudah Ada:</h3>
+    <button onclick="checkDevices()">Refresh / Cek Devices</button>
+    <div id="devices"></div>
+
+    <script>
+    const API_URL = 'http://127.0.1.8000/whatsapp';
+    
+    // Ambil CSRF token dari Laravel
+    function getCsrfToken() {
+        return fetch('http://127.0.1.8000/whatsapp')
+            .then(response => response.text())
+            .then(html => {
+                const match = html.match(/name="_token"\s+value="([^"]+)"/);
+                return match ? match[1] : null;
+            });
+    }
+
+    async function submitDevice() {
+        const deviceName = document.getElementById('device_name').value;
+        const apiKey = document.getElementById('api_key').value;
+        
+        if (!deviceName || !apiKey) {
+            alert('Isi semua field!');
+            return;
+        }
+
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = '<p>Loading...</p>';
+
+        try {
+            const token = await getCsrfToken();
+            
+            const formData = new FormData();
+            formData.append('_token', token);
+            formData.append('device_name', deviceName);
+            formData.append('api_key', apiKey);
+
+            const response = await fetch(API_URL + '/devices', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `
+                    <h3>✅ Berhasil!</h3>
+                    <p>${data.message}</p>
+                    <pre>${JSON.stringify(data.device, null, 2)}</pre>
+                `;
+                checkDevices();
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Gagal!</h3>
+                    <p>${data.message}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            }
+        } catch (error) {
+            resultDiv.className = 'result error';
+            resultDiv.innerHTML = `
+                <h3>❌ Error!</h3>
+                <p>${error.message}</p>
+            `;
+        }
+    }
+
+    function testMode() {
+        document.getElementById('api_key').value = 'test-' + Math.random().toString(36).substring(7);
+        submitDevice();
+    }
+
+    async function checkDevices() {
+        const devicesDiv = document.getElementById('devices');
+        devicesDiv.innerHTML = '<p>Loading...</p>';
+
+        try {
+            const response = await fetch(API_URL + '/devices', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/html'
+                }
+            });
+
+            const html = await response.text();
+            
+            // Extract device count from HTML
+            const match = html.match(/Total Devices:\s*(\d+)/i) || html.match(/Belum Ada Device/i);
+            
+            if (match) {
+                devicesDiv.innerHTML = `
+                    <div class="result" style="background: #e7f3ff; color: #004085;">
+                        <p><strong>Status:</strong> ${match[0]}</p>
+                        <button onclick="window.open('${API_URL}/devices', '_blank')">Buka Halaman Devices</button>
+                    </div>
+                `;
+            } else {
+                devicesDiv.innerHTML = `
+                    <div class="result" style="background: #fff3cd; color: #856404;">
+                        <p>Tidak dapat mendeteksi jumlah device. Cek manual di halaman devices.</p>
+                        <button onclick="window.open('${API_URL}/devices', '_blank')">Buka Halaman Devices</button>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            devicesDiv.innerHTML = `
+                <div class="result error">
+                    <p>Error: ${error.message}</p>
+                </div>
+            `;
+        }
+    }
+
+    // Auto check devices on load
+    checkDevices();
+    </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Add Device</title>
+</head>
+<body>
+    <h2>Test Tambah Device Fonnte</h2>
+    <form action="http://127.0.1.8000/whatsapp/devices" method="POST">
+        <input type="hidden" name="_token" value="TEST_TOKEN">
+        
+        <label>Device Name:</label><br>
+        <input type="text" name="device_name" value="Test Device HRD" required><br><br>
+        
+        <label>API Key Fonnte:</label><br>
+        <input type="text" name="api_key" value="test-api-key-fonnte" required><br><br>
+        
+        <button type="submit">Submit</button>
+    </form>
+
+    <hr>
+    <h3>Test dengan JavaScript (Buka Console F12):</h3>
+    <button onclick="testSubmit()">Test Submit via AJAX</button>
+
+    <script>
+    function testSubmit() {
+        console.log('Testing submit...');
+        
+        fetch('http://127.0.1.8000/whatsapp/devices', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                _token: document.querySelector('[name="_token"]').value,
+                device_name: 'Test Device via AJAX',
+                api_key: 'test-api-key-12345'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Success:', data);
+            alert('Response: ' + JSON.stringify(data));
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error: ' + error);
+        });
+    }
+    </script>
+</body>
+</html>

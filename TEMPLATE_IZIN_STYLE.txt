@@ -1,0 +1,6 @@
+Template CSS untuk semua halaman izin (digunakan untuk reference)
+Akan digunakan di:
+- izinabsen/create-mobile.blade.php
+- izinsakit/create-mobile.blade.php
+- izincuti/create-mobile.blade.php
+- izindinas/create-mobile.blade.php

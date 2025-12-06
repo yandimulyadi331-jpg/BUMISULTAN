@@ -1,0 +1,1039 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Kendaraan;
+use App\Models\KendaraanProses;
+use App\Models\Cabang;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+
+class KendaraanKaryawanController extends Controller
+{
+    /**
+     * List all kendaraan with workflow actions
+     */
+    public function index(Request $request)
+    {
+        // Load all vehicles for swipe navigation
+        $allKendaraan = Kendaraan::with('cabang')
+            ->orderBy('kode_kendaraan')
+            ->get();
+        
+        // Check if specific kendaraan selected via ?k= parameter
+        $selectedKendaraanId = $request->get('k');
+        
+        if ($selectedKendaraanId) {
+            // Find the selected vehicle
+            $kendaraan = Kendaraan::with([
+                'cabang', 
+                'aktivitas' => function($q) { $q->latest()->limit(10); },
+                'peminjaman' => function($q) { $q->latest()->limit(10); },
+                'services' => function($q) { $q->latest()->limit(10); },
+                'jadwalServices',
+                'aktivitasAktif',
+                'peminjamanAktif',
+                'serviceAktif',
+                'prosesAktif'
+            ])->find($selectedKendaraanId);
+            
+            // Find index of this vehicle in allKendaraan
+            $currentIndex = $allKendaraan->search(function($item) use ($selectedKendaraanId) {
+                return $item->id == $selectedKendaraanId;
+            });
+            
+            // If not found, default to first vehicle
+            if ($currentIndex === false || !$kendaraan) {
+                $kendaraan = Kendaraan::with([
+                    'cabang', 
+                    'aktivitas' => function($q) { $q->latest()->limit(10); },
+                    'peminjaman' => function($q) { $q->latest()->limit(10); },
+                    'services' => function($q) { $q->latest()->limit(10); },
+                    'jadwalServices',
+                    'aktivitasAktif',
+                    'peminjamanAktif',
+                    'serviceAktif',
+                    'prosesAktif'
+                ])->orderBy('kode_kendaraan')->first();
+                $currentIndex = 0;
+            }
+        } else {
+            // Load first vehicle with full relations for detail view
+            $kendaraan = Kendaraan::with([
+                'cabang', 
+                'aktivitas' => function($q) { $q->latest()->limit(10); },
+                'peminjaman' => function($q) { $q->latest()->limit(10); },
+                'services' => function($q) { $q->latest()->limit(10); },
+                'jadwalServices',
+                'aktivitasAktif',
+                'peminjamanAktif',
+                'serviceAktif'
+            ])->orderBy('kode_kendaraan')->first();
+            $currentIndex = 0; // Start with first vehicle
+        }
+        
+        return view('kendaraan.karyawan.index_new', compact('kendaraan', 'allKendaraan', 'currentIndex'));
+    }
+
+    /**
+     * List all kendaraan with workflow actions (Alias)
+     */
+    public function indexNew(Request $request)
+    {
+        // Just redirect to index
+        return $this->index($request);
+    }
+
+    /**
+     * Detail Kendaraan dengan Swipeable Card Navigation
+     * Load semua kendaraan untuk navigation, tampilkan detail kendaraan yang dipilih
+     */
+    public function show($id)
+    {
+        // Check if ID is encrypted or not
+        try {
+            $decryptedId = Crypt::decrypt($id);
+            $id = $decryptedId;
+        } catch (\Exception $e) {
+            // ID is not encrypted, use as is
+        }
+        
+        $kendaraan = Kendaraan::with([
+            'cabang', 
+            'aktivitas' => function($q) { $q->latest()->limit(10); },
+            'peminjaman' => function($q) { $q->latest()->limit(10); },
+            'services' => function($q) { $q->latest()->limit(10); },
+            'jadwalServices',
+            'aktivitasAktif',
+            'peminjamanAktif',
+            'serviceAktif'
+        ])->findOrFail($id);
+        
+        // Load semua kendaraan untuk swipe navigation
+        $allKendaraan = Kendaraan::with('cabang')
+            ->orderBy('kode_kendaraan')
+            ->get();
+        
+        // Cari index kendaraan saat ini
+        $currentIndex = $allKendaraan->search(function($item) use ($id) {
+            return $item->id == $id;
+        });
+        
+        return view('kendaraan.karyawan.detail', compact('kendaraan', 'allKendaraan', 'currentIndex'));
+    }
+    
+    /**
+     * API untuk encrypt ID (untuk navigasi swipe)
+     */
+    public function encryptId($id)
+    {
+        return response()->json([
+            'encrypted_id' => Crypt::encrypt($id)
+        ]);
+    }
+
+    public function detail($id)
+    {
+        $id = Crypt::decrypt($id);
+        $kendaraan = Kendaraan::findOrFail($id);
+        
+        // Get latest activities
+        $keluarMasuk = KendaraanKeluarMasuk::where('kendaraan_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+            
+        $peminjaman = KendaraanPeminjaman::where('kendaraan_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+            
+        $service = KendaraanService::where('kendaraan_id', $id)
+            ->orderBy('tanggal_service', 'desc')
+            ->limit(5)
+            ->get();
+        
+        return view('kendaraan.karyawan.detail', compact('kendaraan', 'keluarMasuk', 'peminjaman', 'service'));
+    }
+
+    // ==================== KELUAR/MASUK ====================
+    public function formKeluarMasuk($id)
+    {
+        $id = Crypt::decrypt($id);
+        $kendaraan = Kendaraan::findOrFail($id);
+        
+        return view('kendaraan.karyawan.form-keluar-masuk', compact('kendaraan'));
+    }
+
+    public function storeKeluarMasuk(Request $request, $id)
+    {
+        $id = Crypt::decrypt($id);
+        $kendaraan = Kendaraan::find($id);
+        if (!$kendaraan) {
+            return Redirect::back()->with('error', 'Kendaraan tidak ditemukan!');
+        }
+        
+        $request->validate([
+            'tipe' => 'required|in:Keluar,Masuk',
+            'pengemudi' => 'required|string|max:100',
+            'waktu' => 'required|date',
+            'km' => 'required|integer|min:0',
+            'kondisi' => 'required|in:Baik,Cukup,Perlu Service,Rusak',
+        ]);
+
+        try {
+            $tipe = $request->tipe;
+            $kodeLog = 'LOG-' . date('Ymd') . '-' . str_pad((KendaraanKeluarMasuk::whereDate('created_at', date('Y-m-d'))->count() + 1), 4, '0', STR_PAD_LEFT);
+            
+            $data = [
+                'kode_log' => $kodeLog,
+                'kendaraan_id' => $id,
+                'tipe' => $tipe,
+                'nik' => Auth::user()->nik ?? null,
+                'pengemudi' => $request->pengemudi,
+                'petugas' => Auth::user()->name,
+            ];
+
+            if ($tipe == 'Keluar') {
+                $data['waktu_keluar'] = $request->waktu;
+                $data['km_keluar'] = $request->km;
+                $data['kondisi_keluar'] = $request->kondisi;
+                $data['tujuan'] = $request->tujuan;
+                $data['keperluan'] = $request->keperluan;
+                
+                // Update status kendaraan
+                $kendaraan->update(['status_kendaraan' => 'Digunakan']);
+            } else {
+                $data['waktu_masuk'] = $request->waktu;
+                $data['km_masuk'] = $request->km;
+                $data['kondisi_masuk'] = $request->kondisi;
+                $data['km_tempuh'] = max(0, $request->km - $kendaraan->km_terakhir);
+                
+                // Update status kendaraan based on condition
+                $status = $request->kondisi == 'Rusak' ? 'Rusak' : 
+                         ($request->kondisi == 'Perlu Service' ? 'Service' : 'Tersedia');
+                $kendaraan->update([
+                    'status_kendaraan' => $status,
+                    'km_terakhir' => $request->km
+                ]);
+            }
+            
+            $data['keterangan'] = $request->keterangan;
+            
+            KendaraanKeluarMasuk::create($data);
+            
+            return Redirect::route('kendaraan.karyawan.index')->with('success', "Data $tipe Kendaraan Berhasil Disimpan");
+        } catch (\Exception $e) {
+            return Redirect::back()->with('error', 'Error: ' . $e->getMessage());
+        }
+    }
+
+    public function riwayatKeluarMasuk($id)
+    {
+        $id = Crypt::decrypt($id);
+        $kendaraan = Kendaraan::findOrFail($id);
+        $riwayat = KendaraanKeluarMasuk::where('kendaraan_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
+        return view('kendaraan.karyawan.riwayat-keluar-masuk', compact('kendaraan', 'riwayat'));
+    }
+
+    // ==================== PEMINJAMAN ====================
+    public function formPeminjaman($id)
+    {
+        $id = Crypt::decrypt($id);
+        $kendaraan = Kendaraan::findOrFail($id);
+        
+        // Check if vehicle is available
+        if ($kendaraan->status_kendaraan != 'Tersedia') {
+            return Redirect::back()->with(messageFail('Kendaraan sedang tidak tersedia'));
+        }
+        
+        return view('kendaraan.karyawan.form-peminjaman', compact('kendaraan'));
+    }
+
+    public function storePeminjaman(Request $request, $id)
+    {
+        $id = Crypt::decrypt($id);
+        $kendaraan = Kendaraan::findOrFail($id);
+        
+        $request->validate([
+            'tanggal_pinjam' => 'required|date',
+            'tanggal_kembali' => 'required|date|after_or_equal:tanggal_pinjam',
+            'tujuan_penggunaan' => 'required|string|max:200',
+            'keperluan' => 'required|string',
+            'no_hp' => 'required|string|max:20',
+        ]);
+
+        try {
+            $kodePeminjaman = 'PJM-' . date('Ymd') . '-' . str_pad((KendaraanPeminjaman::whereDate('created_at', date('Y-m-d'))->count() + 1), 4, '0', STR_PAD_LEFT);
+            
+            $user = Auth::user();
+            
+            KendaraanPeminjaman::create([
+                'kode_peminjaman' => $kodePeminjaman,
+                'kendaraan_id' => $id,
+                'nik' => $user->nik ?? null,
+                'nama_peminjam' => $user->name,
+                'jabatan' => $user->jabatan ?? null,
+                'departemen' => $user->kode_dept ?? null,
+                'no_hp' => $request->no_hp,
+                'tanggal_pinjam' => $request->tanggal_pinjam,
+                'tanggal_kembali' => $request->tanggal_kembali,
+                'tujuan_penggunaan' => $request->tujuan_penggunaan,
+                'keperluan' => $request->keperluan,
+                'jumlah_penumpang' => $request->jumlah_penumpang,
+                'keterangan' => $request->keterangan,
+                'status_pengajuan' => 'Pending',
+            ]);
+            
+            return Redirect::route('kendaraan.karyawan.index')->with(messageSuccess('Pengajuan Peminjaman Berhasil Dikirim. Menunggu Persetujuan Admin'));
+        } catch (\Exception $e) {
+            return Redirect::back()->with(messageFail('Error: ' . $e->getMessage()));
+        }
+    }
+
+    public function riwayatPeminjaman()
+    {
+        $user = Auth::user();
+        $peminjaman = KendaraanPeminjaman::with('kendaraan')
+            ->where('nik', $user->nik)
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
+        return view('kendaraan.karyawan.riwayat-peminjaman', compact('peminjaman'));
+    }
+
+    // ==================== SERVICE ====================
+    public function formService($id)
+    {
+        $id = Crypt::decrypt($id);
+        $kendaraan = Kendaraan::findOrFail($id);
+        
+        return view('kendaraan.karyawan.form-service', compact('kendaraan'));
+    }
+
+    public function storeService(Request $request, $id)
+    {
+        $id = Crypt::decrypt($id);
+        $kendaraan = Kendaraan::findOrFail($id);
+        
+        $request->validate([
+            'tanggal_service' => 'required|date',
+            'jenis_service' => 'required|string',
+            'deskripsi_pekerjaan' => 'required|string',
+            'foto_bukti' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
+        ]);
+
+        try {
+            $kodeService = 'SRV-' . date('Ymd') . '-' . str_pad((KendaraanService::whereDate('created_at', date('Y-m-d'))->count() + 1), 4, '0', STR_PAD_LEFT);
+            
+            $data = [
+                'kode_service' => $kodeService,
+                'kendaraan_id' => $id,
+                'tanggal_service' => $request->tanggal_service,
+                'jenis_service' => $request->jenis_service,
+                'bengkel' => $request->bengkel,
+                'deskripsi_pekerjaan' => $request->deskripsi_pekerjaan,
+                'km_service' => $request->km_service,
+                'biaya' => $request->biaya ?? 0,
+                'mekanik' => $request->mekanik,
+                'sparepart_diganti' => $request->sparepart_diganti,
+                'pelapor' => Auth::user()->name,
+                'keterangan' => $request->keterangan,
+            ];
+
+            // Handle foto bukti
+            if ($request->hasFile('foto_bukti')) {
+                $foto = $request->file('foto_bukti');
+                $filename = 'service_' . time() . '.' . $foto->getClientOriginalExtension();
+                $foto->move(public_path('storage/kendaraan/service'), $filename);
+                $data['foto_bukti'] = $filename;
+            }
+
+            KendaraanService::create($data);
+            
+            // Update status if service type indicates need
+            if (in_array($request->jenis_service, ['Service Rutin', 'Perbaikan', 'Body Repair'])) {
+                $kendaraan->update(['status_kendaraan' => 'Service']);
+            }
+            
+            return Redirect::route('kendaraan.karyawan.index')->with(messageSuccess('Laporan Service Berhasil Disimpan'));
+        } catch (\Exception $e) {
+            return Redirect::back()->with(messageFail('Error: ' . $e->getMessage()));
+        }
+    }
+
+    public function riwayatService($id)
+    {
+        $id = Crypt::decrypt($id);
+        $kendaraan = Kendaraan::findOrFail($id);
+        $service = KendaraanService::where('kendaraan_id', $id)
+            ->orderBy('tanggal_service', 'desc')
+            ->paginate(20);
+        
+        return view('kendaraan.karyawan.riwayat-service', compact('kendaraan', 'service'));
+    }
+
+    // ==================== WORKFLOW MANAGEMENT ====================
+
+    /**
+     * Submit Kendaraan Keluar - New Workflow
+     */
+    public function submitKeluarKendaraan(Request $request)
+    {
+        $request->validate([
+            'kendaraan_id' => 'required|exists:kendaraans,id',
+            'tanggal_keluar' => 'required|date',
+            'jam_keluar' => 'required',
+            'tujuan' => 'required|string|max:200',
+            'pengemudi' => 'required|string|max:100',
+            'no_hp_pengemudi' => 'nullable|string|max:20',
+            'estimasi_kembali' => 'required|date',
+            'km_awal' => 'required|integer|min:0',
+            'bbm_awal' => 'nullable|string',
+            'dokumen.*' => 'nullable|file|max:5120', // max 5MB per file
+            'foto.*' => 'nullable|image|max:2048', // max 2MB per image
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $kendaraan = Kendaraan::findOrFail($request->kendaraan_id);
+            
+            // Check if kendaraan can be used
+            if (!$kendaraan->canPerformAction('keluar')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $kendaraan->getBlockingReason()
+                ], 422);
+            }
+
+            $user = Auth::user();
+            
+            // Prepare data proses
+            $dataProses = [
+                'tanggal_keluar' => $request->tanggal_keluar,
+                'jam_keluar' => $request->jam_keluar,
+                'tujuan' => $request->tujuan,
+                'pengemudi' => $request->pengemudi,
+                'no_hp_pengemudi' => $request->no_hp_pengemudi,
+                'estimasi_kembali' => $request->estimasi_kembali,
+                'km_awal' => $request->km_awal,
+                'bbm_awal' => $request->bbm_awal,
+                'latitude_keluar' => $request->latitude,
+                'longitude_keluar' => $request->longitude,
+            ];
+
+            // Handle file uploads
+            if ($request->hasFile('dokumen')) {
+                $dokumenPaths = [];
+                foreach ($request->file('dokumen') as $file) {
+                    $filename = 'dokumen_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->storeAs('public/kendaraan/dokumen', $filename);
+                    $dokumenPaths[] = $filename;
+                }
+                $dataProses['dokumen'] = $dokumenPaths;
+            }
+
+            if ($request->hasFile('foto')) {
+                $fotoPaths = [];
+                foreach ($request->file('foto') as $file) {
+                    $filename = 'foto_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->storeAs('public/kendaraan/foto', $filename);
+                    $fotoPaths[] = $filename;
+                }
+                $dataProses['foto'] = $fotoPaths;
+            }
+
+            // Start workflow process
+            $proses = $kendaraan->startWorkflowProcess(
+                'keluar',
+                $user->id,
+                $user->name,
+                $dataProses
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Kendaraan berhasil keluar. Workflow dimulai.',
+                'data' => [
+                    'proses_id' => $proses->id,
+                    'kode_proses' => $proses->kode_proses,
+                    'workflow' => $kendaraan->getWorkflowStages(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Submit Return Kendaraan
+     */
+    public function submitReturnKendaraan(Request $request)
+    {
+        $request->validate([
+            'proses_id' => 'required|exists:kendaraan_proses,id',
+            'tanggal_kembali' => 'required|date',
+            'jam_kembali' => 'required',
+            'km_akhir' => 'required|integer|min:0',
+            'bbm_akhir' => 'nullable|string',
+            'kondisi_kendaraan' => 'required|in:Baik,Cukup,Perlu Perbaikan,Rusak',
+            'catatan' => 'nullable|string',
+            'foto_kondisi.*' => 'nullable|image|max:2048',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $proses = KendaraanProses::with('kendaraan')->findOrFail($request->proses_id);
+            $kendaraan = $proses->kendaraan;
+            
+            // Check if user has permission to return
+            if (!$this->canUserReturnVehicle($proses, Auth::user())) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki izin untuk mengembalikan kendaraan ini.'
+                ], 403);
+            }
+
+            // Prepare return data
+            $returnData = [
+                'tanggal_kembali' => $request->tanggal_kembali,
+                'jam_kembali' => $request->jam_kembali,
+                'km_akhir' => $request->km_akhir,
+                'bbm_akhir' => $request->bbm_akhir,
+                'kondisi_kendaraan' => $request->kondisi_kendaraan,
+                'catatan' => $request->catatan,
+                'latitude_kembali' => $request->latitude,
+                'longitude_kembali' => $request->longitude,
+                'dikembalikan_oleh' => Auth::user()->name,
+            ];
+
+            // Handle foto kondisi
+            if ($request->hasFile('foto_kondisi')) {
+                $fotoPaths = [];
+                foreach ($request->file('foto_kondisi') as $file) {
+                    $filename = 'kondisi_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->storeAs('public/kendaraan/kondisi', $filename);
+                    $fotoPaths[] = $filename;
+                }
+                $returnData['foto_kondisi'] = $fotoPaths;
+            }
+
+            // Complete the last stage with return data
+            $currentStage = $proses->getCurrentStage();
+            if ($currentStage) {
+                $currentStage->complete($request->catatan, $returnData);
+            }
+
+            // Complete the workflow process
+            $kendaraan->completeWorkflowProcess($request->catatan);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Kendaraan berhasil dikembalikan.',
+                'data' => [
+                    'status' => 'tersedia',
+                    'kondisi' => $request->kondisi_kendaraan,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Submit Peminjaman Kendaraan - New Workflow
+     */
+    public function submitPeminjamanKendaraan(Request $request)
+    {
+        $request->validate([
+            'kendaraan_id' => 'required|exists:kendaraans,id',
+            'tanggal_pinjam' => 'required|date',
+            'tanggal_kembali' => 'required|date|after_or_equal:tanggal_pinjam',
+            'tujuan_penggunaan' => 'required|string|max:200',
+            'keperluan' => 'required|string',
+            'no_hp' => 'required|string|max:20',
+            'jumlah_penumpang' => 'nullable|integer',
+            'signature' => 'nullable|string', // Base64 signature data
+            'foto.*' => 'nullable|image|max:2048',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $kendaraan = Kendaraan::findOrFail($request->kendaraan_id);
+            
+            // Check if kendaraan can be borrowed
+            if (!$kendaraan->canPerformAction('pinjam')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $kendaraan->getBlockingReason()
+                ], 422);
+            }
+
+            $user = Auth::user();
+            
+            // Prepare data proses
+            $dataProses = [
+                'nik' => $user->nik ?? null,
+                'nama_peminjam' => $user->name,
+                'jabatan' => $user->jabatan ?? null,
+                'departemen' => $user->kode_dept ?? null,
+                'no_hp' => $request->no_hp,
+                'tanggal_pinjam' => $request->tanggal_pinjam,
+                'tanggal_kembali' => $request->tanggal_kembali,
+                'tujuan_penggunaan' => $request->tujuan_penggunaan,
+                'keperluan' => $request->keperluan,
+                'jumlah_penumpang' => $request->jumlah_penumpang,
+                'keterangan' => $request->keterangan,
+                'latitude_pinjam' => $request->latitude,
+                'longitude_pinjam' => $request->longitude,
+            ];
+
+            // Handle signature
+            if ($request->signature) {
+                $signatureData = $request->signature;
+                $filename = 'signature_' . time() . '_' . uniqid() . '.png';
+                // Decode base64 and save
+                $image = str_replace('data:image/png;base64,', '', $signatureData);
+                $image = str_replace(' ', '+', $image);
+                Storage::put('public/kendaraan/signatures/' . $filename, base64_decode($image));
+                $dataProses['signature'] = $filename;
+            }
+
+            // Handle foto
+            if ($request->hasFile('foto')) {
+                $fotoPaths = [];
+                foreach ($request->file('foto') as $file) {
+                    $filename = 'foto_pinjam_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->storeAs('public/kendaraan/peminjaman', $filename);
+                    $fotoPaths[] = $filename;
+                }
+                $dataProses['foto'] = $fotoPaths;
+            }
+
+            // Start workflow process
+            $proses = $kendaraan->startWorkflowProcess(
+                'pinjam',
+                $user->id,
+                $user->name,
+                $dataProses
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengajuan peminjaman berhasil dikirim. Menunggu verifikasi.',
+                'data' => [
+                    'proses_id' => $proses->id,
+                    'kode_proses' => $proses->kode_proses,
+                    'workflow' => $kendaraan->getWorkflowStages(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Submit Return Peminjaman
+     */
+    public function submitReturnPeminjaman(Request $request)
+    {
+        \Log::info('🔄 Start Return Peminjaman', ['proses_id' => $request->proses_id]);
+        
+        $request->validate([
+            'proses_id' => 'required|exists:kendaraan_proses,id',
+            'tanggal_return' => 'required|date',
+            'km_akhir' => 'required|integer|min:0',
+            'kondisi_kendaraan' => 'required|in:Baik,Cukup,Perlu Perbaikan,Rusak',
+            'catatan' => 'nullable|string',
+            'signature_return' => 'nullable|string', // Base64 signature
+            'foto_kondisi.*' => 'required|image|max:2048', // Required for return
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $proses = KendaraanProses::with('kendaraan')->findOrFail($request->proses_id);
+            $kendaraan = $proses->kendaraan;
+            
+            \Log::info('✅ Proses found', ['kendaraan' => $kendaraan->nama_kendaraan]);
+
+            // Prepare return data
+            $returnData = [
+                'tanggal_return' => $request->tanggal_return,
+                'km_akhir' => $request->km_akhir,
+                'kondisi_kendaraan' => $request->kondisi_kendaraan,
+                'catatan' => $request->catatan,
+                'latitude_return' => $request->latitude,
+                'longitude_return' => $request->longitude,
+                'dikembalikan_oleh' => Auth::user()->name,
+            ];
+
+            // Handle signature
+            if ($request->signature_return) {
+                $signatureData = $request->signature_return;
+                $filename = 'signature_return_' . time() . '_' . uniqid() . '.png';
+                $image = str_replace('data:image/png;base64,', '', $signatureData);
+                $image = str_replace(' ', '+', $image);
+                Storage::put('public/kendaraan/signatures/' . $filename, base64_decode($image));
+                $returnData['signature_return'] = $filename;
+            }
+
+            // Handle foto kondisi (required)
+            if ($request->hasFile('foto_kondisi')) {
+                \Log::info('📸 Processing photos');
+                $fotoPaths = [];
+                foreach ($request->file('foto_kondisi') as $file) {
+                    $filename = 'kondisi_return_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->storeAs('public/kendaraan/kondisi', $filename);
+                    $fotoPaths[] = $filename;
+                }
+                $returnData['foto_kondisi'] = $fotoPaths;
+                \Log::info('✅ Photos uploaded', ['count' => count($fotoPaths)]);
+            }
+
+            // Check for keterlambatan
+            $estimasiKembali = \Carbon\Carbon::parse($proses->data_proses['tanggal_kembali'] ?? null);
+            $tanggalReturn = \Carbon\Carbon::parse($request->tanggal_return);
+            
+            if ($tanggalReturn->gt($estimasiKembali)) {
+                $keterlambatan = $tanggalReturn->diffInDays($estimasiKembali);
+                $returnData['terlambat'] = true;
+                $returnData['hari_terlambat'] = $keterlambatan;
+            } else {
+                $returnData['terlambat'] = false;
+            }
+
+            // Move to final stage and complete
+            \Log::info('📋 Completing stages');
+            $currentStage = $proses->getCurrentStage();
+            if ($currentStage) {
+                $currentStage->complete('Pengembalian peminjaman', $returnData);
+            }
+
+            // Move to next stages until complete (max 10 iterations to prevent infinite loop)
+            $maxIterations = 10;
+            $iteration = 0;
+            while (!$proses->isCompleted() && $iteration < $maxIterations) {
+                $proses->moveToNextStage('Auto-completed');
+                $iteration++;
+            }
+            
+            \Log::info('✅ Stages completed', ['iterations' => $iteration]);
+
+            // Update status kendaraan ke tersedia dan reset proses aktif
+            $kendaraan->status = 'tersedia';
+            $kendaraan->proses_aktif_id = null;
+            $kendaraan->save();
+            
+            \Log::info('✅ Status kendaraan updated to tersedia and proses_aktif_id reset');
+
+            DB::commit();
+            
+            \Log::info('✅ Return completed successfully');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Peminjaman berhasil dikembalikan.',
+                'data' => [
+                    'status' => 'tersedia',
+                    'terlambat' => $returnData['terlambat'] ?? false,
+                    'hari_terlambat' => $returnData['hari_terlambat'] ?? 0,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('❌ Return failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Submit Service Request - New Workflow
+     */
+    public function submitServiceRequest(Request $request)
+    {
+        $request->validate([
+            'kendaraan_id' => 'required|exists:kendaraans,id',
+            'jenis_service' => 'required|string',
+            'prioritas' => 'required|in:Rendah,Sedang,Tinggi,Urgent',
+            'deskripsi' => 'required|string',
+            'estimasi_biaya' => 'nullable|numeric|min:0',
+            'bengkel' => 'nullable|string',
+            'foto.*' => 'nullable|image|max:2048',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $kendaraan = Kendaraan::findOrFail($request->kendaraan_id);
+            
+            // Check if kendaraan can be serviced
+            if (!$kendaraan->canPerformAction('service')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $kendaraan->getBlockingReason()
+                ], 422);
+            }
+
+            $user = Auth::user();
+            
+            // Prepare data proses
+            $dataProses = [
+                'jenis_service' => $request->jenis_service,
+                'prioritas' => $request->prioritas,
+                'deskripsi' => $request->deskripsi,
+                'estimasi_biaya' => $request->estimasi_biaya,
+                'bengkel' => $request->bengkel,
+                'pelapor' => $user->name,
+                'tanggal_pengajuan' => now(),
+            ];
+
+            // Handle foto
+            if ($request->hasFile('foto')) {
+                $fotoPaths = [];
+                foreach ($request->file('foto') as $file) {
+                    $filename = 'service_req_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->storeAs('public/kendaraan/service', $filename);
+                    $fotoPaths[] = $filename;
+                }
+                $dataProses['foto'] = $fotoPaths;
+            }
+
+            // Start workflow process
+            $proses = $kendaraan->startWorkflowProcess(
+                'service',
+                $user->id,
+                $user->name,
+                $dataProses
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Request service berhasil diajukan.',
+                'data' => [
+                    'proses_id' => $proses->id,
+                    'kode_proses' => $proses->kode_proses,
+                    'workflow' => $kendaraan->getWorkflowStages(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update Proses Stage (for admin or authorized user)
+     */
+    public function updateProsesStage(Request $request)
+    {
+        $request->validate([
+            'tahap_id' => 'required|exists:kendaraan_proses_tahap,id',
+            'action' => 'required|in:approve,reject,skip,complete',
+            'catatan' => 'nullable|string',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $tahap = KendaraanProsesTahap::with('proses.kendaraan')->findOrFail($request->tahap_id);
+            $proses = $tahap->proses;
+            
+            // Check permission (simplified - enhance based on your permission system)
+            $user = Auth::user();
+            
+            $metadata = [];
+            if ($request->hasFile('bukti_foto')) {
+                $fotoPaths = [];
+                foreach ($request->file('bukti_foto') as $file) {
+                    $filename = 'bukti_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->storeAs('public/kendaraan/bukti', $filename);
+                    $fotoPaths[] = $filename;
+                }
+                $metadata['bukti_foto'] = $fotoPaths;
+            }
+
+            switch ($request->action) {
+                case 'approve':
+                case 'complete':
+                    $tahap->complete($request->catatan, $metadata, $user->id, $user->name);
+                    // Move to next stage
+                    $proses->moveToNextStage($request->catatan, $metadata);
+                    break;
+                    
+                case 'reject':
+                    $tahap->reject($request->catatan, $user->id, $user->name);
+                    // Cancel the entire process
+                    $proses->kendaraan->cancelWorkflowProcess($request->catatan);
+                    break;
+                    
+                case 'skip':
+                    $tahap->skip($request->catatan, $user->id, $user->name);
+                    // Move to next stage
+                    $proses->moveToNextStage($request->catatan, $metadata);
+                    break;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tahap proses berhasil diperbarui.',
+                'data' => [
+                    'proses_status' => $proses->fresh()->status_proses,
+                    'tahap_saat_ini' => $proses->fresh()->tahap_saat_ini,
+                    'workflow' => $proses->kendaraan->getWorkflowStages(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get Workflow Status
+     */
+    public function getWorkflowStatus($prosesId)
+    {
+        try {
+            $proses = KendaraanProses::with(['kendaraan', 'tahapan', 'history'])->findOrFail($prosesId);
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'proses' => [
+                        'id' => $proses->id,
+                        'kode_proses' => $proses->kode_proses,
+                        'jenis_proses' => $proses->jenis_proses,
+                        'status_proses' => $proses->status_proses,
+                        'tahap_saat_ini' => $proses->tahap_saat_ini,
+                        'progress' => $proses->getProgressPercentage(),
+                        'data_proses' => $proses->data_proses,
+                        'user_name' => $proses->user_name,
+                        'waktu_mulai' => $proses->waktu_mulai->format('Y-m-d H:i:s'),
+                        'waktu_selesai' => $proses->waktu_selesai ? $proses->waktu_selesai->format('Y-m-d H:i:s') : null,
+                    ],
+                    'kendaraan' => [
+                        'id' => $proses->kendaraan->id,
+                        'nama' => $proses->kendaraan->nama_kendaraan,
+                        'no_polisi' => $proses->kendaraan->no_polisi,
+                        'status' => $proses->kendaraan->status,
+                        'foto' => $proses->kendaraan->foto,
+                    ],
+                    'tahapan' => $proses->kendaraan->getWorkflowStages(),
+                    'history' => $proses->history->map(function($h) {
+                        return [
+                            'id' => $h->id,
+                            'event_type' => $h->event_type,
+                            'formatted_event' => $h->getFormattedEventType(),
+                            'description' => $h->description,
+                            'user_name' => $h->user_name,
+                            'created_at' => $h->created_at->format('Y-m-d H:i:s'),
+                            'icon' => $h->getEventIcon(),
+                            'color' => $h->getEventColor(),
+                        ];
+                    }),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get Riwayat Proses for specific kendaraan
+     */
+    public function getRiwayatProses($kendaraanId)
+    {
+        try {
+            $kendaraanId = Crypt::decrypt($kendaraanId);
+            $kendaraan = Kendaraan::findOrFail($kendaraanId);
+            
+            $proses = KendaraanProses::with(['tahapan'])
+                ->where('kendaraan_id', $kendaraanId)
+                ->orderBy('created_at', 'desc')
+                ->paginate(20);
+            
+            return response()->json([
+                'success' => true,
+                'data' => $proses
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Helper: Check if user can return vehicle
+     */
+    private function canUserReturnVehicle($proses, $user)
+    {
+        // User who initiated the process can return
+        if ($proses->user_id == $user->id) {
+            return true;
+        }
+        
+        // Admin or authorized user can return
+        // Add your permission logic here
+        if ($user->hasRole('admin') || $user->hasRole('manager')) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    public function riwayatKeluarMasukKaryawan()
+    {
+        $user = auth()->user();
+        $riwayat = \App\Models\KendaraanKeluarMasuk::where('pengemudi', $user->name)
+            ->orderBy('created_at', 'desc')
+            ->get();
+        return view('kendaraan.karyawan.riwayat-keluar-masuk', compact('riwayat'));
+    }
+}

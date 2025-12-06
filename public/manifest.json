@@ -1,0 +1,25 @@
+{
+    "name": "BUMI SULTAN APP",
+    "short_name": "BUMI SULTAN",
+    "description": "Aplikasi Presensi GPS untuk Karyawan",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#696cff",
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "lang": "id",
+    "dir": "ltr",
+    "icons": [
+        {
+            "src": "/favicon.ico",
+            "sizes": "48x48",
+            "type": "image/x-icon",
+            "purpose": "any"
+        }
+    ],
+    "categories": [
+        "business",
+        "productivity"
+    ]
+}

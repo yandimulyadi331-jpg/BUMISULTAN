@@ -1,0 +1,29 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('kehadiran_tukangs', function (Blueprint $table) {
+            // Ubah kolom lembur dari boolean menjadi enum
+            $table->enum('lembur', ['tidak', 'full', 'setengah_hari'])->default('tidak')->change();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('kehadiran_tukangs', function (Blueprint $table) {
+            $table->boolean('lembur')->default(false)->change();
+        });
+    }
+};

@@ -1,0 +1,623 @@
+@extends('layouts.app')
+
+@section('content')
+<div class="container-xxl flex-grow-1 container-p-y">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="text-white mb-2">
+                                <i class="ti ti-cash me-2"></i>
+                                DANA OPERASIONAL HARIAN
+                            </h3>
+                            <p class="mb-0">Sistem Pengajuan, Pencairan & Realisasi Dana Operasional</p>
+                        </div>
+                        <div class="text-end">
+                            <a href="{{ route('dana-operasional.create-pengajuan') }}" class="btn btn-light">
+                                <i class="ti ti-plus me-1"></i> Buat Pengajuan Baru
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Saldo Kemarin -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="d-block mb-1">Saldo Kemarin</span>
+                            <h3 class="card-title mb-1 {{ $saldoKemarin >= 0 ? 'text-success' : 'text-danger' }}">
+                                Rp {{ number_format(abs($saldoKemarin), 0, ',', '.') }}
+                            </h3>
+                            <small class="{{ $saldoKemarin >= 0 ? 'text-success' : 'text-danger' }} fw-medium">
+                                {{ $saldoKemarin >= 0 ? 'Sisa Dana' : 'Kekurangan' }}
+                            </small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-{{ $saldoKemarin >= 0 ? 'success' : 'danger' }}">
+                                <i class="ti ti-calendar-minus ti-md"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dana Masuk Hari Ini -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="d-block mb-1">Dana Masuk Hari Ini</span>
+                            <h3 class="card-title mb-1">Rp {{ number_format($saldoHariIni->dana_masuk ?? 0, 0, ',', '.') }}</h3>
+                            <small class="text-info fw-medium">
+                                <i class="ti ti-arrow-down"></i> Pencairan
+                            </small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-info">
+                                <i class="ti ti-coin ti-md"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Realisasi Hari Ini -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="d-block mb-1">Dana Keluar Hari Ini</span>
+                            <h3 class="card-title mb-1 text-warning">Rp {{ number_format($saldoHariIni->total_realisasi ?? 0, 0, ',', '.') }}</h3>
+                            <small class="text-warning fw-medium">
+                                <i class="ti ti-shopping-cart"></i> Pengeluaran
+                            </small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-warning">
+                                <i class="ti ti-receipt ti-md"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Saldo Akhir Hari Ini -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="d-block mb-1">Saldo Akhir Hari Ini</span>
+                            <h3 class="card-title mb-1 {{ ($saldoHariIni->saldo_akhir ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
+                                Rp {{ number_format(abs($saldoHariIni->saldo_akhir ?? 0), 0, ',', '.') }}
+                            </h3>
+                            <small class="{{ ($saldoHariIni->saldo_akhir ?? 0) >= 0 ? 'text-success' : 'text-danger' }} fw-medium">
+                                {{ ($saldoHariIni->saldo_akhir ?? 0) >= 0 ? 'Surplus' : 'Defisit' }}
+                            </small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-{{ ($saldoHariIni->saldo_akhir ?? 0) >= 0 ? 'success' : 'danger' }}">
+                                <i class="ti ti-wallet ti-md"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pengajuan Hari Ini Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="ti ti-file-text me-2"></i>Pengajuan Hari Ini
+                    </h5>
+                    @if($pengajuanHariIni)
+                        <div>
+                            <span class="badge bg-label-primary me-2">{{ $pengajuanHariIni->nomor_pengajuan }}</span>
+                            @if($pengajuanHariIni->status == 'draft')
+                                <span class="badge bg-secondary">Draft</span>
+                            @elseif($pengajuanHariIni->status == 'diajukan')
+                                <span class="badge bg-warning">Menunggu Pencairan</span>
+                            @elseif($pengajuanHariIni->status == 'dicairkan')
+                                <span class="badge bg-info">Sudah Dicairkan</span>
+                            @else
+                                <span class="badge bg-success">Selesai</span>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+                <div class="card-body">
+                    @if($pengajuanHariIni)
+                        <div class="mb-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small class="text-muted">Total Pengajuan:</small>
+                                    <h5>Rp {{ number_format($pengajuanHariIni->total_pengajuan, 0, ',', '.') }}</h5>
+                                </div>
+                                @if($pengajuanHariIni->nominal_cair)
+                                <div class="col-md-6">
+                                    <small class="text-muted">Nominal Cair:</small>
+                                    <h5 class="text-success">Rp {{ number_format($pengajuanHariIni->nominal_cair, 0, ',', '.') }}</h5>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('dana-operasional.show-pengajuan', $pengajuanHariIni->id) }}" class="btn btn-sm btn-primary">
+                                <i class="ti ti-eye me-1"></i> Lihat Detail
+                            </a>
+                            @if($pengajuanHariIni->status == 'dicairkan' || $pengajuanHariIni->status == 'selesai')
+                            <a href="{{ route('dana-operasional.create-realisasi', $pengajuanHariIni->id) }}" class="btn btn-sm btn-success">
+                                <i class="ti ti-plus me-1"></i> Tambah Realisasi
+                            </a>
+                            @endif
+                        </div>
+                    @else
+                        <div class="text-center py-4">
+                            <i class="ti ti-file-off ti-lg text-muted mb-3"></i>
+                            <p class="text-muted">Belum ada pengajuan hari ini</p>
+                            <a href="{{ route('dana-operasional.create-pengajuan') }}" class="btn btn-primary">
+                                <i class="ti ti-plus me-1"></i> Buat Pengajuan
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabel Mutasi Transaksi (Bank Statement Style) -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="ti ti-file-invoice me-2"></i>Riwayat Transaksi - 7 Hari Terakhir
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-center" width="5%">No</th>
+                                    <th width="15%">Tanggal<br><small class="text-muted">Date</small></th>
+                                    <th width="35%">Keterangan<br><small class="text-muted">Remarks</small></th>
+                                    <th class="text-end" width="15%">Dana Masuk (IDR)<br><small class="text-muted">Incoming Transactions</small></th>
+                                    <th class="text-end" width="15%">Dana Keluar (IDR)<br><small class="text-muted">Outgoing Transactions</small></th>
+                                    <th class="text-end" width="15%">Saldo (IDR)<br><small class="text-muted">Balance</small></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @php
+                                    $no = 1;
+                                    $runningBalance = 0;
+                                @endphp
+                                
+                                @forelse($riwayatSaldo as $saldo)
+                                    @php
+                                        // Saldo Awal
+                                        $runningBalance = $saldo->saldo_awal;
+                                    @endphp
+                                    
+                                    {{-- Row Saldo Awal --}}
+                                    @if($saldo->saldo_awal != 0)
+                                    <tr class="table-secondary">
+                                        <td class="text-center">{{ $no++ }}</td>
+                                        <td>
+                                            <strong>{{ $saldo->tanggal->format('d M Y') }}</strong><br>
+                                            <small class="text-muted">{{ $saldo->tanggal->format('H:i:s') }} WIB</small>
+                                        </td>
+                                        <td>
+                                            <strong>Saldo Awal Hari Ini</strong><br>
+                                            <small class="text-muted">Opening Balance</small>
+                                        </td>
+                                        <td class="text-end">-</td>
+                                        <td class="text-end">-</td>
+                                        <td class="text-end">
+                                            <strong class="{{ $runningBalance >= 0 ? 'text-success' : 'text-danger' }}">
+                                                {{ number_format(abs($runningBalance), 2, ',', '.') }}
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                    @endif
+
+                                    {{-- Row Dana Masuk (Pencairan) --}}
+                                    @if($saldo->dana_masuk > 0)
+                                    @php
+                                        $runningBalance += $saldo->dana_masuk;
+                                    @endphp
+                                    <tr>
+                                        <td class="text-center">{{ $no++ }}</td>
+                                        <td>
+                                            <strong>{{ $saldo->tanggal->format('d M Y') }}</strong><br>
+                                            <small class="text-muted">
+                                                {{ $saldo->pengajuan && $saldo->pengajuan->tanggal_cair ? $saldo->pengajuan->tanggal_cair->format('H:i:s') : '00:00:00' }} WIB
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <strong>Pencairan Dana Operasional</strong><br>
+                                            @if($saldo->pengajuan)
+                                                <small class="text-muted">{{ $saldo->pengajuan->nomor_pengajuan }}</small><br>
+                                                @if($saldo->pengajuan->catatan_pencairan)
+                                                    <small class="text-muted">{{ $saldo->pengajuan->catatan_pencairan }}</small>
+                                                @endif
+                                            @endif
+                                        </td>
+                                        <td class="text-end text-success">
+                                            <strong>{{ number_format($saldo->dana_masuk, 2, ',', '.') }}</strong>
+                                        </td>
+                                        <td class="text-end">-</td>
+                                        <td class="text-end">
+                                            <strong class="{{ $runningBalance >= 0 ? 'text-success' : 'text-danger' }}">
+                                                {{ number_format(abs($runningBalance), 2, ',', '.') }}
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                    @endif
+
+                                    {{-- Rows Realisasi (Detail Pengeluaran) --}}
+                                    @if($saldo->pengajuan && $saldo->pengajuan->realisasi->count() > 0)
+                                        @foreach($saldo->pengajuan->realisasi as $realisasi)
+                                        @php
+                                            $runningBalance -= $realisasi->nominal;
+                                        @endphp
+                                        <tr>
+                                            <td class="text-center">{{ $no++ }}</td>
+                                            <td>
+                                                <strong>{{ $realisasi->tanggal_realisasi->format('d M Y') }}</strong><br>
+                                                <small class="text-muted">{{ $realisasi->created_at->format('H:i:s') }} WIB</small>
+                                            </td>
+                                            <td>
+                                                <strong>{{ $realisasi->uraian }}</strong><br>
+                                                @if($realisasi->kategori)
+                                                    <span class="badge bg-label-secondary">{{ $realisasi->kategori }}</span>
+                                                @endif
+                                                @if($realisasi->keterangan)
+                                                    <br><small class="text-muted">{{ $realisasi->keterangan }}</small>
+                                                @endif
+                                            </td>
+                                            <td class="text-end">-</td>
+                                            <td class="text-end text-danger">
+                                                <strong>{{ number_format($realisasi->nominal, 2, ',', '.') }}</strong>
+                                            </td>
+                                            <td class="text-end">
+                                                <strong class="{{ $runningBalance >= 0 ? 'text-success' : 'text-danger' }}">
+                                                    {{ number_format(abs($runningBalance), 2, ',', '.') }}
+                                                </strong>
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    @endif
+
+                                    {{-- Row Saldo Akhir --}}
+                                    <tr class="table-info">
+                                        <td class="text-center">{{ $no++ }}</td>
+                                        <td colspan="2">
+                                            <strong>Saldo Akhir - {{ $saldo->tanggal->format('d M Y') }}</strong><br>
+                                            <small class="text-muted">Closing Balance</small>
+                                        </td>
+                                        <td class="text-end">
+                                            <small class="text-muted">Total Masuk:</small><br>
+                                            <strong class="text-success">{{ number_format($saldo->dana_masuk, 2, ',', '.') }}</strong>
+                                        </td>
+                                        <td class="text-end">
+                                            <small class="text-muted">Total Keluar:</small><br>
+                                            <strong class="text-danger">{{ number_format($saldo->total_realisasi, 2, ',', '.') }}</strong>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong class="{{ $saldo->saldo_akhir >= 0 ? 'text-success' : 'text-danger' }}">
+                                                {{ number_format(abs($saldo->saldo_akhir), 2, ',', '.') }}
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                    
+                                    {{-- Spacing Row --}}
+                                    <tr class="table-light">
+                                        <td colspan="6" style="height: 10px;"></td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5">
+                                            <i class="ti ti-database-off ti-lg text-muted mb-3"></i>
+                                            <p class="text-muted mb-0">Belum ada transaksi dalam 7 hari terakhir</p>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
+        <!-- Saldo Kemarin -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="d-block mb-1">Saldo Kemarin</span>
+                            <h3 class="card-title mb-1 {{ $saldoKemarin >= 0 ? 'text-success' : 'text-danger' }}">
+                                Rp {{ number_format(abs($saldoKemarin), 0, ',', '.') }}
+                            </h3>
+                            <small class="{{ $saldoKemarin >= 0 ? 'text-success' : 'text-danger' }} fw-medium">
+                                {{ $saldoKemarin >= 0 ? 'Sisa Dana' : 'Kekurangan' }}
+                            </small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-{{ $saldoKemarin >= 0 ? 'success' : 'danger' }}">
+                                <i class="ti ti-calendar-minus ti-md"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dana Masuk Hari Ini -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="d-block mb-1">Dana Masuk Hari Ini</span>
+                            <h3 class="card-title mb-1">Rp {{ number_format($saldoHariIni->dana_masuk ?? 0, 0, ',', '.') }}</h3>
+                            <small class="text-info fw-medium">
+                                <i class="ti ti-arrow-down"></i> Pencairan
+                            </small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-info">
+                                <i class="ti ti-coin ti-md"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Realisasi Hari Ini -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="d-block mb-1">Realisasi Hari Ini</span>
+                            <h3 class="card-title mb-1 text-warning">Rp {{ number_format($saldoHariIni->total_realisasi ?? 0, 0, ',', '.') }}</h3>
+                            <small class="text-warning fw-medium">
+                                <i class="ti ti-shopping-cart"></i> Pengeluaran
+                            </small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-warning">
+                                <i class="ti ti-receipt ti-md"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Saldo Akhir Hari Ini -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="d-block mb-1">Saldo Akhir Hari Ini</span>
+                            <h3 class="card-title mb-1 {{ ($saldoHariIni->saldo_akhir ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
+                                Rp {{ number_format(abs($saldoHariIni->saldo_akhir ?? 0), 0, ',', '.') }}
+                            </h3>
+                            <small class="{{ ($saldoHariIni->saldo_akhir ?? 0) >= 0 ? 'text-success' : 'text-danger' }} fw-medium">
+                                {{ ($saldoHariIni->saldo_akhir ?? 0) >= 0 ? 'Surplus' : 'Defisit' }}
+                            </small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-{{ ($saldoHariIni->saldo_akhir ?? 0) >= 0 ? 'success' : 'danger' }}">
+                                <i class="ti ti-wallet ti-md"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <!-- Pengajuan Hari Ini -->
+        <div class="col-xl-8">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="ti ti-file-text me-2"></i>Pengajuan Hari Ini
+                    </h5>
+                    @if($pengajuanHariIni)
+                        <span class="badge bg-label-primary">{{ $pengajuanHariIni->nomor_pengajuan }}</span>
+                    @endif
+                </div>
+                <div class="card-body">
+                    @if($pengajuanHariIni)
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Status:</span>
+                                <span>
+                                    @if($pengajuanHariIni->status == 'draft')
+                                        <span class="badge bg-secondary">Draft</span>
+                                    @elseif($pengajuanHariIni->status == 'diajukan')
+                                        <span class="badge bg-warning">Menunggu Pencairan</span>
+                                    @elseif($pengajuanHariIni->status == 'dicairkan')
+                                        <span class="badge bg-info">Sudah Dicairkan</span>
+                                    @else
+                                        <span class="badge bg-success">Selesai</span>
+                                    @endif
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Total Pengajuan:</span>
+                                <strong>Rp {{ number_format($pengajuanHariIni->total_pengajuan, 0, ',', '.') }}</strong>
+                            </div>
+                            @if($pengajuanHariIni->nominal_cair)
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Nominal Cair:</span>
+                                <strong class="text-success">Rp {{ number_format($pengajuanHariIni->nominal_cair, 0, ',', '.') }}</strong>
+                            </div>
+                            @endif
+                        </div>
+
+                        <h6 class="mb-2">Rincian Kebutuhan:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Uraian</th>
+                                        <th class="text-end">Nominal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($pengajuanHariIni->rincian_kebutuhan as $index => $item)
+                                    <tr>
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>{{ $item['uraian'] }}</td>
+                                        <td class="text-end">Rp {{ number_format($item['nominal'], 0, ',', '.') }}</td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-3">
+                            <a href="{{ route('dana-operasional.show-pengajuan', $pengajuanHariIni->id) }}" class="btn btn-sm btn-primary">
+                                <i class="ti ti-eye me-1"></i> Lihat Detail
+                            </a>
+                            
+                            @if($pengajuanHariIni->status == 'dicairkan' || $pengajuanHariIni->status == 'selesai')
+                            <a href="{{ route('dana-operasional.create-realisasi', $pengajuanHariIni->id) }}" class="btn btn-sm btn-success">
+                                <i class="ti ti-plus me-1"></i> Tambah Realisasi
+                            </a>
+                            @endif
+                        </div>
+                    @else
+                        <div class="text-center py-5">
+                            <i class="ti ti-file-off ti-lg text-muted mb-3"></i>
+                            <p class="text-muted">Belum ada pengajuan hari ini</p>
+                            <a href="{{ route('dana-operasional.create-pengajuan') }}" class="btn btn-primary">
+                                <i class="ti ti-plus me-1"></i> Buat Pengajuan
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Riwayat Saldo 7 Hari -->
+        <div class="col-xl-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="ti ti-history me-2"></i>Riwayat 7 Hari Terakhir
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Tanggal</th>
+                                    <th class="text-end">Saldo Akhir</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($riwayatSaldo as $saldo)
+                                <tr>
+                                    <td>
+                                        <small>{{ $saldo->tanggal->format('d/m/Y') }}</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="badge bg-label-{{ $saldo->saldo_akhir >= 0 ? 'success' : 'danger' }}">
+                                            Rp {{ number_format(abs($saldo->saldo_akhir), 0, ',', '.') }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="2" class="text-center text-muted">
+                                        <small>Belum ada data</small>
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pengajuan Pending -->
+    @if($pengajuanPending->count() > 0)
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="ti ti-clock me-2"></i>Pengajuan Menunggu Pencairan
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>No. Pengajuan</th>
+                                    <th>Tanggal</th>
+                                    <th>Pengajuby</th>
+                                    <th class="text-end">Total</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($pengajuanPending as $pending)
+                                <tr>
+                                    <td>{{ $pending->nomor_pengajuan }}</td>
+                                    <td>{{ $pending->tanggal_pengajuan->format('d/m/Y') }}</td>
+                                    <td>{{ $pending->user->name }}</td>
+                                    <td class="text-end">Rp {{ number_format($pending->total_pengajuan, 0, ',', '.') }}</td>
+                                    <td>
+                                        <a href="{{ route('dana-operasional.form-pencairan', $pending->id) }}" class="btn btn-sm btn-success">
+                                            <i class="ti ti-check me-1"></i> Cairkan
+                                        </a>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection

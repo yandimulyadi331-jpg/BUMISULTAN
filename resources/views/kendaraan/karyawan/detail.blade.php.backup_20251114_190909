@@ -1,0 +1,392 @@
+@extends('layouts.mobile.app')
+@section('content')
+
+<style>
+    body {
+        background: #f5f7fb;
+    }
+    
+    .header-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        color: white;
+        margin: -16px -16px 20px -16px;
+    }
+    
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        color: white;
+        text-decoration: none;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .back-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .vehicle-card {
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+    
+    .vehicle-image {
+        width: 100%;
+        height: 250px;
+        object-fit: cover;
+    }
+    
+    .vehicle-gradient {
+        width: 100%;
+        height: 250px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .vehicle-info {
+        padding: 25px;
+    }
+    
+    .vehicle-title {
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: #1a202c;
+        margin-bottom: 10px;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .info-item {
+        background: #f7fafc;
+        padding: 15px;
+        border-radius: 12px;
+    }
+    
+    .info-label {
+        font-size: 0.75rem;
+        color: #718096;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    
+    .info-value {
+        font-size: 1rem;
+        color: #2d3748;
+        font-weight: 900;
+    }
+    
+    .action-section {
+        margin-top: 25px;
+    }
+    
+    .action-title {
+        font-size: 1rem;
+        font-weight: 900;
+        color: #1a202c;
+        margin-bottom: 15px;
+    }
+    
+    .action-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    
+    .action-btn {
+        padding: 15px;
+        border-radius: 15px;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        border: 2px solid;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-success {
+        background: #10b981;
+        color: white;
+        border-color: #10b981;
+    }
+    
+    .btn-warning {
+        background: #f59e0b;
+        color: white;
+        border-color: #f59e0b;
+    }
+    
+    .btn-info {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+    
+    .btn-secondary {
+        background: #6b7280;
+        color: white;
+        border-color: #6b7280;
+    }
+    
+    .history-section {
+        margin-top: 30px;
+    }
+    
+    .history-card {
+        background: white;
+        border-radius: 15px;
+        padding: 15px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .history-type {
+        font-weight: 900;
+        font-size: 0.9rem;
+    }
+    
+    .history-date {
+        font-size: 0.75rem;
+        color: #718096;
+    }
+    
+    .history-detail {
+        font-size: 0.85rem;
+        color: #4a5568;
+        line-height: 1.5;
+    }
+</style>
+
+<div class="header-section">
+    <a href="{{ route('kendaraan.karyawan.index') }}" class="back-btn">
+        <ion-icon name="arrow-back-outline" style="font-size: 1.3rem;"></ion-icon>
+    </a>
+    <h2 style="font-weight: 900; margin: 0;">Detail Kendaraan</h2>
+    <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 0.9rem;">Informasi Lengkap Kendaraan</p>
+</div>
+
+<div class="vehicle-card">
+    @if($kendaraan->foto && Storage::disk('public')->exists('kendaraan/' . $kendaraan->foto))
+        <img src="{{ asset('storage/kendaraan/' . $kendaraan->foto) }}" class="vehicle-image" alt="{{ $kendaraan->nama_kendaraan }}">
+    @else
+        <div class="vehicle-gradient">
+            <ion-icon name="car-sport" style="font-size: 6rem; color: white; opacity: 0.3;"></ion-icon>
+        </div>
+    @endif
+    
+    <div class="vehicle-info">
+        <h1 class="vehicle-title">{{ $kendaraan->nama_kendaraan }}</h1>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            @php
+                $statusColors = [
+                    'Tersedia' => 'success',
+                    'Digunakan' => 'warning',
+                    'Service' => 'info',
+                    'Rusak' => 'danger'
+                ];
+                $statusColor = $statusColors[$kendaraan->status_kendaraan] ?? 'secondary';
+            @endphp
+            <span class="badge bg-{{ $statusColor }}" style="font-size: 0.9rem; padding: 8px 16px;">{{ $kendaraan->status_kendaraan }}</span>
+            <span class="badge bg-dark" style="font-size: 0.9rem; padding: 8px 16px;">{{ $kendaraan->no_polisi }}</span>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">
+                    <ion-icon name="pricetag-outline"></ion-icon> Kode
+                </div>
+                <div class="info-value">{{ $kendaraan->kode_kendaraan }}</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">
+                    <ion-icon name="cube-outline"></ion-icon> Jenis
+                </div>
+                <div class="info-value">{{ $kendaraan->jenis_kendaraan }}</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">
+                    <ion-icon name="construct-outline"></ion-icon> Merk
+                </div>
+                <div class="info-value">{{ $kendaraan->merk ?? '-' }}</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">
+                    <ion-icon name="calendar-outline"></ion-icon> Tahun
+                </div>
+                <div class="info-value">{{ $kendaraan->tahun ?? '-' }}</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">
+                    <ion-icon name="speedometer-outline"></ion-icon> KM Terakhir
+                </div>
+                <div class="info-value">{{ number_format($kendaraan->km_terakhir ?? 0) }} km</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">
+                    <ion-icon name="people-outline"></ion-icon> Kapasitas
+                </div>
+                <div class="info-value">{{ $kendaraan->kapasitas_penumpang ?? '-' }} orang</div>
+            </div>
+            
+            @if($kendaraan->jenis_bbm)
+            <div class="info-item">
+                <div class="info-label">
+                    <ion-icon name="water-outline"></ion-icon> BBM
+                </div>
+                <div class="info-value">{{ $kendaraan->jenis_bbm }}</div>
+            </div>
+            @endif
+            
+            @if($kendaraan->warna)
+            <div class="info-item">
+                <div class="info-label">
+                    <ion-icon name="color-palette-outline"></ion-icon> Warna
+                </div>
+                <div class="info-value">{{ $kendaraan->warna }}</div>
+            </div>
+            @endif
+        </div>
+        
+        <div class="action-section">
+            <div class="action-title">
+                <ion-icon name="flash-outline"></ion-icon> Aksi Cepat
+            </div>
+            
+            <div class="action-grid">
+                @if($kendaraan->status_kendaraan == 'Tersedia')
+                    <a href="{{ route('kendaraan.karyawan.keluarMasuk', Crypt::encrypt($kendaraan->id)) }}" class="action-btn btn-success">
+                        <ion-icon name="exit-outline" style="font-size: 1.3rem;"></ion-icon>
+                        Keluar
+                    </a>
+                    <a href="{{ route('kendaraan.karyawan.peminjaman', Crypt::encrypt($kendaraan->id)) }}" class="action-btn btn-info">
+                        <ion-icon name="calendar-outline" style="font-size: 1.3rem;"></ion-icon>
+                        Pinjam
+                    </a>
+                @elseif($kendaraan->status_kendaraan == 'Digunakan')
+                    <a href="{{ route('kendaraan.karyawan.keluarMasuk', Crypt::encrypt($kendaraan->id)) }}" class="action-btn btn-warning">
+                        <ion-icon name="enter-outline" style="font-size: 1.3rem;"></ion-icon>
+                        Masuk
+                    </a>
+                @endif
+                
+                <a href="{{ route('kendaraan.karyawan.service', Crypt::encrypt($kendaraan->id)) }}" class="action-btn btn-secondary">
+                    <ion-icon name="build-outline" style="font-size: 1.3rem;"></ion-icon>
+                    Service
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if($keluarMasuk->count() > 0 || $peminjaman->count() > 0 || $service->count() > 0)
+<div class="history-section">
+    <h3 class="action-title">
+        <ion-icon name="time-outline"></ion-icon> Aktivitas Terakhir
+    </h3>
+    
+    @foreach($keluarMasuk as $km)
+    <div class="history-card">
+        <div class="history-header">
+            <div class="history-type" style="color: {{ $km->tipe == 'Keluar' ? '#10b981' : '#f59e0b' }};">
+                <ion-icon name="{{ $km->tipe == 'Keluar' ? 'exit-outline' : 'enter-outline' }}"></ion-icon>
+                {{ $km->tipe }}
+            </div>
+            <div class="history-date">{{ $km->created_at->format('d M Y H:i') }}</div>
+        </div>
+        <div class="history-detail">
+            <strong>Pengemudi:</strong> {{ $km->pengemudi }}<br>
+            @if($km->tujuan)
+            <strong>Tujuan:</strong> {{ $km->tujuan }}<br>
+            @endif
+            <strong>KM:</strong> {{ number_format($km->tipe == 'Keluar' ? $km->km_keluar : $km->km_masuk) }} km
+        </div>
+    </div>
+    @endforeach
+    
+    @foreach($peminjaman as $p)
+    <div class="history-card">
+        <div class="history-header">
+            <div class="history-type" style="color: #3b82f6;">
+                <ion-icon name="calendar-outline"></ion-icon>
+                Peminjaman
+            </div>
+            <div class="history-date">{{ $p->created_at->format('d M Y') }}</div>
+        </div>
+        <div class="history-detail">
+            <strong>Peminjam:</strong> {{ $p->nama_peminjam }}<br>
+            <strong>Tujuan:</strong> {{ $p->tujuan_penggunaan }}<br>
+            <strong>Status:</strong> 
+            <span class="badge bg-{{ $p->status_pengajuan == 'Pending' ? 'warning' : ($p->status_pengajuan == 'Disetujui' ? 'success' : 'danger') }}">
+                {{ $p->status_pengajuan }}
+            </span>
+        </div>
+    </div>
+    @endforeach
+    
+    @foreach($service as $s)
+    <div class="history-card">
+        <div class="history-header">
+            <div class="history-type" style="color: #6b7280;">
+                <ion-icon name="build-outline"></ion-icon>
+                Service
+            </div>
+            <div class="history-date">{{ $s->tanggal_service->format('d M Y') }}</div>
+        </div>
+        <div class="history-detail">
+            <strong>Jenis:</strong> {{ $s->jenis_service }}<br>
+            <strong>Bengkel:</strong> {{ $s->bengkel ?? '-' }}<br>
+            @if($s->biaya > 0)
+            <strong>Biaya:</strong> Rp {{ number_format($s->biaya, 0, ',', '.') }}
+            @endif
+        </div>
+    </div>
+    @endforeach
+    
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="{{ route('kendaraan.karyawan.riwayatKeluarMasuk', Crypt::encrypt($kendaraan->id)) }}" style="color: #667eea; text-decoration: none; font-weight: 700;">
+            Lihat Semua Riwayat →
+        </a>
+    </div>
+</div>
+@endif
+
+<div style="height: 80px;"></div>
+
+@endsection

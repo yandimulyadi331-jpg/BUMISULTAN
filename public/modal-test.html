@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick Test - Modal Working</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .result { padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .code { background: #f8f9fa; padding: 10px; border-left: 4px solid #007bff; margin: 10px 0; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Quick Test - Modal Tugas Luar</h1>
+    
+    <div class="result info">
+        <h3>✅ Fixes Applied:</h3>
+        <ul>
+            <li>✅ Model TugasLuar: Added 'karyawan_list' => 'array' cast</li>
+            <li>✅ Controller: Data sudah dalam format array yang benar</li>
+            <li>✅ JavaScript: Enhanced error handling dan debugging</li>
+            <li>✅ Data: 3 tugas luar tersedia untuk hari ini</li>
+        </ul>
+    </div>
+    
+    <div class="result success">
+        <h3>🎯 Expected Result:</h3>
+        <p>Ketika Anda klik card "Karyawan Tugas Luar" di dashboard, modal seharusnya muncul menampilkan:</p>
+        <ul>
+            <li>Tabel dengan 3 data tugas luar</li>
+            <li>Detail karyawan, kode tugas, tujuan, waktu keluar</li>
+            <li>Tidak ada JavaScript error di console</li>
+        </ul>
+    </div>
+    
+    <div class="code">
+        <h4>🔍 Debug Steps:</h4>
+        <ol>
+            <li>Buka dashboard: <a href="http://127.0.0.1:8000/dashboard" target="_blank">http://127.0.0.1:8000/dashboard</a></li>
+            <li>Tekan F12 untuk buka Developer Tools</li>
+            <li>Klik card "Karyawan Tugas Luar" (yang menampilkan angka 3)</li>
+            <li>Lihat console untuk debug output</li>
+            <li>Modal seharusnya muncul tanpa error</li>
+        </ol>
+    </div>
+    
+    <div class="result error" id="troubleshoot" style="display: none;">
+        <h3>🚨 Jika masih ada masalah:</h3>
+        <ul>
+            <li>Cek console browser untuk error messages</li>
+            <li>Pastikan Bootstrap CSS/JS loaded</li>
+            <li>Refresh page (Ctrl+F5)</li>
+            <li>Cek apakah dataTugasLuar defined di console</li>
+        </ul>
+    </div>
+    
+    <button onclick="window.open('http://127.0.0.1:8000/dashboard', '_blank')">🚀 Open Dashboard</button>
+    <button onclick="testDebug()">🔧 Test Debug Info</button>
+    <button onclick="document.getElementById('troubleshoot').style.display='block'">❓ Troubleshoot</button>
+    
+    <script>
+        function testDebug() {
+            alert('Check console untuk test data format:\n\nSample data yang seharusnya diterima:\n' + 
+                  JSON.stringify({
+                      kode_tugas: "TL202511280001",
+                      karyawan_list: ["NIK001", "NIK002"],
+                      tujuan: "Bank BNI Cabang Sukabumi",
+                      status: "keluar"
+                  }, null, 2));
+        }
+        
+        console.log('🔧 Modal Test Page Loaded');
+        console.log('✅ All fixes have been applied');
+        console.log('🎯 Ready to test modal functionality');
+    </script>
+</body>
+</html>
