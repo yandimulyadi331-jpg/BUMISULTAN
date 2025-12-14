@@ -139,8 +139,8 @@
                                 <td class="text-center">{{ $index + 1 }}</td>
                                 <td>{{ $absensi->tanggal_absensi->translatedFormat('d M Y') }}</td>
                                 <td>{{ $absensi->jadwalSantri ? $absensi->jadwalSantri->nama_jadwal : '-' }}</td>
-                                <td>{{ $absensi->santri->nis }}</td>
-                                <td>{{ $absensi->santri->nama_lengkap }}</td>
+                                <td>{{ $absensi->santri ? $absensi->santri->nis : '-' }}</td>
+                                <td>{{ $absensi->santri ? $absensi->santri->nama_lengkap : '-' }}</td>
                                 <td>
                                     @if($absensi->status_kehadiran == 'hadir')
                                         <span class="badge bg-success">Hadir</span>
