@@ -65,9 +65,13 @@
                     <div class="col-12">
                         <form action="{{ route('yayasan_masar.index') }}">
                             <div class="row">
-                                <div class="col-lg-4 col-sm-12 col-md-12">
+                                <div class="col-lg-3 col-sm-12 col-md-12">
                                     <x-input-with-icon label="Cari Nama" value="{{ Request('nama') }}" name="nama"
                                         icon="ti ti-search" />
+                                </div>
+                                <div class="col-lg-3 col-sm-12 col-md-12">
+                                    <x-input-with-icon label="Cari PIN" value="{{ Request('pin') }}" name="pin"
+                                        icon="ti ti-key" />
                                 </div>
                                 <div class="col-lg-2 col-sm-12 col-md-12">
                                     <button class="btn btn-primary"><i class="ti ti-icons ti-search me-1"></i>Cari</button>

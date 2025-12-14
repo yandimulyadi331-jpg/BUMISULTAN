@@ -1,0 +1,63 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'resources/**'
+      - 'routes/**'
+      - 'database/migrations/**'
+      - 'config/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Deploy to Hostinger via SSH
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOSTINGER_HOST }}
+        username: ${{ secrets.HOSTINGER_USERNAME }}
+        password: ${{ secrets.HOSTINGER_PASSWORD }}
+        port: ${{ secrets.HOSTINGER_PORT }}
+        script: |
+          cd ${{ secrets.DEPLOY_PATH }}
+          
+          # Pull latest code from GitHub
+          git pull origin main
+          
+          # Install/update dependencies
+          composer install --no-dev --optimize-autoloader
+          
+          # Clear caches
+          php artisan cache:clear
+          php artisan config:clear
+          php artisan view:clear
+          
+          # Run migrations if needed
+          php artisan migrate --force --no-interaction
+          
+          # Set permissions
+          chmod -R 755 storage bootstrap/cache
+          
+          echo "✅ Deploy to Hostinger completed successfully!"
+
+    - name: Send Notification
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '❌ Deploy to Hostinger failed! Check the workflow logs.'
+          })

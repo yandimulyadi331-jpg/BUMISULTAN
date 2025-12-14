@@ -48,6 +48,10 @@ class YayasanMasarController extends Controller
             $query->where('nama', 'like', '%' . $request->nama . '%');
         }
 
+        if (!empty($request->pin)) {
+            $query->where('pin', 'like', '%' . $request->pin . '%');
+        }
+
         // Tambahkan filter jenis kelamin
         if (!empty($request->jenis_kelamin)) {
             $query->where('yayasan_masar.jenis_kelamin', $request->jenis_kelamin);
@@ -609,14 +613,14 @@ class YayasanMasarController extends Controller
     // Export Excel - semua data
     public function exportExcel()
     {
-        $data = YayasanMasar::select('no_identitas', 'nama', 'tempat_lahir', 'tanggal_lahir', 'alamat', 'jenis_kelamin', 'no_hp', 'email', 'kode_status_kawin', 'pendidikan_terakhir', 'tanggal_masuk', 'status_umroh')->get();
+        $data = YayasanMasar::select('no_identitas', 'nama', 'tempat_lahir', 'tanggal_lahir', 'alamat', 'jenis_kelamin', 'no_hp', 'email', 'kode_status_kawin', 'pendidikan_terakhir', 'tanggal_masuk', 'status_umroh', 'pin')->get();
         
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Data Jamaah');
         
         // Set header
-        $headers = ['No. Identitas', 'Nama', 'Tempat Lahir', 'Tanggal Lahir', 'Alamat', 'Jenis Kelamin', 'No. HP', 'Email', 'Status Kawin', 'Pendidikan Terakhir', 'Tanggal Masuk', 'Status Umroh'];
+        $headers = ['No. Identitas', 'Nama', 'Tempat Lahir', 'Tanggal Lahir', 'Alamat', 'Jenis Kelamin', 'No. HP', 'Email', 'Status Kawin', 'Pendidikan Terakhir', 'Tanggal Masuk', 'PIN', 'Status Umroh'];
         $sheet->fromArray([$headers], NULL, 'A1');
         
         // Set column widths
@@ -632,12 +636,13 @@ class YayasanMasarController extends Controller
         $sheet->getColumnDimension('J')->setWidth(20);
         $sheet->getColumnDimension('K')->setWidth(15);
         $sheet->getColumnDimension('L')->setWidth(15);
+        $sheet->getColumnDimension('M')->setWidth(15);
         
         // Make header bold and colored
-        $sheet->getStyle('A1:L1')->getFont()->setBold(true);
-        $sheet->getStyle('A1:L1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle('A1:L1')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FF4472C4');
-        $sheet->getStyle('A1:L1')->getFont()->getColor()->setARGB('FFFFFFFF');
+        $sheet->getStyle('A1:M1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:M1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('A1:M1')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FF4472C4');
+        $sheet->getStyle('A1:M1')->getFont()->getColor()->setARGB('FFFFFFFF');
         
         // Add data
         $row = 2;
@@ -653,13 +658,15 @@ class YayasanMasarController extends Controller
             $sheet->setCellValue('I' . $row, $item->kode_status_kawin);
             $sheet->setCellValue('J' . $row, $item->pendidikan_terakhir);
             $sheet->setCellValue('K' . $row, $item->tanggal_masuk);
-            $sheet->setCellValue('L' . $row, $item->status_umroh == '1' ? 'Umroh' : 'Tidak');
+            $sheet->setCellValue('L' . $row, $item->pin);
+            $sheet->setCellValue('M' . $row, $item->status_umroh == '1' ? 'Umroh' : 'Tidak');
             
             // Center alignment for certain columns
             $sheet->getStyle('D' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('F' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('K' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('L' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('M' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
             
             $row++;
         }
