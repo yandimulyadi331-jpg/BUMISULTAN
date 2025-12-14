@@ -6,7 +6,7 @@ use App\Models\Karyawan;
 use App\Models\Cabang;
 use App\Models\Departemen;
 use App\Models\Jabatan;
-use App\Models\StatusKawin;
+use App\Models\Statuskawin;
 use App\Models\Facerecognition;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -22,7 +22,7 @@ class SignupControllerImproved extends Controller
         $cabang = Cabang::orderBy('nama_cabang')->get();
         $departemen = Departemen::orderBy('nama_dept')->get();
         $jabatan = Jabatan::orderBy('nama_jabatan')->get();
-        $status_kawin = StatusKawin::orderBy('status_kawin')->get();
+        $status_kawin = Statuskawin::orderBy('status_kawin')->get();
         
         return view('auth.signup_wizard', compact('cabang', 'departemen', 'jabatan', 'status_kawin'));
     }
