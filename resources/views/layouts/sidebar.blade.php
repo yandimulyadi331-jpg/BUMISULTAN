@@ -495,7 +495,6 @@
                     </ul>
                 </li>
             @endif
-        @endif
 
         <!-- Manajemen Keuangan -->
         @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('dana-operasional.index'))
