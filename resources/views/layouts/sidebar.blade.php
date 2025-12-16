@@ -409,46 +409,59 @@
             </li>
         @endif
         
-        @if (auth()->user()->hasRole(['super admin']))
-            <!-- Menu Manajemen Saung Santri -->
+        <!-- Menu Manajemen Saung Santri -->
+        @if (auth()->user()->hasRole(['super admin']) || auth()->user()->hasAnyPermission(['santri.index', 'keuangan-santri.index']))
             <li class="menu-item {{ request()->is(['santri*', 'jadwal-santri*', 'absensi-santri*', 'ijin-santri*', 'keuangan-santri*', 'pelanggaran-santri*', 'khidmat*']) ? 'active open' : '' }}">
                 <a href="javascript:void(0);" class="menu-link menu-toggle">
                     <i class="menu-icon tf-icons ti ti-users"></i>
                     <div>Manajemen Saung Santri</div>
                 </a>
                 <ul class="menu-sub">
-                    <li class="menu-item {{ request()->is(['santri', 'santri/*']) && !request()->is(['jadwal-santri*', 'absensi-santri*', 'ijin-santri*', 'keuangan-santri*', 'pelanggaran-santri*', 'khidmat*']) ? 'active' : '' }}">
-                        <a href="{{ route('santri.index') }}" class="menu-link">
-                            <div>Data Santri</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is(['jadwal-santri*', 'absensi-santri*']) ? 'active' : '' }}">
-                        <a href="{{ route('jadwal-santri.index') }}" class="menu-link">
-                            <div>Jadwal & Absensi Santri</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is(['ijin-santri*']) ? 'active' : '' }}">
-                        <a href="{{ route('ijin-santri.index') }}" class="menu-link">
-                            <div>Ijin Santri</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is(['keuangan-santri*']) ? 'active' : '' }}">
-                        <a href="{{ route('keuangan-santri.index') }}" class="menu-link">
-                            <div>Keuangan Santri</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is(['pelanggaran-santri*']) ? 'active' : '' }}">
-                        <a href="{{ route('pelanggaran-santri.index') }}" class="menu-link">
-                            <div>Pelanggaran Santri</div>
-                        </a>
-                    </li>
-                    <li class="menu-item {{ request()->is(['khidmat*']) ? 'active' : '' }}">
-                        <a href="{{ route('khidmat.index') }}" class="menu-link">
-                            <div>Khidmat (Belanja Masak)</div>
-                        </a>
-                    </li>
+                    @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('santri.index'))
+                        <li class="menu-item {{ request()->is(['santri', 'santri/*']) && !request()->is(['jadwal-santri*', 'absensi-santri*', 'ijin-santri*', 'keuangan-santri*', 'pelanggaran-santri*', 'khidmat*']) ? 'active' : '' }}">
+                            <a href="{{ route('santri.index') }}" class="menu-link">
+                                <div>Data Santri</div>
+                            </a>
+                        </li>
+                    @endif
+                    @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('santri.index'))
+                        <li class="menu-item {{ request()->is(['jadwal-santri*', 'absensi-santri*']) ? 'active' : '' }}">
+                            <a href="{{ route('jadwal-santri.index') }}" class="menu-link">
+                                <div>Jadwal & Absensi Santri</div>
+                            </a>
+                        </li>
+                    @endif
+                    @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('santri.index'))
+                        <li class="menu-item {{ request()->is(['ijin-santri*']) ? 'active' : '' }}">
+                            <a href="{{ route('ijin-santri.index') }}" class="menu-link">
+                                <div>Ijin Santri</div>
+                            </a>
+                        </li>
+                    @endif
+                    @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('keuangan-santri.index'))
+                        <li class="menu-item {{ request()->is(['keuangan-santri*']) ? 'active' : '' }}">
+                            <a href="{{ route('keuangan-santri.index') }}" class="menu-link">
+                                <div>Keuangan Santri</div>
+                            </a>
+                        </li>
+                    @endif
+                    @if (auth()->user()->hasRole(['super admin']))
+                        <li class="menu-item {{ request()->is(['pelanggaran-santri*']) ? 'active' : '' }}">
+                            <a href="{{ route('pelanggaran-santri.index') }}" class="menu-link">
+                                <div>Pelanggaran Santri</div>
+                            </a>
+                        </li>
+                    @endif
+                    @if (auth()->user()->hasRole(['super admin']))
+                        <li class="menu-item {{ request()->is(['khidmat*']) ? 'active' : '' }}">
+                            <a href="{{ route('khidmat.index') }}" class="menu-link">
+                                <div>Khidmat (Belanja Masak)</div>
+                            </a>
+                        </li>
+                    @endif
                 </ul>
             </li>
+        @endif
 
             <!-- Menu Manajemen Tukang -->
             @if (auth()->user()->hasRole(['super admin']) || auth()->user()->hasAnyPermission(['tukang.index', 'kehadiran-tukang.index', 'keuangan-tukang.index']))
@@ -485,39 +498,47 @@
         @endif
 
         <!-- Manajemen Keuangan -->
-        @if (auth()->user()->hasRole(['super admin']))
+        @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('dana-operasional.index'))
             <li class="menu-item {{ request()->is(['dana-operasional', 'dana-operasional/*']) ? 'active' : '' }}">
                 <a href="{{ route('dana-operasional.index') }}" class="menu-link">
                     <i class="menu-icon tf-icons ti ti-moneybag"></i>
                     <div>Manajemen Keuangan</div>
                 </a>
             </li>
+        @endif
 
-            <!-- Manajemen Pinjaman -->
+        <!-- Manajemen Pinjaman -->
+        @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('pinjaman.index'))
             <li class="menu-item {{ request()->is(['pinjaman', 'pinjaman/*']) ? 'active' : '' }}">
                 <a href="{{ route('pinjaman.index') }}" class="menu-link">
                     <i class="menu-icon tf-icons ti ti-cash"></i>
                     <div>Manajemen Pinjaman</div>
                 </a>
             </li>
+        @endif
 
-            <!-- Manajemen Perawatan Gedung -->
+        <!-- Manajemen Perawatan Gedung -->
+        @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('perawatan.index'))
             <li class="menu-item {{ request()->is(['perawatan', 'perawatan/*']) ? 'active' : '' }}">
                 <a href="{{ route('perawatan.index') }}" class="menu-link">
                     <i class="menu-icon tf-icons ti ti-building-warehouse"></i>
                     <div>Manajemen Perawatan</div>
                 </a>
             </li>
+        @endif
 
-            <!-- Temuan -->
+        <!-- Temuan -->
+        @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('temuan.index'))
             <li class="menu-item {{ request()->is(['temuan', 'temuan/*']) ? 'active' : '' }}">
                 <a href="{{ route('temuan.index') }}" class="menu-link">
                     <i class="menu-icon tf-icons ti ti-alert-circle"></i>
                     <div>Temuan</div>
                 </a>
             </li>
+        @endif
 
-            <!-- Pusat Informasi -->
+        <!-- Pusat Informasi -->
+        @if (auth()->user()->hasRole(['super admin']))
             <li class="menu-item {{ request()->is(['admin/informasi', 'admin/informasi/*']) ? 'active' : '' }}">
                 <a href="{{ route('admin.informasi.index') }}" class="menu-link">
                     <i class="menu-icon tf-icons ti ti-info-circle"></i>
