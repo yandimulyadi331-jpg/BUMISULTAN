@@ -563,24 +563,31 @@ class DanaOperasionalController extends Controller
             \DB::commit();
             
             // Determine redirect URL based on periode
-            $bulanMin = $tanggalMin->format('Y-m');
-            $bulanMax = $tanggalMax->format('Y-m');
-            
-            if ($bulanMin === $bulanMax) {
-                // Same month
-                $redirectUrl = route('dana-operasional.index', [
-                    'filter_type' => 'bulan',
-                    'bulan' => $bulanMin
-                ]);
-                $periode = $tanggalMin->locale('id')->isoFormat('MMMM YYYY');
+            // Check if tanggalMin and tanggalMax are not null
+            if ($tanggalMin && $tanggalMax) {
+                $bulanMin = $tanggalMin->format('Y-m');
+                $bulanMax = $tanggalMax->format('Y-m');
+                
+                if ($bulanMin === $bulanMax) {
+                    // Same month
+                    $redirectUrl = route('dana-operasional.index', [
+                        'filter_type' => 'bulan',
+                        'bulan' => $bulanMin
+                    ]);
+                    $periode = $tanggalMin->locale('id')->isoFormat('MMMM YYYY');
+                } else {
+                    // Different months
+                    $redirectUrl = route('dana-operasional.index', [
+                        'filter_type' => 'range',
+                        'start_date' => $tanggalMin->format('Y-m-d'),
+                        'end_date' => $tanggalMax->format('Y-m-d')
+                    ]);
+                    $periode = $tanggalMin->format('d M Y') . ' - ' . $tanggalMax->format('d M Y');
+                }
             } else {
-                // Different months
-                $redirectUrl = route('dana-operasional.index', [
-                    'filter_type' => 'range',
-                    'start_date' => $tanggalMin->format('Y-m-d'),
-                    'end_date' => $tanggalMax->format('Y-m-d')
-                ]);
-                $periode = $tanggalMin->format('d M Y') . ' - ' . $tanggalMax->format('d M Y');
+                // No data imported, use default
+                $redirectUrl = route('dana-operasional.index');
+                $periode = '-';
             }
             
             return response()->json([

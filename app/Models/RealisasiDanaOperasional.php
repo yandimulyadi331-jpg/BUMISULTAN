@@ -14,7 +14,7 @@ class RealisasiDanaOperasional extends Model
 
     protected $fillable = [
         'pengajuan_id', 'nomor_transaksi', 'nomor_realisasi', 'tanggal_realisasi', 'urutan_baris',
-        'uraian', 'keterangan', 'nominal', 'saldo_running', 'tipe_transaksi', 'kategori', 'file_bukti', 'foto_bukti', 'created_by',
+        'uraian', 'keterangan', 'nominal', 'saldo_running', 'tipe_transaksi', 'kategori', 'file_bukti', 'foto_bukti', 'created_by', 'status',
     ];
 
     protected $casts = [
@@ -63,9 +63,12 @@ class RealisasiDanaOperasional extends Model
                 $model->nomor_transaksi = $prefix . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
             }
             
-            // Generate nomor realisasi (backup)
+            // Generate nomor realisasi (backup) dengan tambahan mikrodetik untuk unique constraint
             if (empty($model->nomor_realisasi)) {
-                $model->nomor_realisasi = $model->nomor_transaksi;
+                // Tambahkan mikrodetik untuk memastikan unique (menghindari duplicate)
+                $mikrodetik = (int)(microtime(true) * 1000000); // Convert to microseconds integer
+                $uniqueSuffix = substr((string)$mikrodetik, -6); // Last 6 digits
+                $model->nomor_realisasi = $model->nomor_transaksi . '-' . $uniqueSuffix;
             }
             
             // AI Auto-detect kategori jika belum ada
