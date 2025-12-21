@@ -201,7 +201,10 @@ class Pinjaman extends Model
     public static function generateNomorPinjaman()
     {
         $prefix = 'PNJ-' . date('Ym') . '-';
-        $lastPinjaman = self::where('nomor_pinjaman', 'like', $prefix . '%')
+        
+        // Include soft-deleted records to avoid duplicate numbers
+        $lastPinjaman = self::withTrashed()
+            ->where('nomor_pinjaman', 'like', $prefix . '%')
             ->orderBy('nomor_pinjaman', 'desc')
             ->first();
 
