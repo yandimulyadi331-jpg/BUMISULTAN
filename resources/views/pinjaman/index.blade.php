@@ -595,27 +595,6 @@ function kirimEmail(pinjamanId, email) {
         });
     });
 }
-                        <li>✅ Status: <strong>LUNAS</strong> (sudah dibayar penuh)</li>
-                        <li>✅ Status: <strong>DITOLAK</strong> (pengajuan ditolak)</li>
-                        <li>✅ Status: <strong>DIBATALKAN</strong> (dibatalkan)</li>
-                    </ul>
-                </div>
-                <p style="color: #6c757d; margin-top: 15px; font-size: 14px;">
-                    <i class="bi bi-shield-check"></i> Kebijakan ini untuk menjaga integritas data keuangan yang masih berjalan.
-                </p>
-            </div>
-        `,
-        icon: 'info',
-        confirmButtonColor: '#0d6efd',
-        confirmButtonText: '<i class="bi bi-check-circle"></i> Mengerti',
-        width: '600px',
-        customClass: {
-            popup: 'swal-modern',
-            confirmButton: 'btn btn-primary btn-lg px-4'
-        },
-        buttonsStyling: false
-    });
-}
 </script>
 
 <style>
