@@ -138,6 +138,9 @@ class KehadiranTukangController extends Controller
             return response()->json([
                 'success' => true,
                 'status' => $kehadiran->status,
+                'upah_harian' => $kehadiran->upah_harian,
+                'upah_lembur' => $kehadiran->upah_lembur,
+                'total_upah' => $kehadiran->upah_harian + $kehadiran->upah_lembur,
                 'upah' => number_format($kehadiran->total_upah, 0, ',', '.')
             ]);
         } catch (\Exception $e) {
@@ -201,8 +204,11 @@ class KehadiranTukangController extends Controller
                 'success' => true,
                 'lembur' => $kehadiran->lembur,
                 'lembur_dibayar_cash' => $kehadiran->lembur_dibayar_cash,
+                'upah_harian' => $kehadiran->upah_harian,
+                'upah_lembur' => $kehadiran->upah_lembur,
+                'total_upah' => $kehadiran->upah_harian + $kehadiran->upah_lembur,
                 'upah' => number_format($kehadiran->total_upah, 0, ',', '.'),
-                'upah_lembur' => number_format($kehadiran->upah_lembur, 0, ',', '.')
+                'upah_lembur_formatted' => number_format($kehadiran->upah_lembur, 0, ',', '.')
             ]);
         } catch (\Exception $e) {
             return response()->json([

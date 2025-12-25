@@ -59,10 +59,13 @@
                      <thead class="table-dark">
                         <tr>
                            <th width="5%">No</th>
-                           <th width="10%">Kode</th>
-                           <th>Nama Tukang</th>
-                           <th width="20%">Status Kehadiran</th>
-                           <th width="15%">Lembur</th>
+                           <th width="8%">Kode</th>
+                           <th width="20%">Nama Tukang</th>
+                           <th width="15%">Status Kehadiran</th>
+                           <th width="12%">Lembur</th>
+                           <th width="13%">Upah Harian</th>
+                           <th width="13%">Upah Lembur</th>
+                           <th width="14%">Total Upah</th>
                         </tr>
                      </thead>
                      <tbody>
@@ -120,10 +123,28 @@
                                     </span>
                                  </button>
                               </td>
+                              <td class="text-end upah-harian-{{ $tukang->id }}">
+                                 @php
+                                    $upahHarian = $tukang->kehadiran_hari_ini->upah_harian ?? 0;
+                                 @endphp
+                                 <strong class="text-success">Rp {{ number_format($upahHarian, 0, ',', '.') }}</strong>
+                              </td>
+                              <td class="text-end upah-lembur-{{ $tukang->id }}">
+                                 @php
+                                    $upahLembur = $tukang->kehadiran_hari_ini->upah_lembur ?? 0;
+                                 @endphp
+                                 <strong class="text-primary">Rp {{ number_format($upahLembur, 0, ',', '.') }}</strong>
+                              </td>
+                              <td class="text-end total-upah-{{ $tukang->id }}">
+                                 @php
+                                    $totalUpah = ($tukang->kehadiran_hari_ini->upah_harian ?? 0) + ($tukang->kehadiran_hari_ini->upah_lembur ?? 0);
+                                 @endphp
+                                 <strong class="text-info">Rp {{ number_format($totalUpah, 0, ',', '.') }}</strong>
+                              </td>
                            </tr>
                         @empty
                            <tr>
-                              <td colspan="5" class="text-center">Tidak ada data tukang aktif</td>
+                              <td colspan="8" class="text-center">Tidak ada data tukang aktif</td>
                            </tr>
                         @endforelse
                      </tbody>
@@ -189,6 +210,11 @@
    opacity: 0.5;
    cursor: not-allowed;
 }
+
+/* Animasi untuk perubahan upah */
+td[class*="upah-"], td[class*="total-upah"] {
+   transition: background-color 1s ease;
+}
 </style>
 
 <script>
@@ -234,6 +260,9 @@ function toggleStatus(button) {
                lemburButton.className = 'btn btn-lembur btn-sm w-100 lembur-tidak';
                lemburButton.querySelector('.lembur-text').innerHTML = '<i class="ti ti-minus"></i> Tidak';
             }
+            
+            // UPDATE UPAH REALTIME
+            updateUpahDisplay(tukangId, response);
          }
          button.disabled = false;
       },
@@ -277,6 +306,9 @@ function toggleLembur(button) {
             
             button.className = btnClass;
             button.querySelector('.lembur-text').innerHTML = icon + ' ' + text;
+            
+            // UPDATE UPAH REALTIME
+            updateUpahDisplay(tukangId, response);
          }
          button.disabled = false;
       },
@@ -285,6 +317,47 @@ function toggleLembur(button) {
          button.disabled = false;
       }
    });
+}
+
+// Fungsi untuk update tampilan upah secara realtime
+function updateUpahDisplay(tukangId, response) {
+   // Update Upah Harian
+   const upahHarianCell = document.querySelector('.upah-harian-' + tukangId);
+   if (upahHarianCell && response.upah_harian !== undefined) {
+      upahHarianCell.innerHTML = '<strong class="text-success">Rp ' + formatRupiah(response.upah_harian) + '</strong>';
+      // Animasi perubahan
+      upahHarianCell.style.backgroundColor = '#d4edda';
+      setTimeout(() => {
+         upahHarianCell.style.backgroundColor = '';
+      }, 1000);
+   }
+   
+   // Update Upah Lembur
+   const upahLemburCell = document.querySelector('.upah-lembur-' + tukangId);
+   if (upahLemburCell && response.upah_lembur !== undefined) {
+      upahLemburCell.innerHTML = '<strong class="text-primary">Rp ' + formatRupiah(response.upah_lembur) + '</strong>';
+      // Animasi perubahan
+      upahLemburCell.style.backgroundColor = '#cfe2ff';
+      setTimeout(() => {
+         upahLemburCell.style.backgroundColor = '';
+      }, 1000);
+   }
+   
+   // Update Total Upah
+   const totalUpahCell = document.querySelector('.total-upah-' + tukangId);
+   if (totalUpahCell && response.total_upah !== undefined) {
+      totalUpahCell.innerHTML = '<strong class="text-info">Rp ' + formatRupiah(response.total_upah) + '</strong>';
+      // Animasi perubahan
+      totalUpahCell.style.backgroundColor = '#d1ecf1';
+      setTimeout(() => {
+         totalUpahCell.style.backgroundColor = '';
+      }, 1000);
+   }
+}
+
+// Fungsi helper untuk format rupiah
+function formatRupiah(angka) {
+   return parseInt(angka).toLocaleString('id-ID');
 }
 </script>
 @endpush
