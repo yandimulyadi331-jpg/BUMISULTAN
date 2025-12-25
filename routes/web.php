@@ -239,11 +239,6 @@ Route::middleware('auth')->group(function () {
         Route::delete('/roles/{id}/delete', 'destroy')->name('roles.delete');
         Route::get('/roles/{id}/createrolepermission', 'createrolepermission')->name('roles.createrolepermission');
         Route::post('/roles/{id}/storerolepermission', 'storerolepermission')->name('roles.storerolepermission');
-        
-        // New enhanced permission management routes
-        Route::get('/roles/{id}/permissions/edit', 'editPermissions')->name('roles.editPermissions');
-        Route::put('/roles/{id}/permissions/update', 'updatePermissions')->name('roles.updatePermissions');
-        Route::get('/api/roles/{id}/permissions', 'getPermissionsJson')->name('roles.permissionsJson');
     });
 
 
@@ -727,7 +722,6 @@ Route::middleware('auth')->group(function () {
             Route::get('/gedung/{gedung_id}/ruangan/{ruangan_id}/barang/{id}/transfer', 'transfer')->name('barang.transfer');
             Route::post('/gedung/{gedung_id}/ruangan/{ruangan_id}/barang/{id}/proses-transfer', 'prosesTransfer')->name('barang.prosesTransfer');
             Route::get('/gedung/{gedung_id}/ruangan/{ruangan_id}/barang/{id}/riwayat', 'riwayatTransfer')->name('barang.riwayat');
-            Route::post('/gedung/{gedung_id}/ruangan/{ruangan_id}/barang/{id}/generate-qr', 'generateQrCode')->name('barang.generateQr');
         });
 
         // Kendaraan Routes
@@ -1557,6 +1551,7 @@ Route::prefix('pengembalian-inventaris')->name('pengembalian-inventaris.')->grou
             Route::post('/simpan-pembayaran-gaji', 'simpanPembayaranGaji')->name('simpan-pembayaran-gaji');
             Route::get('/download-slip-gaji/{id}', 'downloadSlipGaji')->name('download-slip-gaji');
             Route::get('/download-laporan-gaji-kamis', 'downloadLaporanGajiKamis')->name('download-laporan-gaji-kamis');
+            Route::get('/download-laporan-pengajuan-gaji', 'downloadLaporanPengajuanGaji')->name('download-laporan-pengajuan-gaji');
         });
     });
     
@@ -1700,38 +1695,38 @@ Route::middleware('role:super admin')->prefix('pinjaman')->name('pinjaman.')->co
 // ===================================
 // MANAJEMEN PERAWATAN GEDUNG
 // ===================================
-Route::middleware('auth')->prefix('perawatan')->name('perawatan.')->controller(ManajemenPerawatanController::class)->group(function () {
+Route::middleware('role:super admin')->prefix('perawatan')->name('perawatan.')->controller(ManajemenPerawatanController::class)->group(function () {
     // Dashboard Perawatan
-    Route::get('/', 'index')->middleware('role_or_permission:super admin|perawatan.index')->name('index');
+    Route::get('/', 'index')->name('index');
     
     // Master Checklist (CRUD)
     Route::prefix('master')->name('master.')->group(function () {
-        Route::get('/', 'masterIndex')->middleware('role_or_permission:super admin|perawatan.index')->name('index');
-        Route::get('/create', 'masterCreate')->middleware('role_or_permission:super admin|perawatan.create')->name('create');
-        Route::post('/store', 'masterStore')->middleware('role_or_permission:super admin|perawatan.create')->name('store');
-        Route::get('/{id}/edit', 'masterEdit')->middleware('role_or_permission:super admin|perawatan.edit')->name('edit');
-        Route::put('/{id}', 'masterUpdate')->middleware('role_or_permission:super admin|perawatan.edit')->name('update');
-        Route::delete('/{id}', 'masterDestroy')->middleware('role_or_permission:super admin|perawatan.delete')->name('destroy');
+        Route::get('/', 'masterIndex')->name('index');
+        Route::get('/create', 'masterCreate')->name('create');
+        Route::post('/store', 'masterStore')->name('store');
+        Route::get('/{id}/edit', 'masterEdit')->name('edit');
+        Route::put('/{id}', 'masterUpdate')->name('update');
+        Route::delete('/{id}', 'masterDestroy')->name('destroy');
     });
     
     // Eksekusi Checklist
     Route::prefix('checklist')->name('checklist.')->group(function () {
-        Route::get('/harian', 'checklistHarian')->middleware('role_or_permission:super admin|perawatan.index')->name('harian');
-        Route::get('/mingguan', 'checklistMingguan')->middleware('role_or_permission:super admin|perawatan.index')->name('mingguan');
-        Route::get('/bulanan', 'checklistBulanan')->middleware('role_or_permission:super admin|perawatan.index')->name('bulanan');
-        Route::get('/tahunan', 'checklistTahunan')->middleware('role_or_permission:super admin|perawatan.index')->name('tahunan');
+        Route::get('/harian', 'checklistHarian')->name('harian');
+        Route::get('/mingguan', 'checklistMingguan')->name('mingguan');
+        Route::get('/bulanan', 'checklistBulanan')->name('bulanan');
+        Route::get('/tahunan', 'checklistTahunan')->name('tahunan');
         
-        Route::post('/execute', 'executeChecklist')->middleware('role_or_permission:super admin|perawatan.create')->name('execute');
-        Route::post('/uncheck', 'uncheckChecklist')->middleware('role_or_permission:super admin|perawatan.edit')->name('uncheck');
+        Route::post('/execute', 'executeChecklist')->name('execute');
+        Route::post('/uncheck', 'uncheckChecklist')->name('uncheck');
     });
     
     // Laporan
     Route::prefix('laporan')->name('laporan.')->group(function () {
-        Route::get('/', 'laporanIndex')->middleware('role_or_permission:super admin|perawatan.index')->name('index');
-        Route::post('/generate', 'generateLaporan')->middleware('role_or_permission:super admin|perawatan.create')->name('generate');
-        Route::get('/{id}/download', 'downloadLaporan')->middleware('role_or_permission:super admin|perawatan.index')->name('download');
+        Route::get('/', 'laporanIndex')->name('index');
+        Route::post('/generate', 'generateLaporan')->name('generate');
+        Route::get('/{id}/download', 'downloadLaporan')->name('download');
     });
-}); // END Route perawatan with role_or_permission-based access
+}); // END Route::middleware('role:super admin')->prefix('perawatan')
 
 // ===================================
 // PERAWATAN GEDUNG - UNTUK KARYAWAN

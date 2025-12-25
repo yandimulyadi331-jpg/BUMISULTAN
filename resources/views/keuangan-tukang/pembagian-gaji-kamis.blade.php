@@ -16,6 +16,11 @@
                   <p class="text-muted mb-0">Periode: {{ $periodeText }}</p>
                </div>
                <div>
+                  <a href="{{ route('keuangan-tukang.download-laporan-pengajuan-gaji') }}?periode_mulai={{ $periode_mulai }}&periode_akhir={{ $periode_akhir }}" 
+                     class="btn btn-info btn-sm me-2"
+                     target="_blank">
+                     <i class="ti ti-file-text me-1"></i> Download Laporan Pengajuan
+                  </a>
                   <a href="{{ route('keuangan-tukang.download-laporan-gaji-kamis') }}?periode_mulai={{ $periode_mulai }}&periode_akhir={{ $periode_akhir }}" 
                      class="btn btn-success btn-sm me-2"
                      target="_blank">

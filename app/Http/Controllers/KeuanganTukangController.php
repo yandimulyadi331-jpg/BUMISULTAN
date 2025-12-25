@@ -829,7 +829,7 @@ class KeuanganTukangController extends Controller
      */
     public function pembagianGajiKamis(Request $request)
     {
-        // Hitung periode minggu ini (Sabtu minggu lalu s/d Jumat minggu ini)
+        // Hitung periode minggu ini (Sabtu minggu lalu s/d Kamis jam 10:00)
         $today = Carbon::now();
         
         // Cari Kamis terakhir atau hari ini jika Kamis
@@ -838,9 +838,16 @@ class KeuanganTukangController extends Controller
             $kamis->subDay();
         }
         
-        // Periode: Sabtu minggu lalu s/d Jumat minggu ini
-        $periodeAkhir = $kamis->copy()->subDay(); // Jumat
-        $periodeMulai = $periodeAkhir->copy()->subDays(6); // Sabtu minggu lalu
+        // PERUBAHAN: Periode sampai Kamis jam 10:00 (bukan Jumat)
+        // Jika sekarang hari Kamis dan sudah lewat jam 10:00, gunakan Kamis ini
+        // Jika belum jam 10:00 atau belum Kamis, gunakan Kamis minggu lalu
+        if ($today->dayOfWeek === Carbon::THURSDAY && $today->hour >= 10) {
+            $periodeAkhir = $today->copy(); // Kamis hari ini
+        } else {
+            $periodeAkhir = $kamis->copy(); // Kamis minggu lalu
+        }
+        
+        $periodeMulai = $periodeAkhir->copy()->subDays(5); // Sabtu minggu lalu (6 hari termasuk Kamis = Sabtu-Kamis)
         
         // Ambil semua tukang aktif
         $tukangs = Tukang::where('status', 'aktif')
@@ -1136,6 +1143,88 @@ class KeuanganTukangController extends Controller
         $pdf->setPaper('A4', 'landscape');
         
         $filename = 'Laporan-Gaji-Kamis-' . $periodeAkhir->format('d-M-Y') . '.pdf';
+        
+        return $pdf->download($filename);
+    }
+    
+    /**
+     * Download Laporan Pengajuan Gaji (Detail Kehadiran & Potongan)
+     */
+    public function downloadLaporanPengajuanGaji(Request $request)
+    {
+        $periodeMulai = Carbon::parse($request->periode_mulai);
+        $periodeAkhir = Carbon::parse($request->periode_akhir);
+        
+        // Ambil semua tukang aktif
+        $tukangs = Tukang::where('status', 'aktif')
+                        ->orderBy('kode_tukang')
+                        ->get();
+        
+        $dataLaporan = [];
+        
+        // Untuk setiap tukang, kumpulkan detail kehadiran dan potongan
+        foreach ($tukangs as $tukang) {
+            // Detail kehadiran per hari
+            $kehadirans = KehadiranTukang::where('tukang_id', $tukang->id)
+                                       ->whereBetween('tanggal', [$periodeMulai, $periodeAkhir])
+                                       ->orderBy('tanggal')
+                                       ->get();
+            
+            // Detail pinjaman aktif
+            $pinjamanAktif = PinjamanTukang::where('tukang_id', $tukang->id)
+                                          ->where('status', 'aktif')
+                                          ->get();
+            
+            // Detail potongan lain
+            $potonganLain = PotonganTukang::where('tukang_id', $tukang->id)
+                                         ->whereDate('tanggal', '>=', $periodeMulai)
+                                         ->whereDate('tanggal', '<=', $periodeAkhir)
+                                         ->get();
+            
+            // Hitung total
+            $totalUpahHarian = $kehadirans->sum('upah_harian');
+            $totalUpahLembur = $kehadirans->where('lembur', '!=', 'tidak')->sum('upah_lembur');
+            $lemburCashTerbayar = $kehadirans->where('lembur_dibayar_cash', true)->sum('upah_lembur');
+            
+            $totalPotonganPinjaman = $pinjamanAktif->sum('cicilan_per_minggu');
+            $totalPotonganLain = $potonganLain->sum('jumlah');
+            $totalPotongan = $totalPotonganPinjaman + $totalPotonganLain;
+            
+            $totalKotor = $totalUpahHarian + ($totalUpahLembur - $lemburCashTerbayar);
+            $totalNett = $totalKotor - $totalPotongan;
+            
+            // Hitung jumlah hari hadir
+            $jumlahHadir = $kehadirans->where('status', 'hadir')->count();
+            
+            $dataLaporan[] = [
+                'tukang' => $tukang,
+                'kehadirans' => $kehadirans,
+                'jumlah_hadir' => $jumlahHadir,
+                'pinjamanAktif' => $pinjamanAktif,
+                'potonganLain' => $potonganLain,
+                'total_upah_harian' => $totalUpahHarian,
+                'total_upah_lembur' => $totalUpahLembur,
+                'lembur_cash_terbayar' => $lemburCashTerbayar,
+                'total_kotor' => $totalKotor,
+                'total_potongan_pinjaman' => $totalPotonganPinjaman,
+                'total_potongan_lain' => $totalPotonganLain,
+                'total_potongan' => $totalPotongan,
+                'total_nett' => $totalNett
+            ];
+        }
+        
+        $data = [
+            'dataLaporan' => $dataLaporan,
+            'periode_mulai' => $periodeMulai->format('Y-m-d'),
+            'periode_akhir' => $periodeAkhir->format('Y-m-d'),
+            'periodeText' => $periodeMulai->format('d M Y') . ' - ' . $periodeAkhir->format('d M Y'),
+            'tanggalCetak' => Carbon::now()->format('d F Y, H:i')
+        ];
+        
+        $pdf = \PDF::loadView('keuangan-tukang.laporan-pengajuan-gaji-pdf', $data);
+        $pdf->setPaper('A4', 'landscape');
+        
+        $filename = 'Laporan-Pengajuan-Gaji-' . $periodeAkhir->format('d-M-Y') . '.pdf';
         
         return $pdf->download($filename);
     }
