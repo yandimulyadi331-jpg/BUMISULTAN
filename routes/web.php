@@ -90,6 +90,7 @@ use App\Http\Controllers\ManajemenPerawatanController;
 use App\Http\Controllers\PerawatanKaryawanController;
 use App\Http\Controllers\InventarisPeralatanKaryawanController;
 use App\Http\Controllers\TemuanController;
+use App\Http\Controllers\BarangKeluarController;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Role;
 
@@ -1748,6 +1749,25 @@ Route::middleware('role:super admin')->prefix('perawatan')->name('perawatan.')->
         Route::post('/generate', 'generateLaporan')->name('generate');
         Route::get('/{id}/download', 'downloadLaporan')->name('download');
     });
+});
+
+// ===================================
+// TRACKING BARANG KELUAR (Laundry, Perbaikan, dll)
+// ===================================
+Route::middleware('role:super admin')->prefix('barang-keluar')->name('barang-keluar.')->controller(BarangKeluarController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::get('/create', 'create')->name('create');
+    Route::post('/', 'store')->name('store');
+    Route::get('/{id}', 'show')->name('show');
+    Route::get('/{id}/edit', 'edit')->name('edit');
+    Route::put('/{id}', 'update')->name('update');
+    Route::delete('/{id}', 'destroy')->name('destroy');
+    
+    // Additional routes
+    Route::put('/{id}/update-status', 'updateStatus')->name('update-status');
+    Route::delete('/{id}/delete-foto', 'deleteFoto')->name('delete-foto');
+    Route::get('/export/pdf', 'exportPdf')->name('export-pdf');
+    Route::get('/dashboard/stats', 'dashboard')->name('dashboard');
 }); // END Route::middleware('role:super admin')->prefix('perawatan')
 
 // ===================================

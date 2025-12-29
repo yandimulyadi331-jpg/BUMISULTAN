@@ -526,6 +526,16 @@
             </li>
         @endif
 
+        <!-- Tracking Barang Keluar -->
+        @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('barang-keluar.index'))
+            <li class="menu-item {{ request()->is(['barang-keluar', 'barang-keluar/*']) ? 'active' : '' }}">
+                <a href="{{ route('barang-keluar.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons ti ti-package-export"></i>
+                    <div>Tracking Barang Keluar</div>
+                </a>
+            </li>
+        @endif
+
         <!-- Temuan -->
         @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('temuan.index'))
             <li class="menu-item {{ request()->is(['temuan', 'temuan/*']) ? 'active' : '' }}">
