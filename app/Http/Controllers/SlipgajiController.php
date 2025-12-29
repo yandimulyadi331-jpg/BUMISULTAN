@@ -102,6 +102,7 @@ class SlipgajiController extends Controller
                 ->first();
                 
             if (!$slipGaji) {
+                \Log::error('Slip gaji tidak ditemukan', ['bulan' => $bulan, 'tahun' => $tahun]);
                 return Redirect::back()->with(messageError('Slip gaji tidak ditemukan'));
             }
 
@@ -112,8 +113,14 @@ class SlipgajiController extends Controller
                 ->get();
 
             if ($karyawan->count() == 0) {
+                \Log::warning('Tidak ada karyawan dengan email yang terdaftar');
                 return Redirect::back()->with(messageError('Tidak ada karyawan dengan email yang terdaftar'));
             }
+
+            \Log::info('Mulai kirim slip gaji email', [
+                'periode' => getNamabulan($bulan) . ' ' . $tahun,
+                'jumlah_karyawan' => $karyawan->count()
+            ]);
 
             $berhasil = 0;
             $gagal = 0;
@@ -132,21 +139,45 @@ class SlipgajiController extends Controller
                         unlink($pdfPath);
                     }
                     
+                    \Log::info('Email slip gaji berhasil dikirim', [
+                        'karyawan' => $k->nama_karyawan,
+                        'email' => $k->email,
+                        'nik' => $k->nik
+                    ]);
+                    
                     $berhasil++;
                 } catch (\Exception $e) {
                     $gagal++;
-                    $errors[] = "Gagal kirim ke {$k->nama_karyawan}: " . $e->getMessage();
+                    $errorMsg = "Gagal kirim ke {$k->nama_karyawan} ({$k->email}): " . $e->getMessage();
+                    $errors[] = $errorMsg;
+                    
+                    \Log::error('Email slip gaji gagal dikirim', [
+                        'karyawan' => $k->nama_karyawan,
+                        'email' => $k->email,
+                        'nik' => $k->nik,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
                 }
             }
 
             $message = "Berhasil mengirim slip gaji ke {$berhasil} karyawan";
             if ($gagal > 0) {
-                $message .= ", {$gagal} gagal";
+                $message .= ", {$gagal} gagal. Cek log untuk detail error.";
+                \Log::warning('Ringkasan pengiriman slip gaji', [
+                    'berhasil' => $berhasil,
+                    'gagal' => $gagal,
+                    'errors' => $errors
+                ]);
             }
 
-            return Redirect::back()->with(messageSuccess($message));
+            return Redirect::back()->with($gagal > 0 ? messageWarning($message) : messageSuccess($message));
         } catch (\Exception $e) {
-            return Redirect::back()->with(messageError('Error: ' . $e->getMessage()));
+            \Log::error('Error fatal saat kirim slip gaji email', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return Redirect::back()->with(messageError('Error: ' . $e->getMessage() . '. Silakan cek konfigurasi email di .env'));
         }
     }
 
@@ -161,22 +192,42 @@ class SlipgajiController extends Controller
             $karyawan = Karyawan::where('nik', $nik)->first();
             
             if (!$karyawan) {
+                \Log::error('Karyawan tidak ditemukan', ['nik' => $nik]);
                 return Redirect::back()->with(messageError('Karyawan tidak ditemukan'));
             }
 
             if (empty($karyawan->email)) {
+                \Log::error('Email karyawan tidak terdaftar', ['nik' => $nik, 'nama' => $karyawan->nama_karyawan]);
                 return Redirect::back()->with(messageError('Email karyawan tidak terdaftar'));
             }
 
             // Generate PDF slip gaji
-            $pdfPath = null;
+            $pdfPath = $this->generateSlipGajiPDF($nik, $bulan, $tahun);
+            
+            \Log::info('Mengirim slip gaji single', [
+                'nik' => $nik,
+                'nama' => $karyawan->nama_karyawan,
+                'email' => $karyawan->email,
+                'periode' => getNamabulan($bulan) . ' ' . $tahun
+            ]);
             
             // Kirim email
             Mail::to($karyawan->email)->send(new SlipGajiMail($karyawan, $bulan, $tahun, $pdfPath));
+            
+            // Hapus file PDF setelah dikirim
+            if ($pdfPath && file_exists($pdfPath)) {
+                unlink($pdfPath);
+            }
 
+            \Log::info('Slip gaji single berhasil dikirim', ['email' => $karyawan->email]);
             return Redirect::back()->with(messageSuccess("Slip gaji berhasil dikirim ke email {$karyawan->email}"));
         } catch (\Exception $e) {
-            return Redirect::back()->with(messageError('Error: ' . $e->getMessage()));
+            \Log::error('Error kirim slip gaji single', [
+                'nik' => $nik ?? 'unknown',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return Redirect::back()->with(messageError('Error: ' . $e->getMessage() . '. Silakan cek konfigurasi email dan log error.'));
         }
     }
 
