@@ -204,9 +204,9 @@
                          </li>
                      @endif
                      @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('potongan_pinjaman.index'))
-                         <li class="menu-item {{ request()->is(['potongan-pinjaman', 'potongan-pinjaman/*']) ? 'active' : '' }}">
-                             <a href="{{ route('potongan_pinjaman.index') }}" class="menu-link">
-                                 <div>Potongan Pinjaman</div>
+                        <li class="menu-item {{ request()->is(['payroll/potongan-pinjaman-master', 'payroll/potongan-pinjaman-master/*']) ? 'active' : '' }}">
+                            <a href="{{ route('potongan_pinjaman_master.index') }}" class="menu-link">
+                                <div>Potongan Pinjaman Payroll</div>
                              </a>
                          </li>
                      @endif

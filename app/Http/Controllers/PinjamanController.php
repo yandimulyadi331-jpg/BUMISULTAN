@@ -10,6 +10,8 @@ use App\Models\Karyawan;
 use App\Models\TransaksiKeuangan;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use App\Models\PotonganPinjamanMaster;
+use App\Models\PotonganPinjamanDetail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
@@ -483,10 +485,86 @@ class PinjamanController extends Controller
 
             $pinjaman->logHistory('cairkan', $statusLama, 'dicairkan', 'Pinjaman berhasil dicairkan');
 
+            // AUTO-CREATE POTONGAN PINJAMAN PAYROLL (jika crew dan checkbox dicentang)
+            if ($request->has('buat_potongan_payroll') && $pinjaman->kategori_peminjam == 'crew' && $pinjaman->karyawan_id) {
+                try {
+                    // Generate kode potongan
+                    $kodePotongan = PotonganPinjamanMaster::generateKode();
+                    
+                    // Calculate periode selesai
+                    $startDate = \Carbon\Carbon::create($validated['tanggal_pencairan']);
+                    $periodeSelesai = PotonganPinjamanMaster::calculatePeriodeSelesai(
+                        $startDate->month,
+                        $startDate->year,
+                        $pinjaman->tenor_bulan
+                    );
+                    
+                    // Create master potongan
+                    $master = PotonganPinjamanMaster::create([
+                        'kode_potongan' => $kodePotongan,
+                        'nik' => $pinjaman->karyawan_id,
+                        'pinjaman_id' => $pinjaman->id,
+                        'jumlah_pinjaman' => $pinjaman->jumlah_disetujui,
+                        'cicilan_per_bulan' => $pinjaman->cicilan_per_bulan,
+                        'jumlah_bulan' => $pinjaman->tenor_bulan,
+                        'bulan_mulai' => $startDate->month,
+                        'tahun_mulai' => $startDate->year,
+                        'bulan_selesai' => $periodeSelesai['bulan_selesai'],
+                        'tahun_selesai' => $periodeSelesai['tahun_selesai'],
+                        'tanggal_potongan' => $pinjaman->tanggal_jatuh_tempo_setiap_bulan ?? 25,
+                        'sisa_pinjaman' => $pinjaman->jumlah_disetujui,
+                        'status' => 'aktif',
+                        'keterangan' => 'Auto-generated dari Pinjaman ' . $pinjaman->nomor_pinjaman,
+                        'dibuat_oleh' => auth()->id(),
+                    ]);
+                    
+                    // Generate detail cicilan
+                    $sisaPinjaman = $pinjaman->jumlah_disetujui;
+                    for ($i = 1; $i <= $pinjaman->tenor_bulan; $i++) {
+                        $currentDate = $startDate->copy()->addMonths($i - 1);
+                        
+                        // Calculate tanggal jatuh tempo
+                        $tanggalJatuhTempo = \Carbon\Carbon::create(
+                            $currentDate->year,
+                            $currentDate->month,
+                            min($pinjaman->tanggal_jatuh_tempo_setiap_bulan ?? 25, $currentDate->daysInMonth)
+                        );
+                        
+                        // Hitung jumlah cicilan (cicilan terakhir mungkin berbeda)
+                        $jumlahCicilan = $pinjaman->cicilan_per_bulan;
+                        if ($i == $pinjaman->tenor_bulan) {
+                            $jumlahCicilan = $sisaPinjaman;
+                        }
+                        
+                        PotonganPinjamanDetail::create([
+                            'master_id' => $master->id,
+                            'bulan' => $currentDate->month,
+                            'tahun' => $currentDate->year,
+                            'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
+                            'jumlah_potongan' => $jumlahCicilan,
+                            'cicilan_ke' => $i,
+                            'status' => 'pending',
+                            'keterangan' => "Auto-generated dari pinjaman {$pinjaman->nomor_pinjaman} - Cicilan ke-{$i}",
+                        ]);
+                        
+                        $sisaPinjaman -= $jumlahCicilan;
+                    }
+                    
+                } catch (\Exception $e) {
+                    // Log error tapi jangan rollback (pencairan tetap jalan)
+                    \Log::error('Gagal create potongan payroll: ' . $e->getMessage());
+                }
+            }
+
             DB::commit();
 
+            $successMessage = 'Pinjaman berhasil dicairkan dan jadwal cicilan telah dibuat';
+            if ($request->has('buat_potongan_payroll')) {
+                $successMessage .= '. Potongan pinjaman payroll juga telah dibuat otomatis.';
+            }
+
             return redirect()->route('pinjaman.show', $pinjaman->id)
-                ->with('success', 'Pinjaman berhasil dicairkan dan jadwal cicilan telah dibuat');
+                ->with('success', $successMessage);
 
         } catch (\Exception $e) {
             DB::rollBack();

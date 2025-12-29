@@ -16,6 +16,7 @@ use App\Models\Pengaturanumum;
 use App\Models\Presensi;
 use App\Models\User;
 use App\Models\Userkaryawan;
+use App\Services\PotonganPinjamanService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -163,17 +164,21 @@ class LaporanController extends Controller
             ->where('bulan', $request->bulan)
             ->where('tahun', $request->tahun);
 
-        // Ambil data potongan pinjaman
-        $potongan_pinjaman = DB::table('potongan_pinjaman_payroll')
+        // AUTO-PROCESS potongan pinjaman yang sudah jatuh tempo
+        PotonganPinjamanService::processPendingPotongan($request->bulan, $request->tahun);
+
+        // Ambil data potongan pinjaman dari sistem baru
+        $potongan_pinjaman = DB::table('potongan_pinjaman_detail')
+            ->join('potongan_pinjaman_master', 'potongan_pinjaman_detail.master_id', '=', 'potongan_pinjaman_master.id')
             ->select(
-                'nik',
-                DB::raw('SUM(jumlah_potongan) as total_potongan_pinjaman'),
+                'potongan_pinjaman_master.nik',
+                DB::raw('SUM(potongan_pinjaman_detail.jumlah_potongan) as total_potongan_pinjaman'),
                 DB::raw('COUNT(*) as jumlah_cicilan')
             )
-            ->where('bulan', $request->bulan)
-            ->where('tahun', $request->tahun)
-            ->where('status', 'dipotong')
-            ->groupBy('nik');
+            ->where('potongan_pinjaman_detail.bulan', $request->bulan)
+            ->where('potongan_pinjaman_detail.tahun', $request->tahun)
+            ->where('potongan_pinjaman_detail.status', 'dipotong')
+            ->groupBy('potongan_pinjaman_master.nik');
 
         $q_presensi = Karyawan::query();
         $q_presensi->select(

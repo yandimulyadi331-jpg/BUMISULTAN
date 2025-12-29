@@ -28,6 +28,7 @@ use App\Http\Controllers\LemburController;
 use App\Http\Controllers\PengajuanizinController;
 use App\Http\Controllers\PenyesuaiangajiController;
 use App\Http\Controllers\PotonganPinjamanPayrollController;
+use App\Http\Controllers\PotonganPinjamanMasterController;
 use App\Http\Controllers\Permission_groupController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PresensiController;
@@ -448,12 +449,33 @@ Route::middleware('auth')->group(function () {
     });
 
 
+    // Route OLD System - Potongan Pinjaman Payroll (Auto dari Cicilan)
     Route::controller(PotonganPinjamanPayrollController::class)->group(function () {
-        Route::get('/potongan-pinjaman', 'index')->name('potongan_pinjaman.index')->can('potongan_pinjaman.index');
+        Route::get('/potongan-pinjaman-old', 'index')->name('potongan_pinjaman.index')->can('potongan_pinjaman.index');
         Route::post('/potongan-pinjaman/generate', 'generate')->name('potongan_pinjaman.generate')->can('potongan_pinjaman.generate');
         Route::post('/potongan-pinjaman/proses', 'proses')->name('potongan_pinjaman.proses')->can('potongan_pinjaman.proses');
         Route::delete('/potongan-pinjaman/delete-periode', 'deleteByPeriode')->name('potongan_pinjaman.deletePeriode')->can('potongan_pinjaman.delete');
         Route::get('/potongan-pinjaman/get-by-nik/{nik}', 'getPotonganByNik')->name('potongan_pinjaman.getByNik')->can('slipgaji.index');
+    });
+
+    // Route NEW System - Potongan Pinjaman Master (Manual Input seperti BPJS)
+    Route::controller(PotonganPinjamanMasterController::class)->group(function () {
+        // Proses Bulanan (harus di atas route {id} agar tidak bentrok)
+        Route::get('/payroll/potongan-pinjaman-master/proses', 'proses')->name('potongan_pinjaman_master.proses');
+        Route::post('/payroll/potongan-pinjaman-master/generate-detail', 'generateDetail')->name('potongan_pinjaman_master.generateDetail');
+        Route::post('/payroll/potongan-pinjaman-master/proses-potongan', 'prosesPotongan')->name('potongan_pinjaman_master.prosesPotongan');
+        Route::delete('/payroll/potongan-pinjaman-master/delete-periode', 'deletePeriode')->name('potongan_pinjaman_master.deletePeriode');
+        
+        // API untuk slip gaji
+        Route::get('/payroll/potongan-pinjaman-master/get-by-nik/{nik}/{bulan}/{tahun}', 'getPotonganByNik')->name('potongan_pinjaman_master.getByNik');
+        
+        // CRUD (harus di bawah route spesifik)
+        Route::get('/payroll/potongan-pinjaman-master', 'index')->name('potongan_pinjaman_master.index');
+        Route::get('/payroll/potongan-pinjaman-master/create', 'create')->name('potongan_pinjaman_master.create');
+        Route::post('/payroll/potongan-pinjaman-master', 'store')->name('potongan_pinjaman_master.store');
+        Route::get('/payroll/potongan-pinjaman-master/{id}/edit', 'edit')->name('potongan_pinjaman_master.edit');
+        Route::put('/payroll/potongan-pinjaman-master/{id}', 'update')->name('potongan_pinjaman_master.update');
+        Route::delete('/payroll/potongan-pinjaman-master/{id}', 'destroy')->name('potongan_pinjaman_master.delete');
     });
 
     Route::controller(SlipgajiController::class)->group(function () {

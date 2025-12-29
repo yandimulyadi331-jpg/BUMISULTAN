@@ -13,6 +13,7 @@
         "barryvdh/laravel-dompdf": "^3.1",
         "endroid/qr-code": "^5.0",
         "google/apiclient": "^2.18",
+        "google/apiclient-services": "*",
         "guzzlehttp/guzzle": "^7.2",
         "intervention/image": "^3.11",
         "jenssegers/agent": "^2.6",

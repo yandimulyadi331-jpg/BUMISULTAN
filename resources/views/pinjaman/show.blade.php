@@ -943,6 +943,23 @@
                         <label class="form-label">Bukti Pencairan</label>
                         <input type="file" name="bukti_pencairan" class="form-control" accept="image/*,.pdf">
                     </div>
+                    
+                    @if($pinjaman->kategori_peminjam == 'crew' && $pinjaman->karyawan_id)
+                    <div class="mb-3">
+                        <div class="alert alert-primary">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="buat_potongan_payroll" id="buat_potongan_payroll" value="1" checked>
+                                <label class="form-check-label" for="buat_potongan_payroll">
+                                    <strong><i class="bi bi-credit-card"></i> Buat Potongan Pinjaman Otomatis di Payroll</strong>
+                                </label>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                Jika dicentang, sistem akan otomatis membuat potongan pinjaman di payroll dengan cicilan <strong>Rp {{ number_format($pinjaman->cicilan_per_bulan, 0, ',', '.') }}/bulan</strong> selama <strong>{{ $pinjaman->tenor_bulan }} bulan</strong>.
+                                <br>Potongan akan dipotong otomatis setiap tanggal <strong>{{ $pinjaman->tanggal_jatuh_tempo_setiap_bulan }}</strong>.
+                            </small>
+                        </div>
+                    </div>
+                    @endif
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
