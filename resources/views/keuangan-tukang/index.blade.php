@@ -1,6 +1,25 @@
 @extends('layouts.app')
 @section('titlepage', 'Keuangan Tukang')
 
+@push('styles')
+<style>
+   .form-check-input {
+      width: 2.5rem;
+      height: 1.25rem;
+   }
+   .total-bersih-amount {
+      transition: background-color 0.5s ease, transform 0.3s ease;
+   }
+   .cicilan-amount {
+      transition: all 0.3s ease;
+   }
+   @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+   }
+</style>
+@endpush
+
 @section('content')
 @section('navigasi')
    <span class="text-muted fw-light">Manajemen Tukang /</span> Keuangan Tukang
@@ -78,29 +97,33 @@
                            <td class="text-end text-danger">
                               Rp {{ number_format($tukang->total_potongan, 0, ',', '.') }}
                            </td>
-                           <td class="text-end text-warning">
+                           <td class="text-end text-warning cicilan-amount" id="cicilan-{{ $tukang->id }}">
                               @if($tukang->pinjaman_aktif > 0 && $tukang->cicilan_mingguan > 0 && $tukang->auto_potong_pinjaman)
                                  Rp {{ number_format($tukang->cicilan_mingguan, 0, ',', '.') }}
                               @else
                                  <span class="text-muted">-</span>
                               @endif
                            </td>
-                           <td class="text-end">
-                              <strong class="{{ $tukang->total_bersih >= 0 ? 'text-success' : 'text-danger' }}">
+                           <td class="text-end" id="row-tukang-{{ $tukang->id }}">
+                              <strong class="total-bersih-amount {{ $tukang->total_bersih >= 0 ? 'text-success' : 'text-danger' }}">
                                  Rp {{ number_format($tukang->total_bersih, 0, ',', '.') }}
                               </strong>
                            </td>
                            <td class="text-center">
-                              @if($tukang->pinjaman_aktif > 0 && $tukang->cicilan_mingguan > 0)
-                                 <div class="form-check form-switch d-flex justify-content-center">
-                                    <input class="form-check-input" type="checkbox" role="switch" 
-                                           id="switch{{ $tukang->id }}" 
-                                           {{ $tukang->auto_potong_pinjaman ? 'checked' : '' }}
-                                           onchange="togglePotongan({{ $tukang->id }}, '{{ $tukang->nama_tukang }}')">
-                                 </div>
-                              @else
-                                 <span class="text-muted">-</span>
-                              @endif
+                              <div class="form-check form-switch d-flex justify-content-center">
+                                 <input class="form-check-input" type="checkbox" role="switch" 
+                                        id="switch{{ $tukang->id }}" 
+                                        {{ $tukang->auto_potong_pinjaman ? 'checked' : '' }}
+                                        onchange="togglePotongan({{ $tukang->id }}, '{{ $tukang->nama_tukang }}')"
+                                        style="cursor: pointer;">
+                              </div>
+                              <small id="badge-{{ $tukang->id }}" class="d-block mt-1">
+                                 @if($tukang->auto_potong_pinjaman)
+                                    <span class="badge bg-success">AKTIF</span>
+                                 @else
+                                    <span class="badge bg-secondary">NONAKTIF</span>
+                                 @endif
+                              </small>
                            </td>
                            <td class="text-center">
                               <div class="dropdown">
@@ -309,24 +332,30 @@ function togglePotongan(tukangId, namaTukang) {
             if (data.success) {
                // ✅ UPDATE UI REAL-TIME JIKA ADA DATA RECALCULATED
                if (data.data && data.data.total_bersih !== undefined) {
-                  // Update angka-angka di row tukang
-                  const row = document.getElementById('row-tukang-' + tukangId);
-                  if (row) {
-                     // Update cicilan
-                     const cicilanCell = row.querySelector('.cicilan-amount');
-                     if (cicilanCell) {
-                        cicilanCell.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(data.data.cicilan);
+                  // Update cicilan
+                  const cicilanCell = document.getElementById('cicilan-' + tukangId);
+                  if (cicilanCell) {
+                     if (data.data.cicilan > 0) {
+                        cicilanCell.innerHTML = 'Rp ' + new Intl.NumberFormat('id-ID').format(data.data.cicilan);
+                        cicilanCell.className = 'text-end text-warning cicilan-amount';
+                     } else {
+                        cicilanCell.innerHTML = '<span class="text-muted">-</span>';
+                        cicilanCell.className = 'text-end text-warning cicilan-amount';
                      }
-                     
-                     // Update total bersih
-                     const totalBersihCell = row.querySelector('.total-bersih-amount');
+                  }
+                  
+                  // Update total bersih
+                  const totalBersihRow = document.getElementById('row-tukang-' + tukangId);
+                  if (totalBersihRow) {
+                     const totalBersihCell = totalBersihRow.querySelector('.total-bersih-amount');
                      if (totalBersihCell) {
                         totalBersihCell.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(data.data.total_bersih);
                         
                         // Animasi perubahan angka
-                        totalBersihCell.classList.add('text-success', 'fw-bold');
+                        totalBersihCell.classList.add('fw-bold');
+                        totalBersihCell.style.backgroundColor = '#d4edda';
                         setTimeout(() => {
-                           totalBersihCell.classList.remove('text-success', 'fw-bold');
+                           totalBersihCell.style.backgroundColor = '';
                         }, 2000);
                      }
                   }
