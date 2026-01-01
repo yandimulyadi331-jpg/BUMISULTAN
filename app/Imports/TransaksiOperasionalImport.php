@@ -18,6 +18,7 @@ class TransaksiOperasionalImport implements ToCollection, WithHeadingRow, WithSt
     protected $pengajuanId;
     protected $errors = [];
     protected $rowNumber = 0;
+    protected $lastValidDate = null; // Track tanggal terakhir yang valid untuk auto-fill
 
     public function __construct($pengajuanId = null)
     {
@@ -104,6 +105,11 @@ class TransaksiOperasionalImport implements ToCollection, WithHeadingRow, WithSt
             
             // Parse tanggal
             $tanggal = $this->parseTanggal($tanggalInput);
+            
+            // Update last valid date untuk baris berikutnya
+            if (!empty($tanggalInput)) {
+                $this->lastValidDate = $tanggal;
+            }
             
             // AI Auto-detect kategori
             $kategori = $this->detectKategori($keterangan);
@@ -219,11 +225,17 @@ class TransaksiOperasionalImport implements ToCollection, WithHeadingRow, WithSt
 
     /**
      * Parse berbagai format tanggal
+     * FITUR BARU: Auto-fill tanggal kosong dengan tanggal terakhir yang valid
      */
     private function parseTanggal($value)
     {
-        // Jika tidak ada input tanggal, gunakan hari ini
+        // Jika tidak ada input tanggal, gunakan tanggal terakhir yang valid
         if (empty($value)) {
+            // Jika ada tanggal terakhir yang valid, gunakan itu
+            if ($this->lastValidDate !== null) {
+                return $this->lastValidDate;
+            }
+            // Jika belum ada tanggal sama sekali, gunakan hari ini
             return Carbon::now();
         }
 
@@ -247,7 +259,10 @@ class TransaksiOperasionalImport implements ToCollection, WithHeadingRow, WithSt
             return Carbon::parse($value);
             
         } catch (\Exception $e) {
-            // Default ke hari ini jika gagal parse
+            // Jika gagal parse, gunakan tanggal terakhir yang valid atau hari ini
+            if ($this->lastValidDate !== null) {
+                return $this->lastValidDate;
+            }
             return Carbon::now();
         }
     }

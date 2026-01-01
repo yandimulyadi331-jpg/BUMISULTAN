@@ -302,15 +302,17 @@ class DanaOperasionalController extends Controller
             ['5. Nominal tanpa titik/koma, contoh: 150000 bukan 150.000'],
             ['6. Sistem otomatis deteksi kategori dari keterangan (Transport, ATK, Konsumsi, dll)'],
             ['7. Urutan baris = urutan tampil di sistem, jadi atur sesuai kronologi waktu'],
+            ['8. ✨ FITUR BARU: Tanggal boleh dikosongkan! Baris kosong otomatis pakai tanggal baris di atasnya'],
             [''],
             ['CONTOH DATA - HAPUS BARIS INI DAN ISI DATA ANDA DI BAWAH'],
             [''],
             ['Tanggal', 'Keterangan', 'Dana Masuk', 'Dana Keluar'],
             ['2025-01-01', 'Saldo awal kas Januari 2025', '10000000', ''],
             ['2025-01-02', 'Pembelian ATK (pulpen, buku, map)', '', '150000'],
-            ['2025-01-02', 'Bensin motor operasional', '', '50000'],
+            ['', 'Bensin motor operasional', '', '50000'],
+            ['', 'Bayar parkir kendaraan', '', '5000'],
             ['2025-01-03', 'Transfer dari kas pusat', '5000000', ''],
-            ['2025-01-03', 'Bayar listrik bulan Desember', '', '250000'],
+            ['', 'Bayar listrik bulan Desember', '', '250000'],
             ['2025-01-04', 'Konsumsi rapat mingguan', '', '75000'],
             ['2025-01-05', 'Servis kendaraan operasional', '', '350000'],
         ];
@@ -330,7 +332,8 @@ class DanaOperasionalController extends Controller
                 $sheet->mergeCells('A7:D7');
                 $sheet->mergeCells('A8:D8');
                 $sheet->mergeCells('A9:D9');
-                $sheet->mergeCells('A11:D11');
+                $sheet->mergeCells('A10:D10');
+                $sheet->mergeCells('A12:D12');
                 
                 // Set column width
                 $sheet->getColumnDimension('A')->setWidth(15);
@@ -346,7 +349,7 @@ class DanaOperasionalController extends Controller
                     // Panduan - Orange
                     2 => ['font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FF6B00']], 'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFF4E6']]],
                     
-                    // Petunjuk 1-7
+                    // Petunjuk 1-10
                     3 => ['font' => ['size' => 10, 'color' => ['rgb' => '0070C0']]],
                     4 => ['font' => ['size' => 10, 'color' => ['rgb' => '0070C0']]],
                     5 => ['font' => ['size' => 10, 'color' => ['rgb' => '0070C0']]],
@@ -354,21 +357,23 @@ class DanaOperasionalController extends Controller
                     7 => ['font' => ['size' => 10, 'color' => ['rgb' => 'C00000']], 'font' => ['bold' => true]],
                     8 => ['font' => ['size' => 10, 'color' => ['rgb' => '0070C0']]],
                     9 => ['font' => ['size' => 10, 'color' => ['rgb' => '00B050']], 'font' => ['bold' => true]],
+                    10 => ['font' => ['size' => 11, 'color' => ['rgb' => 'FF6B00'], 'bold' => true], 'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFEB9C']]],
                     
                     // Warning - Merah bold
-                    11 => ['font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'C00000']], 'alignment' => ['horizontal' => 'center']],
+                    12 => ['font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']], 'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'C00000']], 'alignment' => ['horizontal' => 'center']],
                     
                     // Header kolom - Kuning bold
-                    13 => ['font' => ['bold' => true, 'size' => 11], 'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFC000']], 'alignment' => ['horizontal' => 'center']],
+                    14 => ['font' => ['bold' => true, 'size' => 11], 'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFC000']], 'alignment' => ['horizontal' => 'center']],
                     
                     // Data contoh - Abu-abu muda
-                    14 => ['fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F2F2F2']]],
                     15 => ['fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F2F2F2']]],
                     16 => ['fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F2F2F2']]],
-                    17 => ['fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F2F2F2']]],
-                    18 => ['fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F2F2F2']]],
+                    17 => ['fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E8F5E9']]],
+                    18 => ['fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E8F5E9']]],
                     19 => ['fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F2F2F2']]],
                     20 => ['fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F2F2F2']]],
+                    21 => ['fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F2F2F2']]],
+                    22 => ['fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F2F2F2']]],
                 ];
             }
         }, 'Template_Import_Transaksi_Operasional.xlsx');
