@@ -186,7 +186,7 @@ class KeuanganTukangController extends Controller
                 if ($tukang->auto_potong_pinjaman) {
                     $cicilan = PinjamanTukang::where('tukang_id', $tukang_id)
                         ->where('status', 'aktif')
-                        ->whereColumn('total_dibayar', '<', 'total_pinjaman')
+                        ->where('sisa_pinjaman', '>', 0)
                         ->sum('cicilan_per_minggu');
                 }
                 
