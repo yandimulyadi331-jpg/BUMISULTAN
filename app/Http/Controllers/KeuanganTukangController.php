@@ -1263,7 +1263,11 @@ class KeuanganTukangController extends Controller
                 'total_potongan_pinjaman' => $totalPotonganPinjaman,
                 'total_potongan_lain' => $totalPotonganLain,
                 'total_potongan' => $totalPotongan,
-                'total_nett' => $totalNett
+                'total_nett' => $totalNett,
+                'periode' => [
+                    'sabtu' => $periodeMulai->format('Y-m-d'),
+                    'kamis' => $periodeAkhir->format('Y-m-d')
+                ]
             ];
         }
         
