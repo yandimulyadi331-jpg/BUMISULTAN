@@ -46,16 +46,17 @@
                <table class="table table-hover table-bordered">
                   <thead class="table-dark">
                      <tr>
-                        <th width="5%">No</th>
-                        <th width="8%">Kode</th>
-                        <th width="15%">Nama Tukang</th>
-                        <th width="12%">Upah Harian</th>
-                        <th width="12%">Upah Lembur</th>
-                        <th width="12%">Total Kotor</th>
-                        <th width="12%">Potongan</th>
-                        <th width="12%">Total Nett</th>
-                        <th width="10%">Status</th>
-                        <th width="12%">Aksi</th>
+                        <th width="4%">No</th>
+                        <th width="7%">Kode</th>
+                        <th width="13%">Nama Tukang</th>
+                        <th width="10%">Upah Harian</th>
+                        <th width="10%">Upah Lembur</th>
+                        <th width="10%">Total Kotor</th>
+                        <th width="10%">Potongan</th>
+                        <th width="10%">Total Nett</th>
+                        <th width="8%">Auto Potong</th>
+                        <th width="8%">Status</th>
+                        <th width="10%">Aksi</th>
                      </tr>
                   </thead>
                   <tbody>
@@ -80,8 +81,39 @@
                               @endif
                            </td>
                            <td><strong class="text-success">Rp {{ number_format($tukang->pembayaran->total_kotor, 0, ',', '.') }}</strong></td>
-                           <td class="text-danger">Rp {{ number_format($tukang->pembayaran->total_potongan, 0, ',', '.') }}</td>
-                           <td><strong class="text-primary">Rp {{ number_format($tukang->pembayaran->total_nett, 0, ',', '.') }}</strong></td>
+                           <td class="text-danger" id="potongan-{{ $tukang->id }}">
+                              Rp {{ number_format($tukang->pembayaran->total_potongan, 0, ',', '.') }}
+                           </td>
+                           <td id="total-nett-{{ $tukang->id }}">
+                              <strong class="text-primary">Rp {{ number_format($tukang->pembayaran->total_nett, 0, ',', '.') }}</strong>
+                           </td>
+                           <td class="text-center">
+                              @php
+                                 $hasPinjaman = \App\Models\PinjamanTukang::where('tukang_id', $tukang->id)
+                                    ->where('status', 'aktif')
+                                    ->exists();
+                              @endphp
+                              @if($hasPinjaman)
+                                 <div class="form-check form-switch d-flex justify-content-center">
+                                    <input class="form-check-input" 
+                                           type="checkbox" 
+                                           role="switch" 
+                                           id="toggle-{{ $tukang->id }}" 
+                                           {{ $tukang->auto_potong_pinjaman ? 'checked' : '' }}
+                                           onchange="toggleAutoPotong({{ $tukang->id }}, '{{ $tukang->nama_tukang }}')"
+                                           style="cursor: pointer; width: 2.5rem; height: 1.25rem;">
+                                 </div>
+                                 <small id="badge-toggle-{{ $tukang->id }}" class="d-block mt-1">
+                                    @if($tukang->auto_potong_pinjaman)
+                                       <span class="badge bg-success">AKTIF</span>
+                                    @else
+                                       <span class="badge bg-secondary">NONAKTIF</span>
+                                    @endif
+                                 </small>
+                              @else
+                                 <span class="badge bg-light text-muted">-</span>
+                              @endif
+                           </td>
                            <td class="text-center">
                               @if(is_object($tukang->pembayaran) && $tukang->pembayaran->status == 'lunas')
                                  <span class="badge bg-success">
@@ -115,9 +147,14 @@
                   @if($tukangs->count() > 0)
                      <tfoot class="table-light">
                         <tr>
-                           <th colspan="5" class="text-end">Total Keseluruhan:</th>
+                           <th colspan="6" class="text-end">Total Keseluruhan:</th>
                            <th>Rp {{ number_format($tukangs->sum('pembayaran.total_kotor'), 0, ',', '.') }}</th>
                            <th class="text-danger">Rp {{ number_format($tukangs->sum('pembayaran.total_potongan'), 0, ',', '.') }}</th>
+                           <th colspan="3" class="text-primary">
+                              <strong>Rp {{ number_format($tukangs->sum('pembayaran.total_nett'), 0, ',', '.') }}</strong>
+                           </th>
+                        </tr>
+                     </tfoot>
                            <th class="text-primary">Rp {{ number_format($tukangs->sum('pembayaran.total_nett'), 0, ',', '.') }}</th>
                            <th colspan="2"></th>
                         </tr>
@@ -228,6 +265,153 @@
 let signaturePad;
 let currentTukangId;
 let currentDetailGaji;
+
+// ✅ FUNGSI TOGGLE AUTO POTONG REAL-TIME
+function toggleAutoPotong(tukangId, namaTukang) {
+   const checkbox = document.getElementById('toggle-' + tukangId);
+   const status = checkbox.checked ? 'AKTIF' : 'NONAKTIF';
+   
+   Swal.fire({
+      title: 'Konfirmasi Perubahan',
+      html: `
+         <div style="text-align: left;">
+            <p><strong>Tukang:</strong> ${namaTukang}</p>
+            <p><strong>Status Auto Potong:</strong> <span style="color: ${checkbox.checked ? '#28a745' : '#ffc107'}; font-weight: bold;">${status}</span></p>
+            <hr>
+            <p style="font-size: 0.9em; color: #666;">
+               ${checkbox.checked 
+                  ? '✅ Cicilan pinjaman akan <strong>otomatis dipotong</strong> dari gaji' 
+                  : '⚠️ Cicilan pinjaman <strong>TIDAK akan dipotong</strong>, gaji diterima utuh'}
+            </p>
+         </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: checkbox.checked ? '#28a745' : '#ffc107',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Ya, Ubah!',
+      cancelButtonText: 'Batal',
+      reverseButtons: true
+   }).then((result) => {
+      if (result.isConfirmed) {
+         Swal.fire({
+            title: 'Memproses...',
+            html: 'Menghitung ulang potongan dan gaji bersih...',
+            allowOutsideClick: false,
+            didOpen: () => {
+               Swal.showLoading();
+            }
+         });
+         
+         // AJAX request
+         fetch(`{{ url('keuangan-tukang') }}/toggle-potongan-pinjaman/${tukangId}?periode={{ $periodeMulai->format('Y-m-d') }}|{{ $periodeAkhir->format('Y-m-d') }}`, {
+            method: 'POST',
+            headers: {
+               'Content-Type': 'application/json',
+               'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+         })
+         .then(response => response.json())
+         .then(data => {
+            if (data.success) {
+               // ✅ UPDATE UI REAL-TIME
+               if (data.data && data.data.total_bersih !== undefined) {
+                  // Update kolom POTONGAN
+                  const potonganCell = document.getElementById('potongan-' + tukangId);
+                  if (potonganCell) {
+                     const totalPotongan = data.data.potongan + data.data.cicilan;
+                     potonganCell.innerHTML = 'Rp ' + new Intl.NumberFormat('id-ID').format(totalPotongan);
+                     potonganCell.className = 'text-danger';
+                     
+                     // Animasi highlight
+                     potonganCell.style.backgroundColor = '#fff3cd';
+                     potonganCell.style.transition = 'background-color 0.5s ease';
+                     setTimeout(() => {
+                        potonganCell.style.backgroundColor = '';
+                     }, 2000);
+                  }
+                  
+                  // Update kolom TOTAL NETT
+                  const totalNettCell = document.getElementById('total-nett-' + tukangId);
+                  if (totalNettCell) {
+                     totalNettCell.innerHTML = '<strong class="text-primary">Rp ' + new Intl.NumberFormat('id-ID').format(data.data.total_bersih) + '</strong>';
+                     
+                     // Animasi highlight
+                     totalNettCell.style.backgroundColor = '#d4edda';
+                     totalNettCell.style.transition = 'background-color 0.5s ease';
+                     setTimeout(() => {
+                        totalNettCell.style.backgroundColor = '';
+                     }, 2000);
+                  }
+                  
+                  // Update badge status
+                  const badgeCell = document.getElementById('badge-toggle-' + tukangId);
+                  if (badgeCell) {
+                     badgeCell.innerHTML = data.status ? 
+                        '<span class="badge bg-success">AKTIF</span>' :
+                        '<span class="badge bg-secondary">NONAKTIF</span>';
+                  }
+               }
+               
+               // Success notification
+               Swal.fire({
+                  icon: 'success',
+                  title: 'Berhasil!',
+                  html: `
+                     <div style="text-align: left;">
+                        <p>${data.message}</p>
+                        ${data.data && data.data.total_bersih !== undefined ? `
+                           <hr>
+                           <p class="mb-1"><strong>Perhitungan Baru:</strong></p>
+                           <table style="width: 100%; font-size: 0.9em;">
+                              <tr>
+                                 <td>Upah + Lembur:</td>
+                                 <td class="text-end">Rp ${new Intl.NumberFormat('id-ID').format(data.data.upah_harian + data.data.lembur)}</td>
+                              </tr>
+                              <tr>
+                                 <td>Potongan Lain:</td>
+                                 <td class="text-end text-danger">-Rp ${new Intl.NumberFormat('id-ID').format(data.data.potongan)}</td>
+                              </tr>
+                              <tr>
+                                 <td>Cicilan Pinjaman:</td>
+                                 <td class="text-end text-danger">-Rp ${new Intl.NumberFormat('id-ID').format(data.data.cicilan)}</td>
+                              </tr>
+                              <tr style="border-top: 2px solid #333; font-weight: bold;">
+                                 <td>Gaji Bersih:</td>
+                                 <td class="text-end text-success">Rp ${new Intl.NumberFormat('id-ID').format(data.data.total_bersih)}</td>
+                              </tr>
+                           </table>
+                        ` : ''}
+                     </div>
+                  `,
+                  confirmButtonColor: '#3085d6',
+                  confirmButtonText: 'OK'
+               });
+            } else {
+               Swal.fire({
+                  icon: 'error',
+                  title: 'Gagal!',
+                  text: data.message,
+                  confirmButtonColor: '#d33'
+               });
+               checkbox.checked = !checkbox.checked;
+            }
+         })
+         .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+               icon: 'error',
+               title: 'Error!',
+               text: 'Terjadi kesalahan saat mengubah status',
+               confirmButtonColor: '#d33'
+            });
+            checkbox.checked = !checkbox.checked;
+         });
+      } else {
+         checkbox.checked = !checkbox.checked;
+      }
+   });
+}
 
 $(document).ready(function() {
    // Initialize Signature Pad
