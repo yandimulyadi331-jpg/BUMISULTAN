@@ -81,6 +81,12 @@ class LaporanController extends Controller
             ->leftJoin('presensi_izinsakit', 'presensi_izinsakit_approve.kode_izin_sakit', '=', 'presensi_izinsakit.kode_izin_sakit')
             ->leftJoin('presensi_izincuti_approve', 'presensi.id', '=', 'presensi_izincuti_approve.id_presensi')
             ->leftJoin('presensi_izincuti', 'presensi_izincuti_approve.kode_izin_cuti', '=', 'presensi_izincuti.kode_izin_cuti')
+            ->leftJoin('presensi_izindinas', function($join) {
+                $join->on('presensi.nik', '=', 'presensi_izindinas.nik')
+                     ->on('presensi.tanggal', '>=', 'presensi_izindinas.dari')
+                     ->on('presensi.tanggal', '<=', 'presensi_izindinas.sampai')
+                     ->where('presensi_izindinas.status', '=', 1);
+            })
             ->select(
                 'presensi.*',
                 'nama_jam_kerja',
@@ -93,7 +99,8 @@ class LaporanController extends Controller
                 'total_jam',
                 'presensi_izinabsen.keterangan as keterangan_izin_absen',
                 'presensi_izinsakit.keterangan as keterangan_izin_sakit',
-                'presensi_izincuti.keterangan as keterangan_izin_cuti'
+                'presensi_izincuti.keterangan as keterangan_izin_cuti',
+                'presensi_izindinas.keterangan as keterangan_izin_dinas'
             )
             ->whereBetween('presensi.tanggal', [$periode_dari, $periode_sampai]);
 

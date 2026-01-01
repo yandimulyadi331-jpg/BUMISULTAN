@@ -56,7 +56,7 @@
                     <th rowspan="3">Denda</th>
                     <th rowspan="3">Pot. Jam</th>
                     <th rowspan="3">Lembur</th>
-                    <th colspan="9">Rekap</th>
+                    <th colspan="10">Rekap</th>
                 </tr>
                 <tr>
                     @php
@@ -71,6 +71,8 @@
                     <th rowspan="2">Hadir</th>
                     <th rowspan="2">Izin</th>
                     <th rowspan="2">Sakit</th>
+                    <th rowspan="2">Dinas</th>
+                    <th rowspan="2">Cuti</th>
                     <th rowspan="2">Alfa</th>
                     <th rowspan="2">Libur</th>
                     <th rowspan="2">Terlambat</th>
@@ -110,6 +112,7 @@
                             $jml_sakit = 0;
                             $jml_izin = 0;
                             $jml_cuti = 0;
+                            $jml_dinas = 0;
                             $jml_libur = 0;
                             $jml_alfa = 0;
                             $jml_terlambat = 0;
@@ -274,11 +277,14 @@
                                         $textcolor = 'white';
                                         $jml_izin++;
                                         $potongan_jam = $d[$tanggal_presensi]['total_jam'];
+                                        $keterangan_izin = !empty($d[$tanggal_presensi]['keterangan_izin_absen']) 
+                                            ? $d[$tanggal_presensi]['keterangan_izin_absen'] 
+                                            : 'Tidak ada keterangan';
                                         $ket =
                                             '<h4 style="font-weight: bold; margin-bottom:10px">IZIN</h4><p>' .
-                                            $d[$tanggal_presensi]['keterangan_izin_absen'] .
+                                            $keterangan_izin .
                                             '</p>
-                                            <p>PJ : ' .
+                                            <p style="color:#ffe066">PJ : ' .
                                             formatAngkaDesimal($potongan_jam) .
                                             ' Jam</p>';
                                     @endphp
@@ -287,21 +293,39 @@
                                         $bgcolor = '#c8075b';
                                         $textcolor = 'white';
                                         $jml_sakit++;
+                                        $keterangan_sakit = !empty($d[$tanggal_presensi]['keterangan_izin_sakit']) 
+                                            ? $d[$tanggal_presensi]['keterangan_izin_sakit'] 
+                                            : 'Tidak ada keterangan';
                                         $ket =
-                                            '<h4 style="font-weight: bold; margin-bottom:10px">SAKIT</h4><span>' .
-                                            $d[$tanggal_presensi]['keterangan_izin_sakit'] .
-                                            '</span>
-                                            ';
+                                            '<h4 style="font-weight: bold; margin-bottom:10px">SAKIT</h4><p>' .
+                                            $keterangan_sakit .
+                                            '</p>';
+                                    @endphp
+                                @elseif($d[$tanggal_presensi]['status'] == 'd')
+                                    @php
+                                        $bgcolor = '#7b68ee';
+                                        $textcolor = 'white';
+                                        $jml_dinas++;
+                                        $keterangan_dinas = !empty($d[$tanggal_presensi]['keterangan_izin_dinas']) 
+                                            ? $d[$tanggal_presensi]['keterangan_izin_dinas'] 
+                                            : 'Ijin Dinas';
+                                        $ket =
+                                            '<h4 style="font-weight: bold; margin-bottom:10px">IJIN DINAS</h4><p>' .
+                                            $keterangan_dinas .
+                                            '</p>';
                                     @endphp
                                 @elseif($d[$tanggal_presensi]['status'] == 'c')
                                     @php
                                         $bgcolor = '#0164b5';
                                         $textcolor = 'white';
                                         $jml_cuti++;
+                                        $keterangan_cuti = !empty($d[$tanggal_presensi]['keterangan_izin_cuti']) 
+                                            ? $d[$tanggal_presensi]['keterangan_izin_cuti'] 
+                                            : 'Tidak ada keterangan';
                                         $ket =
-                                            '<h4 style="font-weight: bold; margin-bottom:10px">CUTI</h4><span>' .
-                                            $d[$tanggal_presensi]['keterangan_izin_cuti'] .
-                                            '</span>';
+                                            '<h4 style="font-weight: bold; margin-bottom:10px">CUTI</h4><p>' .
+                                            $keterangan_cuti .
+                                            '</p>';
                                     @endphp
                                 @elseif($d[$tanggal_presensi]['status'] == 'a')
                                     @php
@@ -310,10 +334,11 @@
                                         $jml_alfa++;
                                         $potongan_jam = $d[$tanggal_presensi]['total_jam'];
                                         $ket =
-                                            '<h4 style="font-weight: bold; margin-bottom:10px">Alpa</h4>
-                                        <span>PJ : ' .
+                                            '<h4 style="font-weight: bold; margin-bottom:10px">TIDAK ABSEN</h4>
+                                        <p>Tidak ada keterangan</p>
+                                        <p style="color:#ffcccc">PJ : ' .
                                             formatAngkaDesimal($potongan_jam) .
-                                            ' Jam</span>';
+                                            ' Jam</p>';
                                     @endphp
                                 @endif
                             @else
@@ -359,6 +384,8 @@
                         <td style="text-align:center">{{ $jml_hadir }}</td>
                         <td style="text-align:center">{{ $jml_izin }}</td>
                         <td style="text-align:center">{{ $jml_sakit }}</td>
+                        <td style="text-align:center">{{ $jml_dinas }}</td>
+                        <td style="text-align:center">{{ $jml_cuti }}</td>
                         <td style="text-align:center">{{ $jml_alfa }}</td>
                         <td style="text-align:center">{{ $jml_libur }}</td>
                         <td style="text-align:center">{{ $jml_terlambat }}</td>
@@ -386,6 +413,26 @@
                 <tr>
                     <td style="text-align:center;">PJ</td>
                     <td>Potongan Jam</td>
+                </tr>
+                <tr>
+                    <td style="text-align:center;background-color:#7b68ee;color:white;">ID</td>
+                    <td>Ijin Dinas</td>
+                </tr>
+                <tr>
+                    <td style="text-align:center;background-color:#dea51f;color:white;">I</td>
+                    <td>Ijin</td>
+                </tr>
+                <tr>
+                    <td style="text-align:center;background-color:#c8075b;color:white;">S</td>
+                    <td>Sakit</td>
+                </tr>
+                <tr>
+                    <td style="text-align:center;background-color:#0164b5;color:white;">C</td>
+                    <td>Cuti</td>
+                </tr>
+                <tr>
+                    <td style="text-align:center;background-color:red;color:white;">A</td>
+                    <td>Tidak Absen / Alpa</td>
                 </tr>
             </tbody>
         </table>

@@ -114,12 +114,17 @@ class IzindinasController extends Controller
                 return Redirect::back()->with(messageError('Tidak Boleh Lebih dari 3 Hari!'));
             }
 
+            // Validasi overlap yang benar: detect semua kemungkinan overlap
+            // Logic: (dari_baru <= sampai_lama) AND (sampai_baru >= dari_lama)
             $cek_izin_dinas = Izindinas::where('nik', $nik)
-                ->whereBetween('dari', [$request->dari, $request->sampai])
-                ->orWhereBetween('sampai', [$request->dari, $request->sampai])->first();
+                ->where(function($query) use ($request) {
+                    $query->where('dari', '<=', $request->sampai)
+                          ->where('sampai', '>=', $request->dari);
+                })
+                ->first();
 
             if ($cek_izin_dinas) {
-                return Redirect::back()->with(messageError('Anda Sudah Mengajukan Izin Dinas Pada Rentang Tanggal Tersebut!'));
+                return Redirect::back()->with(messageError('Anda Sudah Mengajukan Ijin Dinas Pada Rentang Tanggal Tersebut!'));
             }
 
             $lastizin = Izindinas::select('kode_izin_dinas')
@@ -223,6 +228,24 @@ class IzindinasController extends Controller
         ]);
         DB::beginTransaction();
         try {
+            $jmlhari = hitungHari($request->dari, $request->sampai);
+            if ($jmlhari > 3) {
+                return Redirect::back()->with(messageError('Tidak Boleh Lebih dari 3 Hari!'));
+            }
+
+            // Validasi overlap, exclude record yang sedang diedit
+            $cek_izin_dinas = Izindinas::where('nik', $request->nik)
+                ->where('kode_izin_dinas', '!=', $kode_izin_dinas)
+                ->where(function($query) use ($request) {
+                    $query->where('dari', '<=', $request->sampai)
+                          ->where('sampai', '>=', $request->dari);
+                })
+                ->first();
+
+            if ($cek_izin_dinas) {
+                return Redirect::back()->with(messageError('Karyawan Sudah Ada Ijin Dinas Pada Rentang Tanggal Tersebut!'));
+            }
+
             Izindinas::where('kode_izin_dinas', $kode_izin_dinas)->update([
                 'nik' => $request->nik,
                 'tanggal' => $request->dari,
