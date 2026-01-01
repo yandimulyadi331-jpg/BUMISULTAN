@@ -290,14 +290,14 @@ function togglePotongan(tukangId, namaTukang) {
       if (result.isConfirmed) {
          Swal.fire({
             title: 'Memproses...',
-            html: 'Sedang mengubah status potongan',
+            html: 'Sedang mengubah status dan menghitung ulang gaji...',
             allowOutsideClick: false,
             didOpen: () => {
                Swal.showLoading();
             }
          });
          
-         fetch(`{{ url('keuangan-tukang') }}/toggle-potongan-pinjaman/${tukangId}`, {
+         fetch(`{{ url('keuangan-tukang') }}/toggle-potongan-pinjaman/${tukangId}?periode={{ $sabtu->format('Y-m-d') }}|{{ $kamis->format('Y-m-d') }}`, {
             method: 'POST',
             headers: {
                'Content-Type': 'application/json',
@@ -307,14 +307,69 @@ function togglePotongan(tukangId, namaTukang) {
          .then(response => response.json())
          .then(data => {
             if (data.success) {
+               // ✅ UPDATE UI REAL-TIME JIKA ADA DATA RECALCULATED
+               if (data.data && data.data.total_bersih !== undefined) {
+                  // Update angka-angka di row tukang
+                  const row = document.getElementById('row-tukang-' + tukangId);
+                  if (row) {
+                     // Update cicilan
+                     const cicilanCell = row.querySelector('.cicilan-amount');
+                     if (cicilanCell) {
+                        cicilanCell.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(data.data.cicilan);
+                     }
+                     
+                     // Update total bersih
+                     const totalBersihCell = row.querySelector('.total-bersih-amount');
+                     if (totalBersihCell) {
+                        totalBersihCell.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(data.data.total_bersih);
+                        
+                        // Animasi perubahan angka
+                        totalBersihCell.classList.add('text-success', 'fw-bold');
+                        setTimeout(() => {
+                           totalBersihCell.classList.remove('text-success', 'fw-bold');
+                        }, 2000);
+                     }
+                  }
+               }
+               
                Swal.fire({
                   icon: 'success',
                   title: 'Berhasil!',
-                  html: data.message,
+                  html: `
+                     <div style="text-align: left;">
+                        <p>${data.message}</p>
+                        ${data.data && data.data.total_bersih !== undefined ? `
+                           <hr>
+                           <p class="mb-1"><strong>Perhitungan Gaji Terbaru:</strong></p>
+                           <table style="width: 100%; font-size: 0.9em;">
+                              <tr>
+                                 <td>Upah Harian:</td>
+                                 <td class="text-end">Rp ${new Intl.NumberFormat('id-ID').format(data.data.upah_harian)}</td>
+                              </tr>
+                              <tr>
+                                 <td>Lembur:</td>
+                                 <td class="text-end">Rp ${new Intl.NumberFormat('id-ID').format(data.data.lembur)}</td>
+                              </tr>
+                              <tr>
+                                 <td>Potongan:</td>
+                                 <td class="text-end text-danger">-Rp ${new Intl.NumberFormat('id-ID').format(data.data.potongan)}</td>
+                              </tr>
+                              <tr>
+                                 <td>Cicilan Pinjaman:</td>
+                                 <td class="text-end text-danger">-Rp ${new Intl.NumberFormat('id-ID').format(data.data.cicilan)}</td>
+                              </tr>
+                              <tr style="border-top: 2px solid #333; font-weight: bold;">
+                                 <td>Total Bersih:</td>
+                                 <td class="text-end text-success">Rp ${new Intl.NumberFormat('id-ID').format(data.data.total_bersih)}</td>
+                              </tr>
+                           </table>
+                        ` : ''}
+                     </div>
+                  `,
                   confirmButtonColor: '#3085d6',
-                  timer: 2000,
-                  timerProgressBar: true
+                  confirmButtonText: 'OK, Mengerti'
                }).then(() => {
+                  // Reload untuk refresh semua data
                   window.location.reload();
                });
             } else {

@@ -165,6 +165,27 @@
             background-color: #2196f3;
             color: white;
         }
+        .status-pembayaran {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-pending {
+            background-color: #ff9800;
+            color: white;
+        }
+        .status-lunas {
+            background-color: #4caf50;
+            color: white;
+        }
+        .payment-info {
+            font-size: 7px;
+            color: #666;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -177,7 +198,28 @@
     @foreach($dataLaporan as $data)
     <div class="tukang-section">
         <div class="tukang-header">
-            <h4>{{ $data['tukang']->kode_tukang }} - {{ $data['tukang']->nama_tukang }}</h4>
+            <h4>
+                {{ $data['tukang']->kode_tukang }} - {{ $data['tukang']->nama_tukang }}
+                
+                @php
+                    // Cek status pembayaran untuk periode ini
+                    $statusPembayaran = App\Models\PembayaranGajiTukang::where('tukang_id', $data['tukang']->id)
+                        ->where('periode_mulai', '<=', $data['periode']['kamis'])
+                        ->where('periode_akhir', '>=', $data['periode']['sabtu'])
+                        ->where('status', 'lunas')
+                        ->first();
+                @endphp
+                
+                @if($statusPembayaran)
+                    <span class="status-pembayaran status-lunas">✅ SUDAH DIBAYAR</span>
+                    <span class="payment-info">
+                        ({{ $statusPembayaran->tanggal_bayar ? $statusPembayaran->tanggal_bayar->format('d M Y H:i') : '-' }} 
+                        oleh {{ $statusPembayaran->dibayar_oleh ?? 'Admin' }})
+                    </span>
+                @else
+                    <span class="status-pembayaran status-pending">⏳ PENDING - BELUM DIBAYAR</span>
+                @endif
+            </h4>
         </div>
 
         <!-- RINCIAN KEHADIRAN -->

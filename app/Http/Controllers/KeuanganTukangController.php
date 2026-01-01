@@ -148,10 +148,64 @@ class KeuanganTukangController extends Controller
             $status = $tukang->auto_potong_pinjaman ? 'AKTIF' : 'NONAKTIF';
             $message = "Potongan pinjaman otomatis untuk {$tukang->nama_tukang} sekarang {$status}";
             
+            // ✅ RECALCULATE GAJI REAL-TIME
+            $dataRecalculated = [
+                'upah_harian' => 0,
+                'lembur' => 0,
+                'potongan' => 0,
+                'cicilan' => 0,
+                'total_bersih' => 0
+            ];
+            
+            // Jika ada parameter periode, hitung ulang
+            if (request()->has('periode')) {
+                $periode = explode('|', request('periode'));
+                $sabtu = Carbon::parse($periode[0])->startOfDay();
+                $kamis = Carbon::parse($periode[1])->endOfDay();
+                
+                // Hitung upah harian
+                $upah = KeuanganTukang::where('tukang_id', $tukang_id)
+                    ->whereBetween('tanggal', [$sabtu, $kamis])
+                    ->where('jenis_transaksi', 'upah_harian')
+                    ->sum('jumlah');
+                
+                // Hitung lembur
+                $lembur = KeuanganTukang::where('tukang_id', $tukang_id)
+                    ->whereBetween('tanggal', [$sabtu, $kamis])
+                    ->whereIn('jenis_transaksi', ['lembur_full', 'lembur_setengah'])
+                    ->sum('jumlah');
+                
+                // Hitung potongan (kredit)
+                $potongan = KeuanganTukang::where('tukang_id', $tukang_id)
+                    ->whereBetween('tanggal', [$sabtu, $kamis])
+                    ->where('tipe', 'kredit')
+                    ->sum('jumlah');
+                
+                // Cicilan HANYA jika auto potong AKTIF
+                $cicilan = 0;
+                if ($tukang->auto_potong_pinjaman) {
+                    $cicilan = PinjamanTukang::where('tukang_id', $tukang_id)
+                        ->where('status', 'aktif')
+                        ->whereColumn('total_dibayar', '<', 'total_pinjaman')
+                        ->sum('cicilan_per_minggu');
+                }
+                
+                $totalBersih = $upah + $lembur - $potongan - $cicilan;
+                
+                $dataRecalculated = [
+                    'upah_harian' => $upah,
+                    'lembur' => $lembur,
+                    'potongan' => $potongan,
+                    'cicilan' => $cicilan,
+                    'total_bersih' => $totalBersih
+                ];
+            }
+            
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'status' => $tukang->auto_potong_pinjaman
+                'status' => $tukang->auto_potong_pinjaman,
+                'data' => $dataRecalculated
             ]);
         } catch (\Exception $e) {
             return response()->json([
