@@ -487,7 +487,7 @@
                         @endif
                         @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('keuangan-tukang.index'))
                             <li class="menu-item {{ request()->is(['keuangan-tukang*', 'cash-lembur*']) ? 'active' : '' }}">
-                                <a href="{{ route('keuangan-tukang.index') }}" class="menu-link">
+                                <a href="{{ route('keuangan-tukang.pinjaman') }}" class="menu-link">
                                     <div>Keuangan Tukang</div>
                                 </a>
                             </li>

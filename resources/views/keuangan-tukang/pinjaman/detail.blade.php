@@ -99,6 +99,56 @@
                </div>
             </div>
 
+            <!-- Status Auto Potong -->
+            @if($pinjaman->status == 'aktif')
+            <div class="row mb-4">
+               <div class="col-12">
+                  <div class="card border-{{ $pinjaman->tukang->auto_potong_pinjaman ? 'success' : 'secondary' }}">
+                     <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                           <div>
+                              <h6 class="card-title mb-2">
+                                 <i class="ti ti-settings me-2"></i>Status Potongan Otomatis
+                              </h6>
+                              <p class="mb-0">
+                                 @if($pinjaman->tukang->auto_potong_pinjaman)
+                                    <span class="badge bg-success" style="font-size: 14px; padding: 8px 16px;">
+                                       <i class="ti ti-check"></i> AKTIF - Cicilan akan dipotong otomatis dari gaji
+                                    </span>
+                                 @else
+                                    <span class="badge bg-secondary" style="font-size: 14px; padding: 8px 16px;">
+                                       <i class="ti ti-x"></i> NONAKTIF - Cicilan tidak dipotong otomatis
+                                    </span>
+                                 @endif
+                              </p>
+                           </div>
+                           <div>
+                              <div class="form-check form-switch">
+                                 <input class="form-check-input" 
+                                        type="checkbox" 
+                                        role="switch" 
+                                        id="toggleAutoPotong" 
+                                        {{ $pinjaman->tukang->auto_potong_pinjaman ? 'checked' : '' }}
+                                        onchange="toggleAutoPotong()"
+                                        style="cursor: pointer; width: 3rem; height: 1.5rem;">
+                                 <label class="form-check-label" for="toggleAutoPotong">
+                                    <strong>Toggle Auto Potong</strong>
+                                 </label>
+                              </div>
+                           </div>
+                        </div>
+                        <hr>
+                        <small class="text-muted">
+                           <i class="ti ti-info-circle me-1"></i>
+                           Jika diaktifkan, cicilan <strong>Rp {{ number_format($pinjaman->cicilan_per_minggu, 0, ',', '.') }}</strong> 
+                           akan otomatis dipotong dari gaji {{ $pinjaman->tukang->nama_tukang }} setiap minggu.
+                        </small>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            @endif
+
             <!-- Foto Bukti -->
             @if($pinjaman->foto_bukti)
             <div class="row mb-4">
@@ -133,7 +183,9 @@
             <!-- Riwayat Pembayaran -->
             <div class="card">
                <div class="card-header">
-                  <h6 class="mb-0">Riwayat Pembayaran Cicilan</h6>
+                  <h6 class="mb-0">
+                     <i class="ti ti-history me-2"></i>Riwayat Pembayaran Cicilan
+                  </h6>
                </div>
                <div class="card-body">
                   <div class="table-responsive">
@@ -152,10 +204,25 @@
                            @forelse($riwayatBayar as $index => $bayar)
                               <tr>
                                  <td class="text-center">{{ $index + 1 }}</td>
-                                 <td>{{ \Carbon\Carbon::parse($bayar->tanggal)->format('d/m/Y') }}</td>
-                                 <td class="text-end text-success fw-bold">Rp {{ number_format($bayar->jumlah, 0, ',', '.') }}</td>
-                                 <td class="text-end">Rp {{ number_format($bayar->saldo ?? 0, 0, ',', '.') }}</td>
-                                 <td>{{ $bayar->keterangan }}</td>
+                                 <td>{{ \Carbon\Carbon::parse($bayar->tanggal)->format('d/m/Y H:i') }}</td>
+                                 <td class="text-end text-success fw-bold">
+                                    Rp {{ number_format($bayar->jumlah, 0, ',', '.') }}
+                                    @if(stripos($bayar->keterangan, 'otomatis') !== false || stripos($bayar->keterangan, 'auto') !== false)
+                                       <br><span class="badge bg-info" style="font-size: 10px;"><i class="ti ti-robot"></i> AUTO</span>
+                                    @endif
+                                 </td>
+                                 <td class="text-end text-{{ $bayar->saldo > 0 ? 'danger' : 'success' }}">
+                                    Rp {{ number_format($bayar->saldo ?? 0, 0, ',', '.') }}
+                                    @if($bayar->saldo == 0)
+                                       <br><span class="badge bg-success" style="font-size: 10px;"><i class="ti ti-check"></i> LUNAS</span>
+                                    @endif
+                                 </td>
+                                 <td>
+                                    {{ $bayar->keterangan }}
+                                    @if(stripos($bayar->keterangan, 'potongan gaji') !== false)
+                                       <br><small class="text-muted"><i class="ti ti-calendar"></i> Dipotong dari gaji mingguan</small>
+                                    @endif
+                                 </td>
                                  <td>{{ $bayar->dicatat_oleh }}</td>
                               </tr>
                            @empty
@@ -225,9 +292,70 @@
 </div>
 @endsection
 
+@push('styles')
+<style>
+   .form-check-input {
+      width: 3rem;
+      height: 1.5rem;
+   }
+</style>
+@endpush
+
 <script>
 function bayarCicilan() {
    var myModal = new bootstrap.Modal(document.getElementById('modalBayar'));
    myModal.show();
+}
+
+async function toggleAutoPotong() {
+   const toggle = document.getElementById('toggleAutoPotong');
+   const isChecked = toggle.checked;
+   const tukangId = {{ $pinjaman->tukang->id }};
+   
+   try {
+      const response = await fetch(`{{ url('keuangan-tukang/toggle-potongan-pinjaman') }}/${tukangId}`, {
+         method: 'POST',
+         headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+         }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+         // Reload halaman untuk update tampilan
+         Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            html: `
+               <div class="text-start">
+                  <strong>{{ $pinjaman->tukang->nama_tukang }}</strong><br>
+                  Status Auto Potong: <strong>${isChecked ? 'AKTIF' : 'NONAKTIF'}</strong><br><br>
+                  ${isChecked ? 
+                     '<i class="ti ti-info-circle text-info"></i> Cicilan <strong>Rp {{ number_format($pinjaman->cicilan_per_minggu, 0, ",", ".") }}</strong> akan otomatis dipotong dari gaji setiap minggu.' : 
+                     '<i class="ti ti-alert-triangle text-warning"></i> Cicilan tidak akan dipotong otomatis dari gaji.'
+                  }
+               </div>
+            `,
+            showConfirmButton: true,
+            timer: 3000
+         }).then(() => {
+            location.reload();
+         });
+      } else {
+         throw new Error(data.message || 'Gagal mengubah status');
+      }
+   } catch (error) {
+      console.error('Error:', error);
+      toggle.checked = !isChecked; // Kembalikan ke posisi semula
+      
+      Swal.fire({
+         icon: 'error',
+         title: 'Gagal!',
+         text: error.message || 'Terjadi kesalahan saat mengubah status auto potong',
+         showConfirmButton: true
+      });
+   }
 }
 </script>

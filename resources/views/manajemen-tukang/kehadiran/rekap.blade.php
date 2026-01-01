@@ -16,22 +16,22 @@
                   <p class="text-muted mb-0">{{ $bulanNama }}</p>
                </div>
                <div class="d-flex gap-2">
-                  <a href="{{ route('kehadiran-tukang.export-pdf', ['bulan' => $bulan, 'tahun' => $tahun]) }}" class="btn btn-danger btn-sm" target="_blank">
+                  <button type="button" class="btn btn-success btn-sm" onclick="pilihMingguIni()">
+                     <i class="ti ti-calendar-week me-1"></i> Minggu Ini
+                  </button>
+                  <a href="{{ route('kehadiran-tukang.export-pdf') }}?tanggal_mulai={{ $tanggal_mulai }}&tanggal_akhir={{ $tanggal_akhir }}" 
+                     class="btn btn-danger btn-sm" target="_blank">
                      <i class="ti ti-file-type-pdf me-1"></i> Download PDF
                   </a>
-                  <form action="{{ route('kehadiran-tukang.rekap') }}" method="GET" class="d-flex align-items-center gap-2">
-                     <select name="bulan" class="form-select" onchange="this.form.submit()">
-                        @for($m = 1; $m <= 12; $m++)
-                           <option value="{{ $m }}" {{ $m == $bulan ? 'selected' : '' }}>
-                              {{ \Carbon\Carbon::create(null, $m, 1)->locale('id')->isoFormat('MMMM') }}
-                           </option>
-                        @endfor
-                     </select>
-                     <select name="tahun" class="form-select" onchange="this.form.submit()">
-                        @for($y = date('Y'); $y >= date('Y') - 3; $y--)
-                           <option value="{{ $y }}" {{ $y == $tahun ? 'selected' : '' }}>{{ $y }}</option>
-                        @endfor
-                     </select>
+                  <form action="{{ route('kehadiran-tukang.rekap') }}" method="GET" id="formFilter" class="d-flex align-items-center gap-2">
+                     <input type="date" name="tanggal_mulai" id="tanggal_mulai" class="form-control" 
+                            value="{{ $tanggal_mulai }}" required>
+                     <span class="text-muted">s/d</span>
+                     <input type="date" name="tanggal_akhir" id="tanggal_akhir" class="form-control" 
+                            value="{{ $tanggal_akhir }}" required>
+                     <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="ti ti-search"></i> Filter
+                     </button>
                   </form>
                </div>
             </div>
@@ -52,7 +52,8 @@
                         <th width="6%" class="text-center" title="Lembur Setengah dibayar Kamis">L.1/2</th>
                         <th width="7%" class="text-center" title="Lembur Full CASH hari ini">💰Full</th>
                         <th width="7%" class="text-center" title="Lembur Setengah CASH hari ini">💰1/2</th>
-                        <th width="12%">Total Upah</th>
+                        <th width="10%" class="text-danger">Potongan</th>
+                        <th width="10%" class="text-success">Total Nett</th>
                         <th width="6%">Aksi</th>
                      </tr>
                   </thead>
@@ -93,12 +94,45 @@
                               <span class="badge bg-info" style="font-weight: bold;">{{ $tukang->total_lembur_setengah_cash }}</span>
                            </td>
                            <td>
-                              <strong class="text-success fs-6">
-                                 Rp {{ number_format($tukang->total_upah, 0, ',', '.') }}
+                              @php
+                                 // Cek apakah auto potong aktif
+                                 $autoPotongAktif = $tukang->auto_potong_pinjaman ?? false;
+                                 
+                                 // Hitung potongan HANYA jika auto potong aktif
+                                 $potonganPinjaman = 0;
+                                 if ($autoPotongAktif) {
+                                    $potonganPinjaman = \App\Models\PinjamanTukang::where('tukang_id', $tukang->id)
+                                       ->where('status', 'aktif')
+                                       ->where('sisa_pinjaman', '>', 0)
+                                       ->sum('cicilan_per_minggu');
+                                 }
+                                 
+                                 // Hitung berapa minggu dalam range tanggal
+                                 $start = \Carbon\Carbon::parse($tanggal_mulai);
+                                 $end = \Carbon\Carbon::parse($tanggal_akhir);
+                                 $jumlahMinggu = ceil($start->diffInDays($end) / 7);
+                                 
+                                 $totalPotongan = $potonganPinjaman * $jumlahMinggu;
+                                 $totalNett = $tukang->total_upah - $totalPotongan;
+                              @endphp
+                              @if($totalPotongan > 0)
+                                 <strong class="text-danger fs-6">
+                                    -Rp {{ number_format($totalPotongan, 0, ',', '.') }}
+                                 </strong>
+                                 <br><small class="text-muted">
+                                    ({{ $jumlahMinggu }}x Rp {{ number_format($potonganPinjaman, 0, ',', '.') }})
+                                 </small>
+                              @else
+                                 <span class="text-muted">-</span>
+                              @endif
+                           </td>
+                           <td>
+                              <strong class="fs-6" style="color: {{ $totalNett >= 0 ? '#28a745' : '#dc3545' }};">
+                                 Rp {{ number_format($totalNett, 0, ',', '.') }}
                               </strong>
                            </td>
                            <td class="text-center">
-                              <a href="{{ route('kehadiran-tukang.detail', $tukang->id) }}?bulan={{ $bulan }}&tahun={{ $tahun }}" 
+                              <a href="{{ route('kehadiran-tukang.detail', $tukang->id) }}?tanggal_mulai={{ $tanggal_mulai }}&tanggal_akhir={{ $tanggal_akhir }}" 
                                  class="btn btn-sm btn-info" title="Detail">
                                  <i class="ti ti-eye"></i>
                               </a>
@@ -106,7 +140,7 @@
                         </tr>
                      @empty
                         <tr>
-                           <td colspan="13" class="text-center">Tidak ada data</td>
+                           <td colspan="14" class="text-center">Tidak ada data</td>
                         </tr>
                      @endforelse
                   </tbody>
@@ -121,9 +155,32 @@
                            <th class="text-center">{{ $tukangs->sum('total_lembur_setengah') }}</th>
                            <th class="text-center"><strong>{{ $tukangs->sum('total_lembur_full_cash') }}</strong></th>
                            <th class="text-center"><strong>{{ $tukangs->sum('total_lembur_setengah_cash') }}</strong></th>
-                           <th class="text-success">
-                              <strong class="fs-5">
-                                 Rp {{ number_format($tukangs->sum('total_upah'), 0, ',', '.') }}
+                           <th>
+                              @php
+                                 $start = \Carbon\Carbon::parse($tanggal_mulai);
+                                 $end = \Carbon\Carbon::parse($tanggal_akhir);
+                                 $jumlahMinggu = ceil($start->diffInDays($end) / 7);
+                                 
+                                 $totalPotonganAll = 0;
+                                 foreach($tukangs as $t) {
+                                    // Hitung potongan HANYA jika auto potong aktif
+                                    if ($t->auto_potong_pinjaman) {
+                                       $cicilan = \App\Models\PinjamanTukang::where('tukang_id', $t->id)
+                                          ->where('status', 'aktif')
+                                          ->where('sisa_pinjaman', '>', 0)
+                                          ->sum('cicilan_per_minggu');
+                                       $totalPotonganAll += ($cicilan * $jumlahMinggu);
+                                    }
+                                 }
+                                 $totalNettAll = $tukangs->sum('total_upah') - $totalPotonganAll;
+                              @endphp
+                              <strong class="text-danger fs-6">
+                                 -RP {{ number_format($totalPotonganAll, 0, ',', '.') }}
+                              </strong>
+                           </th>
+                           <th>
+                              <strong class="fs-5" style="color: {{ $totalNettAll >= 0 ? '#28a745' : '#dc3545' }};">
+                                 Rp {{ number_format($totalNettAll, 0, ',', '.') }}
                               </strong>
                            </th>
                            <th></th>
@@ -132,46 +189,60 @@
                   @endif
                </table>
             </div>
-            
-            <!-- Summary Cards -->
-            @if($tukangs->count() > 0)
-               <div class="row mt-4">
-                  <div class="col-md-3">
-                     <div class="card bg-success text-white">
-                        <div class="card-body text-center">
-                           <h3>{{ $tukangs->sum('total_hadir') }}</h3>
-                           <p class="mb-0">Total Hari Hadir</p>
-                        </div>
-                     </div>
-                  </div>
-                  <div class="col-md-3">
-                     <div class="card bg-warning">
-                        <div class="card-body text-center">
-                           <h3>{{ $tukangs->sum('total_setengah_hari') }}</h3>
-                           <p class="mb-0">Total Setengah Hari</p>
-                        </div>
-                     </div>
-                  </div>
-                  <div class="col-md-3">
-                     <div class="card bg-info text-white">
-                        <div class="card-body text-center">
-                           <h3>{{ $tukangs->sum('total_lembur') }}</h3>
-                           <p class="mb-0">Total Hari Lembur</p>
-                        </div>
-                     </div>
-                  </div>
-                  <div class="col-md-3">
-                     <div class="card bg-primary text-white">
-                        <div class="card-body text-center">
-                           <h5>Rp {{ number_format($tukangs->sum('total_upah'), 0, ',', '.') }}</h5>
-                           <p class="mb-0">Total Pengeluaran Gaji</p>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            @endif
          </div>
       </div>
    </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function pilihMingguIni() {
+   // Hitung periode minggu ini (Sabtu - Kamis)
+   const today = new Date();
+   const dayOfWeek = today.getDay(); // 0 = Minggu, 6 = Sabtu
+   
+   let sabtu, kamis;
+   
+   if (dayOfWeek === 5) { // Jumat (libur)
+      // Ambil Sabtu minggu lalu sampai Kamis kemarin
+      const daysToSabtu = 7; // 7 hari ke belakang ke Sabtu minggu lalu
+      sabtu = new Date(today);
+      sabtu.setDate(today.getDate() - daysToSabtu);
+      
+      kamis = new Date(today);
+      kamis.setDate(today.getDate() - 1); // Kamis kemarin
+   } else if (dayOfWeek === 6) { // Sabtu
+      // Sabtu hari ini sampai Kamis minggu ini
+      sabtu = new Date(today);
+      
+      kamis = new Date(today);
+      kamis.setDate(today.getDate() + 5); // +5 hari = Kamis
+   } else { // Minggu (0) - Kamis (4)
+      // Cari Sabtu terdekat ke belakang
+      const daysToSabtu = (dayOfWeek === 0) ? 1 : (7 - dayOfWeek + 6) % 7 + 1;
+      sabtu = new Date(today);
+      sabtu.setDate(today.getDate() - daysToSabtu);
+      
+      // Kamis = Sabtu + 5 hari
+      kamis = new Date(sabtu);
+      kamis.setDate(sabtu.getDate() + 5);
+   }
+   
+   // Format tanggal ke YYYY-MM-DD
+   const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+   };
+   
+   // Set nilai input
+   document.getElementById('tanggal_mulai').value = formatDate(sabtu);
+   document.getElementById('tanggal_akhir').value = formatDate(kamis);
+   
+   // Auto submit form
+   document.getElementById('formFilter').submit();
+}
+</script>
+@endpush

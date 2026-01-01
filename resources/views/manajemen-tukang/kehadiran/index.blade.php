@@ -16,6 +16,26 @@
                   <p class="text-muted mb-0">{{ $hariNama }}</p>
                </div>
                <div class="d-flex gap-2">
+                  @can('keuangan-tukang.index')
+                  <a href="{{ route('keuangan-tukang.download-laporan-pengajuan-gaji') }}?periode_mulai={{ $periode_mulai }}&periode_akhir={{ $periode_akhir }}" 
+                     class="btn btn-warning btn-sm"
+                     target="_blank">
+                     <i class="ti ti-file-text me-1"></i> Laporan Pengajuan
+                  </a>
+                  <a href="{{ route('keuangan-tukang.download-laporan-gaji-kamis') }}?periode_mulai={{ $periode_mulai }}&periode_akhir={{ $periode_akhir }}" 
+                     class="btn btn-danger btn-sm"
+                     target="_blank">
+                     <i class="ti ti-file-download me-1"></i> Laporan PDF
+                  </a>
+                  <a href="{{ route('keuangan-tukang.pembagian-gaji-kamis') }}" class="btn btn-primary btn-sm">
+                     <i class="ti ti-writing-sign me-1"></i> Gaji Kamis (TTD)
+                  </a>
+                  @endcan
+                  @can('keuangan-tukang.lembur-cash')
+                  <a href="{{ route('keuangan-tukang.lembur-cash') }}" class="btn btn-success btn-sm">
+                     <i class="ti ti-cash me-1"></i> Lembur Cash
+                  </a>
+                  @endcan
                   @can('kehadiran-tukang.rekap')
                   <a href="{{ route('kehadiran-tukang.rekap') }}" class="btn btn-info btn-sm">
                      <i class="ti ti-file-chart me-1"></i> Lihat Rekap Kehadiran

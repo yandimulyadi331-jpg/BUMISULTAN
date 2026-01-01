@@ -24,6 +24,20 @@ class KehadiranTukangController extends Controller
         // Cek apakah hari Jumat (libur)
         $isJumat = $carbonDate->isFriday();
         
+        // Hitung periode minggu ini (Sabtu - Kamis)
+        $hariSekarang = $carbonDate->dayOfWeek; // 0=Minggu, 6=Sabtu
+        if ($hariSekarang == 5) { // Jumat
+            $periodeMulai = $carbonDate->copy()->subDays(6); // Sabtu minggu lalu
+            $periodeAkhir = $carbonDate->copy()->subDay(); // Kamis kemarin
+        } elseif ($hariSekarang == 6) { // Sabtu
+            $periodeMulai = $carbonDate->copy(); // Sabtu hari ini
+            $periodeAkhir = $carbonDate->copy()->addDays(5); // Kamis minggu ini
+        } else { // Minggu - Kamis
+            $hariKeSabtu = ($hariSekarang == 0) ? 1 : 7 - $hariSekarang + 1; // hari ke Sabtu terdekat ke belakang
+            $periodeMulai = $carbonDate->copy()->subDays($hariKeSabtu);
+            $periodeAkhir = $periodeMulai->copy()->addDays(5); // +5 hari = Kamis
+        }
+        
         // Ambil semua tukang aktif
         $tukangs = Tukang::where('status', 'aktif')
                     ->orderBy('kode_tukang')
@@ -40,7 +54,9 @@ class KehadiranTukangController extends Controller
             'tukangs' => $tukangs,
             'tanggal' => $tanggal,
             'isJumat' => $isJumat,
-            'hariNama' => $carbonDate->locale('id')->isoFormat('dddd, D MMMM YYYY')
+            'hariNama' => $carbonDate->locale('id')->isoFormat('dddd, D MMMM YYYY'),
+            'periode_mulai' => $periodeMulai->format('Y-m-d'),
+            'periode_akhir' => $periodeAkhir->format('Y-m-d')
         ];
         
         return view('manajemen-tukang.kehadiran.index', $data);
@@ -303,8 +319,9 @@ class KehadiranTukangController extends Controller
      */
     public function rekap(Request $request)
     {
-        $bulan = $request->input('bulan', date('m'));
-        $tahun = $request->input('tahun', date('Y'));
+        // ✅ Support range tanggal custom
+        $tanggal_mulai = $request->input('tanggal_mulai', date('Y-m-01'));
+        $tanggal_akhir = $request->input('tanggal_akhir', date('Y-m-t'));
         
         // Ambil semua tukang aktif
         $tukangs = Tukang::where('status', 'aktif')
@@ -314,7 +331,7 @@ class KehadiranTukangController extends Controller
         // Hitung rekap untuk setiap tukang
         foreach ($tukangs as $tukang) {
             $kehadiran = KehadiranTukang::where('tukang_id', $tukang->id)
-                                        ->bulan($tahun, $bulan)
+                                        ->whereBetween('tanggal', [$tanggal_mulai, $tanggal_akhir])
                                         ->get();
             
             $tukang->total_hadir = $kehadiran->where('status', 'hadir')->count();
@@ -333,9 +350,9 @@ class KehadiranTukangController extends Controller
         
         $data = [
             'tukangs' => $tukangs,
-            'bulan' => $bulan,
-            'tahun' => $tahun,
-            'bulanNama' => Carbon::create($tahun, $bulan, 1)->locale('id')->isoFormat('MMMM YYYY')
+            'tanggal_mulai' => $tanggal_mulai,
+            'tanggal_akhir' => $tanggal_akhir,
+            'bulanNama' => Carbon::parse($tanggal_mulai)->locale('id')->isoFormat('D MMMM Y') . ' - ' . Carbon::parse($tanggal_akhir)->locale('id')->isoFormat('D MMMM Y')
         ];
         
         return view('manajemen-tukang.kehadiran.rekap', $data);
@@ -346,8 +363,9 @@ class KehadiranTukangController extends Controller
      */
     public function exportPdf(Request $request)
     {
-        $bulan = $request->input('bulan', date('m'));
-        $tahun = $request->input('tahun', date('Y'));
+        // ✅ Support range tanggal custom
+        $tanggal_mulai = $request->input('tanggal_mulai', date('Y-m-01'));
+        $tanggal_akhir = $request->input('tanggal_akhir', date('Y-m-t'));
         
         // Ambil semua tukang aktif
         $tukangs = Tukang::where('status', 'aktif')
@@ -357,7 +375,7 @@ class KehadiranTukangController extends Controller
         // Hitung rekap untuk setiap tukang
         foreach ($tukangs as $tukang) {
             $kehadiran = KehadiranTukang::where('tukang_id', $tukang->id)
-                                        ->bulan($tahun, $bulan)
+                                        ->whereBetween('tanggal', [$tanggal_mulai, $tanggal_akhir])
                                         ->get();
             
             $tukang->total_hadir = $kehadiran->where('status', 'hadir')->count();
@@ -373,17 +391,23 @@ class KehadiranTukangController extends Controller
             $tukang->total_upah = $kehadiran->sum('total_upah');
         }
         
+        // Hitung jumlah minggu untuk potongan
+        $start = Carbon::parse($tanggal_mulai);
+        $end = Carbon::parse($tanggal_akhir);
+        $jumlahMinggu = ceil($start->diffInDays($end) / 7);
+        
         $data = [
             'tukangs' => $tukangs,
-            'bulan' => $bulan,
-            'tahun' => $tahun,
-            'bulanNama' => Carbon::create($tahun, $bulan, 1)->locale('id')->isoFormat('MMMM YYYY')
+            'tanggal_mulai' => $tanggal_mulai,
+            'tanggal_akhir' => $tanggal_akhir,
+            'jumlahMinggu' => $jumlahMinggu,
+            'periodeText' => Carbon::parse($tanggal_mulai)->locale('id')->isoFormat('D MMMM Y') . ' - ' . Carbon::parse($tanggal_akhir)->locale('id')->isoFormat('D MMMM Y')
         ];
         
         $pdf = \PDF::loadView('manajemen-tukang.kehadiran.rekap-pdf', $data);
         $pdf->setPaper('A4', 'landscape');
         
-        return $pdf->stream('Rekap-Kehadiran-Tukang-' . $data['bulanNama'] . '.pdf');
+        return $pdf->stream('Rekap-Kehadiran-Tukang-' . $start->format('d-M') . '-' . $end->format('d-M-Y') . '.pdf');
     }
     
     /**

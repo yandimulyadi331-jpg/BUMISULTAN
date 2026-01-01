@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Rekap Kehadiran Tukang - {{ $bulanNama }}</title>
+    <title>Rekap Kehadiran Tukang - {{ $periodeText }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -107,7 +107,7 @@
 
     <div class="header">
         <h2>REKAP KEHADIRAN TUKANG</h2>
-        <p>{{ $bulanNama }}</p>
+        <p>{{ $periodeText }}</p>
         <p>Dicetak: {{ \Carbon\Carbon::now()->locale('id')->isoFormat('dddd, D MMMM YYYY HH:mm') }}</p>
     </div>
 
@@ -115,26 +115,29 @@
         <thead>
             <tr>
                 <th rowspan="2" style="width: 3%;">No</th>
-                <th rowspan="2" style="width: 7%;">Kode</th>
-                <th rowspan="2" style="width: 15%;">Nama Tukang</th>
-                <th rowspan="2" style="width: 10%;">Tarif/Hari</th>
+                <th rowspan="2" style="width: 6%;">Kode</th>
+                <th rowspan="2" style="width: 13%;">Nama Tukang</th>
+                <th rowspan="2" style="width: 8%;">Tarif/Hari</th>
                 <th colspan="3" style="background-color: #28a745;">Kehadiran</th>
                 <th colspan="4" style="background-color: #dc3545;">Lembur</th>
-                <th rowspan="2" style="width: 12%;">Total Upah</th>
+                <th rowspan="2" style="width: 10%; background-color: #dc3545; color: white;">Potongan</th>
+                <th rowspan="2" style="width: 10%; background-color: #28a745; color: white;">Total Nett</th>
             </tr>
             <tr>
-                <th style="width: 5%; background-color: #28a745; color: white;">Hadir</th>
-                <th style="width: 5%; background-color: #ffc107; color: #000;">1/2 Hari</th>
-                <th style="width: 5%; background-color: #6c757d; color: white;">Alfa</th>
-                <th style="width: 5%; background-color: #dc3545; color: white;">L.Full</th>
-                <th style="width: 5%; background-color: #fd7e14; color: white;">L.1/2</th>
-                <th style="width: 5%; background-color: #20c997; color: white;">🔥 Full</th>
-                <th style="width: 5%; background-color: #17a2b8; color: white;">🔥 1/2</th>
+                <th style="width: 4%; background-color: #28a745; color: white;">Hadir</th>
+                <th style="width: 4%; background-color: #ffc107; color: #000;">1/2 Hari</th>
+                <th style="width: 4%; background-color: #6c757d; color: white;">Alfa</th>
+                <th style="width: 4%; background-color: #dc3545; color: white;">L.Full</th>
+                <th style="width: 4%; background-color: #fd7e14; color: white;">L.1/2</th>
+                <th style="width: 4%; background-color: #20c997; color: white;">🔥 Full</th>
+                <th style="width: 4%; background-color: #17a2b8; color: white;">🔥 1/2</th>
             </tr>
         </thead>
         <tbody>
             @php
                 $totalKeseluruhan = 0;
+                $totalNettAll = 0;
+                $totalPotonganAll = 0;
                 $totalHadir = 0;
                 $totalSetengah = 0;
                 $totalAlfa = 0;
@@ -146,7 +149,24 @@
             
             @foreach($tukangs as $index => $tukang)
                 @php
+                    // Cek apakah auto potong aktif
+                    $autoPotongAktif = $tukang->auto_potong_pinjaman ?? false;
+                    
+                    // Hitung potongan pinjaman HANYA jika auto potong aktif
+                    $potonganPinjaman = 0;
+                    if ($autoPotongAktif) {
+                        $potonganPinjaman = \App\Models\PinjamanTukang::where('tukang_id', $tukang->id)
+                            ->where('status', 'aktif')
+                            ->where('sisa_pinjaman', '>', 0)
+                            ->sum('cicilan_per_minggu');
+                    }
+                    
+                    $totalPotongan = $potonganPinjaman * $jumlahMinggu;
+                    $totalNett = $tukang->total_upah - $totalPotongan;
+                    
                     $totalKeseluruhan += $tukang->total_upah;
+                    $totalPotonganAll += $totalPotongan;
+                    $totalNettAll += $totalNett;
                     $totalHadir += $tukang->total_hadir;
                     $totalSetengah += $tukang->total_setengah_hari;
                     $totalAlfa += $tukang->total_tidak_hadir;
@@ -167,7 +187,17 @@
                     <td><span class="badge badge-warning">{{ $tukang->total_lembur_setengah }}</span></td>
                     <td><span class="badge badge-success">{{ $tukang->total_lembur_full_cash }}</span></td>
                     <td><span class="badge badge-info">{{ $tukang->total_lembur_setengah_cash }}</span></td>
-                    <td class="text-right text-success">Rp {{ number_format($tukang->total_upah, 0, ',', '.') }}</td>
+                    <td class="text-right text-danger">
+                        @if($totalPotongan > 0)
+                            -Rp {{ number_format($totalPotongan, 0, ',', '.') }}
+                            <small>({{ $jumlahMinggu }}x Rp {{ number_format($potonganPinjaman, 0, ',', '.') }})</small>
+                        @else
+                            <span style="color: #999;">-</span>
+                        @endif
+                    </td>
+                    <td class="text-right" style="color: {{ $totalNett >= 0 ? '#28a745' : '#dc3545' }}; font-weight: bold;">
+                        Rp {{ number_format($totalNett, 0, ',', '.') }}
+                    </td>
                 </tr>
             @endforeach
         </tbody>
@@ -181,7 +211,16 @@
                 <td>{{ $totalLemburSetengah }}</td>
                 <td>{{ $totalLemburFullCash }}</td>
                 <td>{{ $totalLemburSetengahCash }}</td>
-                <td class="text-right text-success">Rp {{ number_format($totalKeseluruhan, 0, ',', '.') }}</td>
+                <td class="text-right text-danger">
+                    @if($totalPotonganAll > 0)
+                        <strong>-Rp {{ number_format($totalPotonganAll, 0, ',', '.') }}</strong>
+                    @else
+                        <span style="color: #999;">-</span>
+                    @endif
+                </td>
+                <td class="text-right" style="color: #28a745; font-weight: bold;">
+                    <strong>Rp {{ number_format($totalNettAll, 0, ',', '.') }}</strong>
+                </td>
             </tr>
         </tfoot>
     </table>

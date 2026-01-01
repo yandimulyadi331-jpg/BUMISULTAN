@@ -1,11 +1,11 @@
 @extends('layouts.app')
 @section('titlepage', 'Pinjaman Tukang')
 
-@section('content')
 @section('navigasi')
    <span class="text-muted fw-light">Keuangan Tukang /</span> Pinjaman
 @endsection
 
+@section('content')
 <div class="row">
    <div class="col-12">
       <div class="card">
@@ -22,7 +22,7 @@
                   <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalPinjaman">
                      <i class="ti ti-plus me-1"></i> Tambah Pinjaman
                   </button>
-                  <a href="{{ route('keuangan-tukang.index') }}" class="btn btn-secondary btn-sm">
+                  <a href="{{ route('kehadiran-tukang.index') }}" class="btn btn-secondary btn-sm">
                      <i class="ti ti-arrow-left me-1"></i> Kembali
                   </a>
                </div>
@@ -74,6 +74,7 @@
                         <th width="9%">Cicilan/Minggu</th>
                         <th width="7%">Foto</th>
                         <th width="7%">Status</th>
+                        <th width="10%" class="text-center">Auto Potong</th>
                         <th width="10%">Aksi</th>
                      </tr>
                   </thead>
@@ -106,6 +107,28 @@
                            </td>
                            <td class="text-center">
                               @if($p->status == 'aktif')
+                                 <div class="form-check form-switch d-flex justify-content-center">
+                                    <input class="form-check-input" 
+                                           type="checkbox" 
+                                           role="switch" 
+                                           id="toggle-{{ $p->tukang->id }}" 
+                                           {{ $p->tukang->auto_potong_pinjaman ? 'checked' : '' }}
+                                           onchange="toggleAutoPotongPinjaman({{ $p->tukang->id }}, '{{ $p->tukang->nama_tukang }}')"
+                                           style="cursor: pointer; width: 2.5rem; height: 1.25rem;">
+                                 </div>
+                                 <small id="badge-toggle-{{ $p->tukang->id }}" class="d-block mt-1">
+                                    @if($p->tukang->auto_potong_pinjaman)
+                                       <span class="badge bg-success">AKTIF</span>
+                                    @else
+                                       <span class="badge bg-secondary">NONAKTIF</span>
+                                    @endif
+                                 </small>
+                              @else
+                                 <span class="badge bg-light text-muted">-</span>
+                              @endif
+                           </td>
+                           <td class="text-center">
+                              @if($p->status == 'aktif')
                                  <button type="button" class="btn btn-sm btn-info" onclick="event.preventDefault(); bayarCicilan({{ $p->id }}, '{{ addslashes($p->tukang->nama_tukang) }}', {{ $p->sisa_pinjaman }}, {{ $p->cicilan_per_minggu }});">
                                     <i class="ti ti-cash"></i>
                                  </button>
@@ -120,7 +143,7 @@
                         </tr>
                      @empty
                         <tr>
-                           <td colspan="11" class="text-center">Tidak ada data pinjaman</td>
+                           <td colspan="12" class="text-center">Tidak ada data pinjaman</td>
                         </tr>
                      @endforelse
                   </tbody>
@@ -131,7 +154,7 @@
                            <th class="text-end">Rp {{ number_format($pinjamans->sum('jumlah_pinjaman'), 0, ',', '.') }}</th>
                            <th class="text-end text-success">Rp {{ number_format($pinjamans->sum('jumlah_terbayar'), 0, ',', '.') }}</th>
                            <th class="text-end text-danger">Rp {{ number_format($pinjamans->sum('sisa_pinjaman'), 0, ',', '.') }}</th>
-                           <th colspan="4"></th>
+                           <th colspan="5"></th>
                         </tr>
                      </tfoot>
                   @endif
@@ -272,9 +295,9 @@
       </div>
    </div>
 </div>
-
 @endsection
 
+@push('scripts')
 <script>
 function filterData() {
    let status = document.getElementById('filterStatus').value;
@@ -330,4 +353,62 @@ function cekPinjamanAktif(tukangId) {
       infoPinjaman.style.display = 'none';
    }
 }
+
+async function toggleAutoPotongPinjaman(tukangId, namaTukang) {
+   const toggle = document.getElementById('toggle-' + tukangId);
+   const isChecked = toggle.checked;
+   
+   try {
+      const response = await fetch(`{{ url('keuangan-tukang/toggle-potongan-pinjaman') }}/${tukangId}`, {
+         method: 'POST',
+         headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+         }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+         // Update badge
+         const badge = document.getElementById('badge-toggle-' + tukangId);
+         if (isChecked) {
+            badge.innerHTML = '<span class="badge bg-success">AKTIF</span>';
+         } else {
+            badge.innerHTML = '<span class="badge bg-secondary">NONAKTIF</span>';
+         }
+         
+         // Tampilkan notifikasi
+         Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            html: `
+               <div class="text-start">
+                  <strong>${namaTukang}</strong><br>
+                  Status Auto Potong: <strong>${isChecked ? 'AKTIF' : 'NONAKTIF'}</strong><br><br>
+                  ${isChecked ? 
+                     '<i class="ti ti-info-circle text-info"></i> Cicilan akan otomatis dipotong dari gaji setiap minggu.' : 
+                     '<i class="ti ti-alert-triangle text-warning"></i> Cicilan tidak akan dipotong otomatis dari gaji.'
+                  }
+               </div>
+            `,
+            showConfirmButton: true,
+            timer: 3000
+         });
+      } else {
+         throw new Error(data.message || 'Gagal mengubah status');
+      }
+   } catch (error) {
+      console.error('Error:', error);
+      toggle.checked = !isChecked; // Kembalikan ke posisi semula
+      
+      Swal.fire({
+         icon: 'error',
+         title: 'Gagal!',
+         text: error.message || 'Terjadi kesalahan saat mengubah status auto potong',
+         showConfirmButton: true
+      });
+   }
+}
 </script>
+@endpush

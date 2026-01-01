@@ -16,17 +16,7 @@
                   <p class="text-muted mb-0">Periode: {{ $periodeText }}</p>
                </div>
                <div>
-                  <a href="{{ route('keuangan-tukang.download-laporan-pengajuan-gaji') }}?periode_mulai={{ $periode_mulai }}&periode_akhir={{ $periode_akhir }}" 
-                     class="btn btn-info btn-sm me-2"
-                     target="_blank">
-                     <i class="ti ti-file-text me-1"></i> Download Laporan Pengajuan
-                  </a>
-                  <a href="{{ route('keuangan-tukang.download-laporan-gaji-kamis') }}?periode_mulai={{ $periode_mulai }}&periode_akhir={{ $periode_akhir }}" 
-                     class="btn btn-success btn-sm me-2"
-                     target="_blank">
-                     <i class="ti ti-file-download me-1"></i> Download Laporan PDF
-                  </a>
-                  <a href="{{ route('keuangan-tukang.index') }}" class="btn btn-secondary btn-sm">
+                  <a href="{{ route('kehadiran-tukang.index') }}" class="btn btn-secondary btn-sm">
                      <i class="ti ti-arrow-left me-1"></i> Kembali
                   </a>
                </div>
@@ -46,17 +36,11 @@
                <table class="table table-hover table-bordered">
                   <thead class="table-dark">
                      <tr>
-                        <th width="4%">No</th>
-                        <th width="7%">Kode</th>
-                        <th width="13%">Nama Tukang</th>
-                        <th width="10%">Upah Harian</th>
-                        <th width="10%">Upah Lembur</th>
-                        <th width="10%">Total Kotor</th>
-                        <th width="10%">Potongan</th>
-                        <th width="10%">Total Nett</th>
-                        <th width="8%">Auto Potong</th>
-                        <th width="8%">Status</th>
-                        <th width="10%">Aksi</th>
+                        <th width="5%">No</th>
+                        <th width="10%">Kode</th>
+                        <th width="50%">Nama Tukang</th>
+                        <th width="15%" class="text-center">Status</th>
+                        <th width="20%" class="text-center">Aksi</th>
                      </tr>
                   </thead>
                   <tbody>
@@ -68,98 +52,41 @@
                               <div class="d-flex align-items-center">
                                  @if($tukang->foto)
                                     <img src="{{ Storage::url('tukang/' . $tukang->foto) }}" 
-                                       class="rounded me-2" width="32" height="32" style="object-fit: cover;">
+                                       class="rounded me-2" width="40" height="40" style="object-fit: cover;">
                                  @endif
-                                 {{ $tukang->nama_tukang }}
+                                 <strong>{{ $tukang->nama_tukang }}</strong>
                               </div>
-                           </td>
-                           <td>Rp {{ number_format($tukang->pembayaran->total_upah_harian, 0, ',', '.') }}</td>
-                           <td>
-                              Rp {{ number_format($tukang->pembayaran->total_upah_lembur - $tukang->pembayaran->lembur_cash_terbayar, 0, ',', '.') }}
-                              @if($tukang->pembayaran->lembur_cash_terbayar > 0)
-                                 <br><small class="text-muted">(Cash: -Rp {{ number_format($tukang->pembayaran->lembur_cash_terbayar, 0, ',', '.') }})</small>
-                              @endif
-                           </td>
-                           <td><strong class="text-success">Rp {{ number_format($tukang->pembayaran->total_kotor, 0, ',', '.') }}</strong></td>
-                           <td class="text-danger" id="potongan-{{ $tukang->id }}">
-                              Rp {{ number_format($tukang->pembayaran->total_potongan, 0, ',', '.') }}
-                           </td>
-                           <td id="total-nett-{{ $tukang->id }}">
-                              <strong class="text-primary">Rp {{ number_format($tukang->pembayaran->total_nett, 0, ',', '.') }}</strong>
-                           </td>
-                           <td class="text-center">
-                              @php
-                                 $hasPinjaman = \App\Models\PinjamanTukang::where('tukang_id', $tukang->id)
-                                    ->where('status', 'aktif')
-                                    ->exists();
-                              @endphp
-                              @if($hasPinjaman)
-                                 <div class="form-check form-switch d-flex justify-content-center">
-                                    <input class="form-check-input" 
-                                           type="checkbox" 
-                                           role="switch" 
-                                           id="toggle-{{ $tukang->id }}" 
-                                           {{ $tukang->auto_potong_pinjaman ? 'checked' : '' }}
-                                           onchange="toggleAutoPotong({{ $tukang->id }}, '{{ $tukang->nama_tukang }}')"
-                                           style="cursor: pointer; width: 2.5rem; height: 1.25rem;">
-                                 </div>
-                                 <small id="badge-toggle-{{ $tukang->id }}" class="d-block mt-1">
-                                    @if($tukang->auto_potong_pinjaman)
-                                       <span class="badge bg-success">AKTIF</span>
-                                    @else
-                                       <span class="badge bg-secondary">NONAKTIF</span>
-                                    @endif
-                                 </small>
-                              @else
-                                 <span class="badge bg-light text-muted">-</span>
-                              @endif
                            </td>
                            <td class="text-center">
                               @if(is_object($tukang->pembayaran) && $tukang->pembayaran->status == 'lunas')
-                                 <span class="badge bg-success">
+                                 <span class="badge bg-success" style="font-size: 14px; padding: 8px 12px;">
                                     <i class="ti ti-check"></i> Lunas
                                  </span>
                               @else
-                                 <span class="badge bg-warning">
+                                 <span class="badge bg-warning" style="font-size: 14px; padding: 8px 12px;">
                                     <i class="ti ti-clock"></i> Belum Bayar
                                  </span>
                               @endif
                            </td>
                            <td class="text-center">
                               @if(is_object($tukang->pembayaran) && $tukang->pembayaran->status == 'lunas')
-                                 <button class="btn btn-sm btn-info" onclick="lihatSlip({{ $tukang->pembayaran->id }})">
-                                    <i class="ti ti-file"></i> Lihat Slip
+                                 <button class="btn btn-info" onclick="lihatSlip({{ $tukang->pembayaran->id }})">
+                                    <i class="ti ti-file me-1"></i> Lihat Slip
                                  </button>
                               @else
-                                 <button class="btn btn-sm btn-primary" 
+                                 <button class="btn btn-primary" 
                                     onclick="bayarGaji({{ $tukang->id }}, '{{ $tukang->nama_tukang }}')">
-                                    <i class="ti ti-cash"></i> Bayar Gaji
+                                    <i class="ti ti-cash me-1"></i> Bayar Gaji
                                  </button>
                               @endif
                            </td>
                         </tr>
                      @empty
                         <tr>
-                           <td colspan="10" class="text-center">Tidak ada data tukang</td>
+                           <td colspan="5" class="text-center">Tidak ada data tukang</td>
                         </tr>
                      @endforelse
                   </tbody>
-                  @if($tukangs->count() > 0)
-                     <tfoot class="table-light">
-                        <tr>
-                           <th colspan="6" class="text-end">Total Keseluruhan:</th>
-                           <th>Rp {{ number_format($tukangs->sum('pembayaran.total_kotor'), 0, ',', '.') }}</th>
-                           <th class="text-danger">Rp {{ number_format($tukangs->sum('pembayaran.total_potongan'), 0, ',', '.') }}</th>
-                           <th colspan="3" class="text-primary">
-                              <strong>Rp {{ number_format($tukangs->sum('pembayaran.total_nett'), 0, ',', '.') }}</strong>
-                           </th>
-                        </tr>
-                     </tfoot>
-                           <th class="text-primary">Rp {{ number_format($tukangs->sum('pembayaran.total_nett'), 0, ',', '.') }}</th>
-                           <th colspan="2"></th>
-                        </tr>
-                     </tfoot>
-                  @endif
                </table>
             </div>
          </div>
