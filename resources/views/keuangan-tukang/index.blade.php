@@ -110,20 +110,24 @@
                               </strong>
                            </td>
                            <td class="text-center">
-                              <div class="form-check form-switch d-flex justify-content-center">
-                                 <input class="form-check-input" type="checkbox" role="switch" 
-                                        id="switch{{ $tukang->id }}" 
-                                        {{ $tukang->auto_potong_pinjaman ? 'checked' : '' }}
-                                        onchange="togglePotongan({{ $tukang->id }}, '{{ $tukang->nama_tukang }}')"
-                                        style="cursor: pointer;">
-                              </div>
-                              <small id="badge-{{ $tukang->id }}" class="d-block mt-1">
-                                 @if($tukang->auto_potong_pinjaman)
-                                    <span class="badge bg-success">AKTIF</span>
-                                 @else
-                                    <span class="badge bg-secondary">NONAKTIF</span>
-                                 @endif
-                              </small>
+                              @if($tukang->pinjaman_aktif > 0 && $tukang->cicilan_mingguan > 0)
+                                 <div class="form-check form-switch d-flex justify-content-center">
+                                    <input class="form-check-input" type="checkbox" role="switch" 
+                                           id="switch{{ $tukang->id }}" 
+                                           {{ $tukang->auto_potong_pinjaman ? 'checked' : '' }}
+                                           onchange="togglePotongan({{ $tukang->id }}, '{{ $tukang->nama_tukang }}')"
+                                           style="cursor: pointer;">
+                                 </div>
+                                 <small id="badge-{{ $tukang->id }}" class="d-block mt-1">
+                                    @if($tukang->auto_potong_pinjaman)
+                                       <span class="badge bg-success">AKTIF</span>
+                                    @else
+                                       <span class="badge bg-secondary">NONAKTIF</span>
+                                    @endif
+                                 </small>
+                              @else
+                                 <span class="badge bg-light text-muted">Tidak Ada Pinjaman</span>
+                              @endif
                            </td>
                            <td class="text-center">
                               <div class="dropdown">

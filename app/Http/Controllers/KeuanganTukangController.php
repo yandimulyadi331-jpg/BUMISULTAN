@@ -1240,7 +1240,12 @@ class KeuanganTukangController extends Controller
             $totalUpahLembur = $kehadirans->where('lembur', '!=', 'tidak')->sum('upah_lembur');
             $lemburCashTerbayar = $kehadirans->where('lembur_dibayar_cash', true)->sum('upah_lembur');
             
-            $totalPotonganPinjaman = $pinjamanAktif->sum('cicilan_per_minggu');
+            // ✅ POTONGAN PINJAMAN HANYA JIKA AUTO POTONG AKTIF
+            $totalPotonganPinjaman = 0;
+            if ($tukang->auto_potong_pinjaman) {
+                $totalPotonganPinjaman = $pinjamanAktif->sum('cicilan_per_minggu');
+            }
+            
             $totalPotonganLain = $potonganLain->sum('jumlah');
             $totalPotongan = $totalPotonganPinjaman + $totalPotonganLain;
             

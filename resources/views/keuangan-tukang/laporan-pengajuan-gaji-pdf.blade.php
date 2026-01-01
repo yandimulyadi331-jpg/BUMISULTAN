@@ -289,13 +289,13 @@
         </table>
 
         <!-- RINCIAN POTONGAN -->
-        @if($data['pinjamanAktif']->count() > 0 || $data['potonganLain']->count() > 0)
+        @if(($data['pinjamanAktif']->count() > 0 && $data['tukang']->auto_potong_pinjaman) || $data['potonganLain']->count() > 0)
         <div class="potongan-detail">
             <h5>💳 Rincian Potongan</h5>
             
-            @if($data['pinjamanAktif']->count() > 0)
+            @if($data['pinjamanAktif']->count() > 0 && $data['tukang']->auto_potong_pinjaman)
                 <div style="margin-bottom: 5px;">
-                    <strong style="font-size: 8px; color: #f57c00;">Cicilan Pinjaman:</strong>
+                    <strong style="font-size: 8px; color: #f57c00;">Cicilan Pinjaman (AUTO POTONG AKTIF):</strong>
                     @foreach($data['pinjamanAktif'] as $pinjaman)
                     <div class="potongan-item">
                         <table style="width: 100%; border: none;">
@@ -312,6 +312,12 @@
                         </table>
                     </div>
                     @endforeach
+                </div>
+            @elseif($data['pinjamanAktif']->count() > 0 && !$data['tukang']->auto_potong_pinjaman)
+                <div style="margin-bottom: 5px; padding: 5px; background: #fff3cd; border-left: 3px solid #ffc107;">
+                    <strong style="font-size: 8px; color: #856404;">⚠️ Pinjaman Aktif (AUTO POTONG NONAKTIF):</strong><br>
+                    <small>Tukang memiliki {{ $data['pinjamanAktif']->count() }} pinjaman aktif, tapi auto potong dinonaktifkan.</small><br>
+                    <small>Total sisa pinjaman: <strong>Rp {{ number_format($data['pinjamanAktif']->sum('sisa_pinjaman'), 0, ',', '.') }}</strong></small>
                 </div>
             @endif
 
@@ -361,7 +367,14 @@
             </tr>
             <tr>
                 <td class="label">Potongan Pinjaman:</td>
-                <td class="value text-danger">- Rp {{ number_format($data['total_potongan_pinjaman'], 0, ',', '.') }}</td>
+                <td class="value text-danger">
+                    - Rp {{ number_format($data['total_potongan_pinjaman'], 0, ',', '.') }}
+                    @if($data['total_potongan_pinjaman'] > 0)
+                        <br><small style="color: #4caf50;">(Auto Potong: AKTIF)</small>
+                    @elseif($data['pinjamanAktif']->count() > 0)
+                        <br><small style="color: #ff9800;">(Auto Potong: NONAKTIF)</small>
+                    @endif
+                </td>
             </tr>
             <tr>
                 <td class="label">Potongan Lain:</td>
