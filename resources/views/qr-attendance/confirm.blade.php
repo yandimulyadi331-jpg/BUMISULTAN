@@ -157,92 +157,169 @@
         </div>
     </div>
 
+    <!-- Load jQuery from CDN as fallback -->
     <script src="{{ asset('assets/js/jquery-3.7.1.min.js') }}"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script>
-        $(document).ready(function() {
-            $('#btnHadir').click(function() {
-                console.log('Button HADIR clicked');
-                
-                // Request GPS location
-                if (navigator.geolocation) {
-                    $('#confirmForm').hide();
-                    $('#loadingDiv').show();
+        // Check if jQuery loaded, if not use vanilla JS
+        if (typeof jQuery === 'undefined') {
+            console.warn('jQuery not loaded, using vanilla JS');
+            
+            document.addEventListener('DOMContentLoaded', function() {
+                document.getElementById('btnHadir').addEventListener('click', function() {
+                    console.log('Button HADIR clicked (Vanilla JS)');
+                    
+                    // Request GPS location
+                    if (navigator.geolocation) {
+                        document.getElementById('confirmForm').style.display = 'none';
+                        document.getElementById('loadingDiv').style.display = 'block';
 
-                    navigator.geolocation.getCurrentPosition(
-                        function(position) {
-                            console.log('GPS berhasil:', position.coords);
-                            
-                            // Submit absensi
-                            $.ajax({
-                                url: '{{ route('qr-attendance.submit-simple') }}',
-                                type: 'POST',
-                                data: {
-                                    _token: '{{ csrf_token() }}',
-                                    token: '{{ $token }}',
-                                    kode_yayasan: '{{ $jamaah->kode_yayasan }}',
-                                    latitude: position.coords.latitude,
-                                    longitude: position.coords.longitude
-                                },
-                                success: function(response) {
-                                    console.log('Absensi berhasil:', response);
-                                    if (response.redirect_url) {
-                                        window.location.href = response.redirect_url;
+                        navigator.geolocation.getCurrentPosition(
+                            function(position) {
+                                console.log('GPS berhasil:', position.coords);
+                                
+                                // Submit absensi with fetch
+                                fetch('{{ route('qr-attendance.submit-simple') }}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                    },
+                                    body: JSON.stringify({
+                                        token: '{{ $token }}',
+                                        kode_yayasan: '{{ $jamaah->kode_yayasan }}',
+                                        latitude: position.coords.latitude,
+                                        longitude: position.coords.longitude
+                                    })
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    console.log('Absensi berhasil:', data);
+                                    if (data.redirect_url) {
+                                        window.location.href = data.redirect_url;
                                     } else {
                                         window.location.href = '{{ route('qr-attendance.success') }}?kode_yayasan={{ $jamaah->kode_yayasan }}&event_id={{ $event->id }}';
                                     }
-                                },
-                                error: function(xhr, status, error) {
-                                    console.error('Error AJAX:', xhr.responseText);
-                                    $('#loadingDiv').hide();
-                                    $('#confirmForm').show();
-                                    
-                                    var message = 'Terjadi kesalahan. Silakan coba lagi.';
-                                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                                        message = xhr.responseJSON.message;
-                                    } else if (xhr.responseText) {
-                                        try {
-                                            var errorData = JSON.parse(xhr.responseText);
-                                            message = errorData.message || message;
-                                        } catch(e) {
-                                            console.error('Parse error:', e);
-                                        }
-                                    }
-                                    alert(message);
+                                })
+                                .catch(error => {
+                                    console.error('Error fetch:', error);
+                                    document.getElementById('loadingDiv').style.display = 'none';
+                                    document.getElementById('confirmForm').style.display = 'block';
+                                    alert('Terjadi kesalahan. Silakan coba lagi.');
+                                });
+                            },
+                            function(error) {
+                                console.error('GPS Error:', error);
+                                document.getElementById('loadingDiv').style.display = 'none';
+                                document.getElementById('confirmForm').style.display = 'block';
+                                
+                                var errorMessage = 'Gagal mendapatkan lokasi GPS. ';
+                                switch(error.code) {
+                                    case error.PERMISSION_DENIED:
+                                        errorMessage += 'Izin lokasi ditolak. Aktifkan izin lokasi di browser.';
+                                        break;
+                                    case error.POSITION_UNAVAILABLE:
+                                        errorMessage += 'Informasi lokasi tidak tersedia.';
+                                        break;
+                                    case error.TIMEOUT:
+                                        errorMessage += 'Waktu permintaan lokasi habis.';
+                                        break;
+                                    default:
+                                        errorMessage += 'Error tidak diketahui.';
                                 }
-                            });
-                        },
-                        function(error) {
-                            console.error('GPS Error:', error);
-                            $('#loadingDiv').hide();
-                            $('#confirmForm').show();
-                            
-                            var errorMessage = 'Gagal mendapatkan lokasi GPS. ';
-                            switch(error.code) {
-                                case error.PERMISSION_DENIED:
-                                    errorMessage += 'Izin lokasi ditolak. Aktifkan izin lokasi di browser.';
-                                    break;
-                                case error.POSITION_UNAVAILABLE:
-                                    errorMessage += 'Informasi lokasi tidak tersedia.';
-                                    break;
-                                case error.TIMEOUT:
-                                    errorMessage += 'Waktu permintaan lokasi habis.';
-                                    break;
-                                default:
-                                    errorMessage += 'Error tidak diketahui.';
+                                alert(errorMessage);
+                            },
+                            {
+                                enableHighAccuracy: true,
+                                timeout: 10000,
+                                maximumAge: 0
                             }
-                            alert(errorMessage);
-                        },
-                        {
-                            enableHighAccuracy: true,
-                            timeout: 10000,
-                            maximumAge: 0
-                        }
-                    );
-                } else {
-                    alert('Browser Anda tidak mendukung GPS');
-                }
+                        );
+                    } else {
+                        alert('Browser Anda tidak mendukung GPS');
+                    }
+                });
             });
-        });
+        } else {
+            // jQuery loaded, use jQuery
+            $(document).ready(function() {
+                $('#btnHadir').click(function() {
+                    console.log('Button HADIR clicked (jQuery)');
+                    
+                    // Request GPS location
+                    if (navigator.geolocation) {
+                        $('#confirmForm').hide();
+                        $('#loadingDiv').show();
+
+                        navigator.geolocation.getCurrentPosition(
+                            function(position) {
+                                console.log('GPS berhasil:', position.coords);
+                                
+                                // Submit absensi
+                                $.ajax({
+                                    url: '{{ route('qr-attendance.submit-simple') }}',
+                                    type: 'POST',
+                                    data: {
+                                        _token: '{{ csrf_token() }}',
+                                        token: '{{ $token }}',
+                                        kode_yayasan: '{{ $jamaah->kode_yayasan }}',
+                                        latitude: position.coords.latitude,
+                                        longitude: position.coords.longitude
+                                    },
+                                    success: function(response) {
+                                        console.log('Absensi berhasil:', response);
+                                        if (response.redirect_url) {
+                                            window.location.href = response.redirect_url;
+                                        } else {
+                                            window.location.href = '{{ route('qr-attendance.success') }}?kode_yayasan={{ $jamaah->kode_yayasan }}&event_id={{ $event->id }}';
+                                        }
+                                    },
+                                    error: function(xhr, status, error) {
+                                        console.error('Error AJAX:', xhr.responseText);
+                                        $('#loadingDiv').hide();
+                                        $('#confirmForm').show();
+                                        
+                                        var message = 'Terjadi kesalahan. Silakan coba lagi.';
+                                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                                            message = xhr.responseJSON.message;
+                                        }
+                                        alert(message);
+                                    }
+                                });
+                            },
+                            function(error) {
+                                console.error('GPS Error:', error);
+                                $('#loadingDiv').hide();
+                                $('#confirmForm').show();
+                                
+                                var errorMessage = 'Gagal mendapatkan lokasi GPS. ';
+                                switch(error.code) {
+                                    case error.PERMISSION_DENIED:
+                                        errorMessage += 'Izin lokasi ditolak. Aktifkan izin lokasi di browser.';
+                                        break;
+                                    case error.POSITION_UNAVAILABLE:
+                                        errorMessage += 'Informasi lokasi tidak tersedia.';
+                                        break;
+                                    case error.TIMEOUT:
+                                        errorMessage += 'Waktu permintaan lokasi habis.';
+                                        break;
+                                    default:
+                                        errorMessage += 'Error tidak diketahui.';
+                                }
+                                alert(errorMessage);
+                            },
+                            {
+                                enableHighAccuracy: true,
+                                timeout: 10000,
+                                maximumAge: 0
+                            }
+                        );
+                    } else {
+                        alert('Browser Anda tidak mendukung GPS');
+                    }
+                });
+            });
+        }
     </script>
 </body>
 </html>
