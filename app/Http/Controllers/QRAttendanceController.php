@@ -608,7 +608,7 @@ class QRAttendanceController extends Controller
             // Cek apakah sudah absen hari ini untuk event ini
             $sudahAbsen = PresensiYayasan::where('kode_yayasan', $jamaah->kode_yayasan)
                 ->where('qr_event_id', $event->id)
-                ->whereDate('tanggal_presensi', now()->toDateString())
+                ->whereDate('tanggal', now()->toDateString())
                 ->exists();
 
             if ($sudahAbsen) {
@@ -655,11 +655,11 @@ class QRAttendanceController extends Controller
             // Simpan presensi
             $presensi = PresensiYayasan::create([
                 'kode_yayasan' => $jamaah->kode_yayasan,
-                'tanggal_presensi' => now()->toDateString(),
+                'tanggal' => now()->toDateString(),
                 'kode_jam_kerja' => $jamKerja ? $jamKerja->kode_jam_kerja : 'JK01',
-                'jam_in' => now()->toTimeString(),
+                'jam_in' => now(),
                 'foto_in' => null,
-                'keterangan' => 'Hadir via QR Code - ' . $event->event_name,
+                'lokasi_in' => $request->latitude . ',' . $request->longitude,
                 'status' => 'h',
                 'latitude_in' => $request->latitude,
                 'longitude_in' => $request->longitude,
