@@ -143,12 +143,6 @@
                 <i class="ti ti-check"></i> Submit Absensi
             </button>
         </form>
-
-        <div class="mt-3 text-center">
-            <a href="{{ route('qr-attendance.logout') }}" class="btn btn-link text-danger">
-                <i class="ti ti-logout"></i> Logout
-            </a>
-        </div>
     </div>
 
     <script src="{{ asset('assets/js/jquery-3.7.1.min.js') }}"></script>
