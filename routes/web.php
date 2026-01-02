@@ -35,6 +35,8 @@ use App\Http\Controllers\PresensiController;
 use App\Http\Controllers\PresensiistirahatController;
 use App\Http\Controllers\YayasanPresensiController;
 use App\Http\Controllers\YayasanLaporanController;
+use App\Http\Controllers\QRAttendanceEventController;
+use App\Http\Controllers\QRAttendanceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SlipgajiController;
@@ -130,6 +132,16 @@ Route::controller(\App\Http\Controllers\BarangPublicController::class)->group(fu
     Route::get('/barang/qr/{hash}', 'publicDetail')->name('barang.public-detail');
     Route::get('/barang/qr/{hash}/download', 'downloadQrCode')->name('barang.download-qr');
     Route::get('/api/barang/qr/{hash}', 'getBarangDetails')->name('barang.api-details');
+});
+
+// ============ QR CODE ATTENDANCE SYSTEM (PUBLIC - JAMAAH) ============
+Route::prefix('absensi-qr')->name('qr-attendance.')->controller(QRAttendanceController::class)->group(function () {
+    // Public routes (no auth required - untuk jamaah umum)
+    Route::get('/{token}', 'scan')->name('scan');
+    Route::get('/form/{token}', 'showForm')->name('form');
+    Route::post('/submit', 'submit')->name('submit');
+    Route::get('/success', 'success')->name('success');
+    Route::post('/device-reset', 'requestDeviceReset')->name('device-reset');
 });
 
 // Route::get('/dashboard', function () {
@@ -542,6 +554,24 @@ Route::middleware('auth')->group(function () {
         Route::post('/yayasan-presensi/submitallmasuk', 'submitallmasuk')->name('yayasan-presensi.submitallmasuk');
         Route::post('/yayasan-presensi/submitallpulang', 'submitallpulang')->name('yayasan-presensi.submitallpulang');
         Route::post('/yayasan-presensi/{pin}/{status_scan}/updatefrommachine', 'updatefrommachine')->name('yayasan-presensi.updatefrommachine');
+    });
+
+    // ============ QR CODE ATTENDANCE SYSTEM (ADMIN) ============
+    Route::prefix('qr-attendance')->name('qr-attendance.')->group(function () {
+        // Event Management (Admin Only)
+        Route::controller(QRAttendanceEventController::class)->group(function () {
+            Route::get('/events', 'index')->name('events.index')->can('yayasan_masar.index');
+            Route::get('/events/create', 'create')->name('events.create')->can('yayasan_masar.index');
+            Route::post('/events', 'store')->name('events.store')->can('yayasan_masar.index');
+            Route::get('/events/{id}', 'show')->name('events.show')->can('yayasan_masar.index');
+            Route::get('/events/{id}/edit', 'edit')->name('events.edit')->can('yayasan_masar.index');
+            Route::put('/events/{id}', 'update')->name('events.update')->can('yayasan_masar.index');
+            Route::delete('/events/{id}', 'destroy')->name('events.destroy')->can('yayasan_masar.index');
+            Route::post('/events/{id}/toggle-status', 'toggleStatus')->name('events.toggle-status')->can('yayasan_masar.index');
+            Route::post('/events/{id}/generate-qr', 'generateQR')->name('events.generate-qr')->can('yayasan_masar.index');
+            Route::get('/events/{id}/display-qr', 'displayQR')->name('events.display-qr')->can('yayasan_masar.index');
+            Route::get('/events/{id}/statistics', 'getStatistics')->name('events.statistics')->can('yayasan_masar.index');
+        });
     });
 
     Route::controller(JamkerjabydeptController::class)->group(function () {

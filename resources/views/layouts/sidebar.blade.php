@@ -584,6 +584,13 @@
                             </li>
                         @endif
                         @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('yayasan_masar.index'))
+                            <li class="menu-item {{ request()->is(['qr-attendance/events*']) ? 'active' : '' }}">
+                                <a href="{{ route('qr-attendance.events.index') }}" class="menu-link">
+                                    <div><i class="ti ti-qrcode me-1"></i> QR Code Attendance</div>
+                                </a>
+                            </li>
+                        @endif
+                        @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('yayasan_masar.index'))
                             <li class="menu-item {{ request()->is(['laporan/presensi-yayasan', 'laporan/presensi-yayasan/*']) ? 'active' : '' }}">
                                 <a href="{{ route('yayasan-laporan.presensi') }}" class="menu-link">
                                     <div>Laporan Presensi Yayasan</div>

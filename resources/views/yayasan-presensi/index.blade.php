@@ -55,6 +55,7 @@
                                         <th>Cbg</th>
                                         <th>Jam Kerja</th>
                                         <th>Status</th>
+                                        <th class="text-center">Method</th>
                                         <th class="text-center">Jam Masuk</th>
                                         <th class="text-center">Jam Pulang</th>
                                         <th class="text-center">Status</th>
@@ -127,6 +128,23 @@
                                                     <span class="badge bg-primary">C</span>
                                                 @else
                                                     <i class="ti ti-hourglass-low text-warning"></i>
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
+                                                @if (!empty($d->attendance_method))
+                                                    @if ($d->attendance_method == 'qr_code')
+                                                        <span class="badge bg-success" title="QR Code"><i class="ti ti-qrcode"></i> QR</span>
+                                                    @elseif($d->attendance_method == 'fingerprint')
+                                                        <span class="badge bg-primary" title="Fingerprint"><i class="ti ti-fingerprint"></i> FP</span>
+                                                    @else
+                                                        <span class="badge bg-secondary" title="Manual">Manual</span>
+                                                    @endif
+                                                @else
+                                                    @if ($d->jam_in != null)
+                                                        <span class="badge bg-primary" title="Fingerprint"><i class="ti ti-fingerprint"></i> FP</span>
+                                                    @else
+                                                        -
+                                                    @endif
                                                 @endif
                                             </td>
                                             <td class="text-center">
