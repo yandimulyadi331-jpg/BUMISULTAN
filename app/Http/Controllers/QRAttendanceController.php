@@ -83,9 +83,14 @@ class QRAttendanceController extends Controller
             return redirect()->route('qr-attendance.form', ['token' => $token]);
 
         } catch (\Exception $e) {
+            \Log::error('QR Attendance Scan Error: ' . $e->getMessage(), [
+                'token' => $token,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return view('qr-attendance.error', [
                 'title' => 'Terjadi Kesalahan',
-                'message' => 'Terjadi kesalahan sistem. Silakan coba lagi.',
+                'message' => config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan sistem. Silakan coba lagi.',
                 'icon' => 'ti-alert-triangle'
             ]);
         }

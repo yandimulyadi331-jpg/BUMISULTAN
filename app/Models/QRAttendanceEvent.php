@@ -15,8 +15,6 @@ class QRAttendanceEvent extends Model
 
     protected $casts = [
         'event_date' => 'date',
-        'event_start_time' => 'datetime:H:i',
-        'event_end_time' => 'datetime:H:i',
         'venue_latitude' => 'decimal:8',
         'venue_longitude' => 'decimal:8',
         'is_active' => 'boolean',
@@ -79,11 +77,19 @@ class QRAttendanceEvent extends Model
     public function isOngoing()
     {
         $now = now();
-        $eventDateTime = $this->event_date->format('Y-m-d');
-        $startTime = $eventDateTime . ' ' . $this->event_start_time;
-        $endTime = $eventDateTime . ' ' . $this->event_end_time;
-
-        return $now->between($startTime, $endTime);
+        $today = $now->format('Y-m-d');
+        $eventDate = $this->event_date->format('Y-m-d');
+        
+        // Pastikan event adalah hari ini
+        if ($eventDate !== $today) {
+            return false;
+        }
+        
+        // Buat datetime lengkap untuk perbandingan
+        $startDateTime = \Carbon\Carbon::parse($eventDate . ' ' . $this->event_start_time);
+        $endDateTime = \Carbon\Carbon::parse($eventDate . ' ' . $this->event_end_time);
+        
+        return $now->between($startDateTime, $endDateTime);
     }
 
     /**
