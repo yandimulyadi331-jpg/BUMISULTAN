@@ -612,7 +612,10 @@ class QRAttendanceController extends Controller
                 ->exists();
 
             if ($sudahAbsen) {
-                return back()->with(messageError('Anda sudah melakukan absensi untuk event ini hari ini'));
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda sudah melakukan absensi untuk event ini hari ini'
+                ], 400);
             }
 
             // Geofencing Validation
@@ -638,10 +641,10 @@ class QRAttendanceController extends Controller
                     'failure_reason' => 'Lokasi terlalu jauh dari venue (' . round($geofence['distance']) . ' meter)'
                 ]);
 
-                return back()->with(messageError(
-                    'Lokasi Anda terlalu jauh dari venue event (' . round($geofence['distance']) . ' meter). ' .
-                    'Jarak maksimal: ' . $event->venue_radius_meter . ' meter.'
-                ));
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lokasi Anda terlalu jauh dari venue event (' . round($geofence['distance']) . ' meter). Jarak maksimal: ' . $event->venue_radius_meter . ' meter.'
+                ], 400);
             }
 
             // Tentukan jam kerja berdasarkan waktu absen
@@ -680,13 +683,22 @@ class QRAttendanceController extends Controller
 
             DB::commit();
 
-            return redirect()->route('qr-attendance.success', ['kode_yayasan' => $jamaah->kode_yayasan, 'event_id' => $event->id])
-                ->with(messageSuccess('Absensi berhasil! Selamat mengikuti ' . $event->event_name));
+            return response()->json([
+                'success' => true,
+                'message' => 'Absensi berhasil! Selamat mengikuti ' . $event->event_name,
+                'redirect_url' => route('qr-attendance.success', ['kode_yayasan' => $jamaah->kode_yayasan, 'event_id' => $event->id])
+            ]);
 
         } catch (\Exception $e) {
             DB::rollback();
-            \Log::error('QR Attendance Submit Error: ' . $e->getMessage());
-            return back()->with(messageError('Terjadi kesalahan: ' . $e->getMessage()));
+            \Log::error('QR Attendance Submit Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

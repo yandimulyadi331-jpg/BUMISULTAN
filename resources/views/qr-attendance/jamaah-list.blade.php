@@ -113,9 +113,9 @@
 
     <div id="jamaahContainer">
         @forelse($jamaahList as $jamaah)
-        <div class="jamaah-card" onclick="window.location.href='{{ route('qr-attendance.confirm', ['token' => $token, 'kode_yayasan' => $jamaah->kode_yayasan]) }}'">
-            @if($jamaah->foto && file_exists(public_path('storage/uploads/karyawan/' . $jamaah->foto)))
-                <img src="{{ asset('storage/uploads/karyawan/' . $jamaah->foto) }}" alt="{{ $jamaah->nama }}" class="jamaah-photo">
+        <div class="jamaah-card" data-nama="{{ strtolower($jamaah->nama) }}" data-identitas="{{ $jamaah->no_identitas }}" onclick="window.location.href='{{ route('qr-attendance.confirm', ['token' => $token, 'kode_yayasan' => $jamaah->kode_yayasan]) }}'">
+            @if($jamaah->foto && file_exists(storage_path('app/public/yayasan_masar/' . $jamaah->foto)))
+                <img src="{{ asset('storage/yayasan_masar/' . $jamaah->foto) }}" alt="{{ $jamaah->nama }}" class="jamaah-photo">
             @else
                 <div class="jamaah-photo-placeholder">
                     {{ strtoupper(substr($jamaah->nama, 0, 1)) }}
@@ -158,11 +158,20 @@
     <script src="{{ asset('assets/js/jquery-3.7.1.min.js') }}"></script>
     <script>
         $(document).ready(function() {
-            // Search functionality
+            // Improved search functionality
             $('#searchJamaah').on('keyup', function() {
-                var value = $(this).val().toLowerCase();
-                $('.jamaah-card').filter(function() {
-                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+                var searchValue = $(this).val().toLowerCase();
+                
+                $('.jamaah-card').each(function() {
+                    var nama = $(this).data('nama') || '';
+                    var identitas = $(this).data('identitas') || '';
+                    
+                    // Search by nama or no_identitas
+                    if (nama.indexOf(searchValue) > -1 || identitas.indexOf(searchValue) > -1) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
                 });
             });
         });

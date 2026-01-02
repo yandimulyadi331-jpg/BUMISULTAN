@@ -86,8 +86,8 @@
 <body>
     <div class="confirm-card">
         <div id="confirmForm">
-            @if($jamaah->foto && file_exists(public_path('storage/uploads/karyawan/' . $jamaah->foto)))
-                <img src="{{ asset('storage/uploads/karyawan/' . $jamaah->foto) }}" alt="{{ $jamaah->nama }}" class="jamaah-photo-large">
+            @if($jamaah->foto && file_exists(storage_path('app/public/yayasan_masar/' . $jamaah->foto)))
+                <img src="{{ asset('storage/yayasan_masar/' . $jamaah->foto) }}" alt="{{ $jamaah->nama }}" class="jamaah-photo-large">
             @else
                 <div class="jamaah-photo-placeholder-large">
                     {{ strtoupper(substr($jamaah->nama, 0, 1)) }}
@@ -161,6 +161,8 @@
     <script>
         $(document).ready(function() {
             $('#btnHadir').click(function() {
+                console.log('Button HADIR clicked');
+                
                 // Request GPS location
                 if (navigator.geolocation) {
                     $('#confirmForm').hide();
@@ -168,6 +170,8 @@
 
                     navigator.geolocation.getCurrentPosition(
                         function(position) {
+                            console.log('GPS berhasil:', position.coords);
+                            
                             // Submit absensi
                             $.ajax({
                                 url: '{{ route('qr-attendance.submit-simple') }}',
@@ -180,24 +184,53 @@
                                     longitude: position.coords.longitude
                                 },
                                 success: function(response) {
-                                    window.location.href = '{{ route('qr-attendance.success') }}?kode_yayasan={{ $jamaah->kode_yayasan }}&event_id={{ $event->id }}';
+                                    console.log('Absensi berhasil:', response);
+                                    if (response.redirect_url) {
+                                        window.location.href = response.redirect_url;
+                                    } else {
+                                        window.location.href = '{{ route('qr-attendance.success') }}?kode_yayasan={{ $jamaah->kode_yayasan }}&event_id={{ $event->id }}';
+                                    }
                                 },
-                                error: function(xhr) {
+                                error: function(xhr, status, error) {
+                                    console.error('Error AJAX:', xhr.responseText);
                                     $('#loadingDiv').hide();
                                     $('#confirmForm').show();
                                     
                                     var message = 'Terjadi kesalahan. Silakan coba lagi.';
                                     if (xhr.responseJSON && xhr.responseJSON.message) {
                                         message = xhr.responseJSON.message;
+                                    } else if (xhr.responseText) {
+                                        try {
+                                            var errorData = JSON.parse(xhr.responseText);
+                                            message = errorData.message || message;
+                                        } catch(e) {
+                                            console.error('Parse error:', e);
+                                        }
                                     }
                                     alert(message);
                                 }
                             });
                         },
                         function(error) {
+                            console.error('GPS Error:', error);
                             $('#loadingDiv').hide();
                             $('#confirmForm').show();
-                            alert('Gagal mendapatkan lokasi GPS. Pastikan GPS Anda aktif dan berikan izin lokasi.');
+                            
+                            var errorMessage = 'Gagal mendapatkan lokasi GPS. ';
+                            switch(error.code) {
+                                case error.PERMISSION_DENIED:
+                                    errorMessage += 'Izin lokasi ditolak. Aktifkan izin lokasi di browser.';
+                                    break;
+                                case error.POSITION_UNAVAILABLE:
+                                    errorMessage += 'Informasi lokasi tidak tersedia.';
+                                    break;
+                                case error.TIMEOUT:
+                                    errorMessage += 'Waktu permintaan lokasi habis.';
+                                    break;
+                                default:
+                                    errorMessage += 'Error tidak diketahui.';
+                            }
+                            alert(errorMessage);
                         },
                         {
                             enableHighAccuracy: true,
