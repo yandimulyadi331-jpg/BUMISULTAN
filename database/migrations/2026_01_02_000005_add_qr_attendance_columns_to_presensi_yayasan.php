@@ -78,28 +78,3 @@ return new class extends Migration
         }
     }
 };
-                            ->references('id')
-                            ->on('qr_attendance_events')
-                            ->nullOnDelete();
-                    }
-                });
-            }
-        }
-    }
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        if (Schema::hasTable('presensi_yayasan')) {
-            Schema::table('presensi_yayasan', function (Blueprint $table) {
-                // Drop foreign key terlebih dahulu
-                $table->dropForeign(['qr_event_id']);
-                
-                // Drop kolom
-                $table->dropColumn(['attendance_method', 'qr_event_id', 'device_id']);
-            });
-        }
-    }
-};
