@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -13,7 +14,7 @@ return new class extends Migration
     {
         if (Schema::hasTable('presensi_yayasan')) {
             Schema::table('presensi_yayasan', function (Blueprint $table) {
-                // Cek apakah kolom belum ada sebelum ditambahkan
+                // Tambah kolom jika belum ada
                 if (!Schema::hasColumn('presensi_yayasan', 'attendance_method')) {
                     $table->enum('attendance_method', ['fingerprint', 'qr_code', 'manual'])
                         ->default('fingerprint')
@@ -22,6 +23,7 @@ return new class extends Migration
                 
                 if (!Schema::hasColumn('presensi_yayasan', 'qr_event_id')) {
                     $table->unsignedBigInteger('qr_event_id')->nullable()->after('attendance_method');
+                    $table->index('qr_event_id');
                 }
                 
                 if (!Schema::hasColumn('presensi_yayasan', 'device_id')) {
@@ -29,35 +31,53 @@ return new class extends Migration
                 }
             });
 
-            // Tambah index setelah kolom dibuat
+            // Tambah foreign key menggunakan raw SQL untuk avoid doctrine
+            if (Schema::hasTable('qr_attendance_events')) {
+                try {
+                    DB::statement('
+                        ALTER TABLE presensi_yayasan 
+                        ADD CONSTRAINT fk_presensi_qr_event 
+                        FOREIGN KEY (qr_event_id) 
+                        REFERENCES qr_attendance_events(id) 
+                        ON DELETE SET NULL
+                    ');
+                } catch (\Exception $e) {
+                    // Foreign key mungkin sudah ada, skip error
+                }
+            }
+        }
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        if (Schema::hasTable('presensi_yayasan')) {
             Schema::table('presensi_yayasan', function (Blueprint $table) {
-                if (!Schema::hasColumn('presensi_yayasan', 'attendance_method')) {
-                    $table->index('attendance_method');
+                // Drop foreign key terlebih dahulu
+                try {
+                    DB::statement('ALTER TABLE presensi_yayasan DROP FOREIGN KEY fk_presensi_qr_event');
+                } catch (\Exception $e) {
+                    // Skip jika tidak ada
                 }
                 
-                if (!Schema::hasColumn('presensi_yayasan', 'qr_event_id')) {
-                    $table->index('qr_event_id');
+                // Drop kolom
+                if (Schema::hasColumn('presensi_yayasan', 'device_id')) {
+                    $table->dropColumn('device_id');
+                }
+                
+                if (Schema::hasColumn('presensi_yayasan', 'qr_event_id')) {
+                    $table->dropColumn('qr_event_id');
+                }
+                
+                if (Schema::hasColumn('presensi_yayasan', 'attendance_method')) {
+                    $table->dropColumn('attendance_method');
                 }
             });
-
-            // Tambah foreign key jika tabel qr_attendance_events sudah ada
-            if (Schema::hasTable('qr_attendance_events')) {
-                Schema::table('presensi_yayasan', function (Blueprint $table) {
-                    // Cek apakah foreign key belum ada
-                    $foreignKeys = Schema::getConnection()
-                        ->getDoctrineSchemaManager()
-                        ->listTableForeignKeys('presensi_yayasan');
-                    
-                    $hasForeignKey = false;
-                    foreach ($foreignKeys as $foreignKey) {
-                        if (in_array('qr_event_id', $foreignKey->getColumns())) {
-                            $hasForeignKey = true;
-                            break;
-                        }
-                    }
-
-                    if (!$hasForeignKey && Schema::hasColumn('presensi_yayasan', 'qr_event_id')) {
-                        $table->foreign('qr_event_id')
+        }
+    }
+};
                             ->references('id')
                             ->on('qr_attendance_events')
                             ->nullOnDelete();
