@@ -138,9 +138,14 @@ Route::controller(\App\Http\Controllers\BarangPublicController::class)->group(fu
 Route::prefix('absensi-qr')->name('qr-attendance.')->controller(QRAttendanceController::class)->group(function () {
     // Public routes (no auth required - untuk jamaah umum)
     Route::get('/{token}', 'scan')->name('scan');
+    Route::get('/jamaah-list/{token}', 'showJamaahList')->name('jamaah-list');
+    Route::get('/confirm/{token}/{kode_yayasan}', 'showConfirmAttendance')->name('confirm');
+    Route::post('/submit-simple', 'submitSimpleAttendance')->name('submit-simple');
+    Route::get('/success', 'success')->name('success');
+    
+    // Old routes (keep for backward compatibility)
     Route::get('/form/{token}', 'showForm')->name('form');
     Route::post('/submit', 'submit')->name('submit');
-    Route::get('/success', 'success')->name('success');
     Route::post('/device-reset', 'requestDeviceReset')->name('device-reset');
 });
 

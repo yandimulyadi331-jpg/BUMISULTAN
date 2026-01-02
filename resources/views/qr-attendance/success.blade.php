@@ -97,7 +97,32 @@
             Jazakallah khair atas kehadiran Anda
         </div>
 
-        @if($attendance && $event)
+        @if(isset($jamaah) && isset($event))
+        <div class="info-box">
+            <div class="info-row">
+                <span class="info-label">Nama:</span>
+                <span class="info-value">{{ $jamaah->nama }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Event:</span>
+                <span class="info-value">{{ $event->event_name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Waktu Absen:</span>
+                <span class="info-value">{{ now()->format('H:i:s') }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Tanggal:</span>
+                <span class="info-value">{{ now()->format('d F Y') }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Jumlah Kehadiran:</span>
+                <span class="info-value">
+                    <span class="badge bg-success">{{ $jumlahKehadiran }}x</span>
+                </span>
+            </div>
+        </div>
+        @elseif(isset($attendance) && isset($event))
         <div class="info-box">
             <div class="info-row">
                 <span class="info-label">Event:</span>
@@ -127,8 +152,8 @@
         </div>
 
         <div class="mt-4">
-            <a href="{{ route('qr-attendance.logout') }}" class="btn btn-outline-primary">
-                <i class="ti ti-logout"></i> Selesai
+            <a href="{{ url('/') }}" class="btn btn-primary">
+                <i class="ti ti-home"></i> Selesai
             </a>
         </div>
 
@@ -140,7 +165,7 @@
     <script>
         // Auto redirect after 10 seconds
         setTimeout(function() {
-            window.location.href = '{{ route('qr-attendance.logout') }}';
+            window.location.href = '{{ url('/') }}';
         }, 10000);
     </script>
 </body>
