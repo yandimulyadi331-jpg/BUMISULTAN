@@ -507,7 +507,7 @@ class QRAttendanceController extends Controller
             // Ambil semua jamaah aktif dari YayasanMasar
             $jamaahList = YayasanMasar::where('status_aktif', '1')
                 ->with(['departemen', 'cabang'])
-                ->select('kode_yayasan', 'nik', 'nama', 'no_hp', 'pin', 'foto', 'status', 'tgl_masuk', 'kode_dept', 'kode_cabang')
+                ->select('kode_yayasan', 'no_identitas', 'nama', 'no_hp', 'pin', 'foto', 'status', 'tanggal_masuk', 'kode_dept', 'kode_cabang')
                 ->orderBy('nama', 'asc')
                 ->get()
                 ->map(function ($jamaah) use ($event) {

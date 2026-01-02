@@ -99,8 +99,8 @@
             <div class="card mt-3">
                 <div class="card-body p-0">
                     <div class="info-row">
-                        <span class="info-label">NIK</span>
-                        <span class="info-value">{{ $jamaah->nik }}</span>
+                        <span class="info-label">No. Identitas</span>
+                        <span class="info-value">{{ $jamaah->no_identitas }}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Nomor HP</span>
@@ -122,7 +122,7 @@
                     </div>
                     <div class="info-row">
                         <span class="info-label">Tanggal Masuk</span>
-                        <span class="info-value">{{ \Carbon\Carbon::parse($jamaah->tgl_masuk)->format('d F Y') }}</span>
+                        <span class="info-value">{{ \Carbon\Carbon::parse($jamaah->tanggal_masuk)->format('d F Y') }}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Departemen</span>

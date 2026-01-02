@@ -124,7 +124,7 @@
             
             <div class="jamaah-info">
                 <div class="jamaah-name">{{ $jamaah->nama }}</div>
-                <div class="jamaah-detail"><strong>NIK:</strong> {{ $jamaah->nik }}</div>
+                <div class="jamaah-detail"><strong>No. Identitas:</strong> {{ $jamaah->no_identitas }}</div>
                 <div class="jamaah-detail">
                     <strong>Status:</strong> 
                     @if($jamaah->status == 'K') Kontrak
@@ -133,7 +133,7 @@
                     @else {{ $jamaah->status }}
                     @endif
                 </div>
-                <div class="jamaah-detail"><strong>Tgl Masuk:</strong> {{ \Carbon\Carbon::parse($jamaah->tgl_masuk)->format('d M Y') }}</div>
+                <div class="jamaah-detail"><strong>Tgl Masuk:</strong> {{ \Carbon\Carbon::parse($jamaah->tanggal_masuk)->format('d M Y') }}</div>
                 @if($jamaah->jumlah_kehadiran > 0)
                 <div class="mt-2">
                     <span class="badge-kehadiran">
