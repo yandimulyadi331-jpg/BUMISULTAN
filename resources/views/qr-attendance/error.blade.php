@@ -55,7 +55,7 @@
         </div>
         @endif
 
-        <a href="/" class="btn btn-primary">
+        <a href="{{ url('/') }}" class="btn btn-primary">
             <i class="ti ti-home"></i> Kembali
         </a>
     </div>
