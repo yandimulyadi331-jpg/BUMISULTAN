@@ -422,6 +422,27 @@
         const token = '{{ $token }}';
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
         
+        // Search functionality - didefinisikan di global scope
+        function performSearch() {
+            const searchValue = $('#searchJamaah').val().toLowerCase();
+            console.log('Mencari:', searchValue);
+            
+            let foundCount = 0;
+            $('.jamaah-card').each(function() {
+                const nama = ($(this).data('nama') || '').toString().toLowerCase();
+                const identitas = ($(this).data('identitas') || '').toString().toLowerCase();
+                
+                if (nama.indexOf(searchValue) > -1 || identitas.indexOf(searchValue) > -1) {
+                    $(this).show();
+                    foundCount++;
+                } else {
+                    $(this).hide();
+                }
+            });
+            
+            console.log('Ditemukan:', foundCount, 'jamaah');
+        }
+        
         $(document).ready(function() {
             // Auto-focus pada input PIN
             $('#pinInput').focus();
@@ -527,22 +548,6 @@
                 });
             }
             
-            // Search functionality
-            function performSearch() {
-                const searchValue = $('#searchJamaah').val().toLowerCase();
-                
-                $('.jamaah-card').each(function() {
-                    const nama = $(this).data('nama') || '';
-                    const identitas = $(this).data('identitas') || '';
-                    
-                    if (nama.indexOf(searchValue) > -1 || identitas.indexOf(searchValue) > -1) {
-                        $(this).show();
-                    } else {
-                        $(this).hide();
-                    }
-                });
-            }
-            
             // Keyup event untuk search otomatis
             $(document).on('keyup', '#searchJamaah', function(e) {
                 performSearch();
@@ -553,21 +558,31 @@
                 }
             });
             
-            // Click event untuk tombol Cari
+            // Click event untuk tombol Cari - multiple handlers untuk memastikan work
+            $('#btnSearch').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Tombol Cari diklik (direct handler)');
+                performSearch();
+            });
+            
             $(document).on('click', '#btnSearch', function(e) {
                 e.preventDefault();
-                console.log('Tombol Cari diklik');
+                e.stopPropagation();
+                console.log('Tombol Cari diklik (delegated handler)');
                 performSearch();
             });
             
             // Fallback dengan vanilla JS
             document.addEventListener('click', function(e) {
-                if (e.target && (e.target.id === 'btnSearch' || e.target.closest('#btnSearch'))) {
+                const target = e.target;
+                if (target && (target.id === 'btnSearch' || target.closest('#btnSearch'))) {
                     e.preventDefault();
+                    e.stopPropagation();
                     console.log('Tombol Cari diklik (vanilla JS)');
                     performSearch();
                 }
-            });
+            }, true);
         });
     </script>
 </body>
