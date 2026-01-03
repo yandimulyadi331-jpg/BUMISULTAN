@@ -323,11 +323,17 @@
             display: flex;
             align-items: center;
             gap: 5px;
+            pointer-events: auto;
+            z-index: 100;
         }
         
         .btn-search:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-search:active {
+            transform: translateY(0);
         }
     </style>
 </head>
@@ -548,8 +554,19 @@
             });
             
             // Click event untuk tombol Cari
-            $(document).on('click', '#btnSearch', function() {
+            $(document).on('click', '#btnSearch', function(e) {
+                e.preventDefault();
+                console.log('Tombol Cari diklik');
                 performSearch();
+            });
+            
+            // Fallback dengan vanilla JS
+            document.addEventListener('click', function(e) {
+                if (e.target && (e.target.id === 'btnSearch' || e.target.closest('#btnSearch'))) {
+                    e.preventDefault();
+                    console.log('Tombol Cari diklik (vanilla JS)');
+                    performSearch();
+                }
             });
         });
     </script>
