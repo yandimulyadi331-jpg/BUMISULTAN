@@ -55,7 +55,6 @@
                                         <th class="text-center">Method</th>
                                         <th class="text-center">Jam Masuk</th>
                                         <th class="text-center">Jam Pulang</th>
-                                        <th class="text-center">Status</th>
                                         {{-- <th class="text-center">Keluar</th> --}}
                                         <th class="text-center">Terlambat</th>
                                         {{-- <th class="text-center">Total</th> --}}
@@ -193,19 +192,6 @@
                                                         <i class="ti ti-hourglass-low text-warning"></i>
                                                     @endif
                                                 </div>
-                                            </td>
-                                            <td class="text-center">
-                                                @if ($d->status == 'h')
-                                                    <span class="badge bg-success">H</span>
-                                                @elseif($d->status == 'i')
-                                                    <span class="badge bg-info">I</span>
-                                                @elseif($d->status == 's')
-                                                    <span class="badge bg-warning">S</span>
-                                                @elseif($d->status == 'a')
-                                                    <span class="badge bg-danger">A</span>
-                                                @else
-                                                    <i class="ti ti-hourglass-low text-warning"></i>
-                                                @endif
                                             </td>
                                             <td class="text-center">
 
