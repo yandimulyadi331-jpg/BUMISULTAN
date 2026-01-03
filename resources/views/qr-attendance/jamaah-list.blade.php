@@ -170,6 +170,27 @@
             color: #667eea;
             margin-left: 10px;
         }
+        .card-disabled {
+            opacity: 0.6;
+            position: relative;
+        }
+        .card-disabled::after {
+            content: '📷 Belum ada foto';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #dc3545;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .card-disabled:hover {
+            transform: translateY(0px);
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -195,12 +216,16 @@
 
     <div id="jamaahContainer">
         @forelse($jamaahList as $jamaah)
-        <div class="jamaah-card" 
+        <div class="jamaah-card {{ !$jamaah->has_photo ? 'card-disabled' : '' }}" 
              data-nama="{{ strtolower($jamaah->nama) }}" 
              data-identitas="{{ $jamaah->no_identitas }}" 
              data-alamat="{{ strtolower($jamaah->alamat ?? '') }}"
              data-tempat-lahir="{{ strtolower($jamaah->tempat_lahir ?? '') }}"
-             onclick="window.location.href='{{ route('qr-attendance.jamaah-attendance', ['token' => $token, 'kode_yayasan' => $jamaah->kode_yayasan]) }}'">
+             @if($jamaah->has_photo)
+             onclick="window.location.href='{{ route('qr-attendance.jamaah-attendance', ['token' => $token, 'kode_yayasan' => $jamaah->kode_yayasan]) }}'"
+             @else
+             onclick="alert('❌ {{ $jamaah->nama }} belum memiliki foto.\n\nSilakan upload foto terlebih dahulu untuk dapat melakukan absensi.')"
+             @endif>
             
             <div class="jamaah-card-header">
                 @if($jamaah->foto && (file_exists(public_path('storage/yayasan_masar/' . $jamaah->foto)) || file_exists(public_path('storage/jamaah/' . $jamaah->foto))))
@@ -254,8 +279,7 @@
                     <div class="jamaah-detail">
                         <i class="ti ti-calendar-check"></i>
                         <div>
-                            <strong>Tahun Masuk:</strong> 
-                            {{ $jamaah->tanggal_masuk ? \Carbon\Carbon::parse($jamaah->tanggal_masuk)->format('Y') : '-' }}
+                            Tidak ada data jamaah tersedia
                             @if($jamaah->tanggal_masuk)
                                 ({{ \Carbon\Carbon::parse($jamaah->tanggal_masuk)->diffForHumans() }})
                             @endif
