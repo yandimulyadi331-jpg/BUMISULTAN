@@ -577,29 +577,37 @@
     <!-- Menu Grid -->
     <div class="section-title">Pilih Checklist</div>
     <div class="menu-grid">
+        @if($configs->get('harian')?->is_enabled)
         <a href="{{ route('perawatan.karyawan.checklist', 'harian') }}" class="menu-card harian">
             <div class="menu-icon"><i class="ti ti-sun" style="font-size: 42px;"></i></div>
             <div class="menu-title">Harian</div>
             <div class="menu-subtitle">Tugas setiap hari</div>
         </a>
+        @endif
 
+        @if($configs->get('mingguan')?->is_enabled)
         <a href="{{ route('perawatan.karyawan.checklist', 'mingguan') }}" class="menu-card mingguan">
             <div class="menu-icon"><i class="ti ti-calendar-week" style="font-size: 42px;"></i></div>
             <div class="menu-title">Mingguan</div>
             <div class="menu-subtitle">Tugas setiap minggu</div>
         </a>
+        @endif
 
+        @if($configs->get('bulanan')?->is_enabled)
         <a href="{{ route('perawatan.karyawan.checklist', 'bulanan') }}" class="menu-card bulanan">
             <div class="menu-icon"><i class="ti ti-calendar-month" style="font-size: 42px;"></i></div>
             <div class="menu-title">Bulanan</div>
             <div class="menu-subtitle">Tugas setiap bulan</div>
         </a>
+        @endif
 
+        @if($configs->get('tahunan')?->is_enabled)
         <a href="{{ route('perawatan.karyawan.checklist', 'tahunan') }}" class="menu-card tahunan">
             <div class="menu-icon"><i class="ti ti-calendar-event" style="font-size: 42px;"></i></div>
             <div class="menu-title">Tahunan</div>
             <div class="menu-subtitle">Tugas setiap tahun</div>
         </a>
+        @endif
     </div>
 
     <!-- History Button -->

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\MasterPerawatan;
 use App\Models\PerawatanLog;
 use App\Models\PerawatanStatusPeriode;
+use App\Models\ChecklistPeriodeConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,32 +21,45 @@ class PerawatanKaryawanController extends Controller
     {
         $user = Auth::user();
         
-        // Statistik checklist hari ini
+        // Ambil config untuk filter menu yang enabled
+        $configs = ChecklistPeriodeConfig::all()->keyBy('tipe_periode');
+        
+        // Statistik checklist hari ini (jika enabled)
         $today = now()->format('Y-m-d');
         $todayKey = 'harian_' . $today;
         
-        $checklistHariIni = MasterPerawatan::active()
-            ->byTipe('harian')
-            ->ordered()
-            ->get();
+        $checklistHariIni = collect([]);
+        $completedHariIni = 0;
+        
+        if ($configs->get('harian')?->is_enabled) {
+            $checklistHariIni = MasterPerawatan::active()
+                ->byTipe('harian')
+                ->ordered()
+                ->get();
+                
+            $completedHariIni = PerawatanLog::where('user_id', $user->id)
+                ->where('periode_key', $todayKey)
+                ->where('status', 'completed')
+                ->count();
+        }
             
-        $completedHariIni = PerawatanLog::where('user_id', $user->id)
-            ->where('periode_key', $todayKey)
-            ->where('status', 'completed')
-            ->count();
-            
-        // Statistik minggu ini
+        // Statistik minggu ini (jika enabled)
         $thisWeek = now()->format('Y-\\WW');
         $weekKey = 'mingguan_' . $thisWeek;
         
-        $checklistMingguIni = MasterPerawatan::active()
-            ->byTipe('mingguan')
-            ->count();
-            
-        $completedMingguIni = PerawatanLog::where('user_id', $user->id)
-            ->where('periode_key', $weekKey)
-            ->where('status', 'completed')
-            ->count();
+        $checklistMingguIni = 0;
+        $completedMingguIni = 0;
+        
+        if ($configs->get('mingguan')?->is_enabled) {
+            $checklistMingguIni = MasterPerawatan::active()
+                ->byTipe('mingguan')
+                ->count();
+                
+            $completedMingguIni = PerawatanLog::where('user_id', $user->id)
+                ->where('periode_key', $weekKey)
+                ->where('status', 'completed')
+                ->count();
+        }
             
         // History aktivitas terakhir
         $recentActivities = PerawatanLog::where('user_id', $user->id)
@@ -59,7 +73,8 @@ class PerawatanKaryawanController extends Controller
             'completedHariIni',
             'checklistMingguIni',
             'completedMingguIni',
-            'recentActivities'
+            'recentActivities',
+            'configs'
         ));
     }
 
@@ -70,6 +85,19 @@ class PerawatanKaryawanController extends Controller
     {
         if (!in_array($tipe, ['harian', 'mingguan', 'bulanan', 'tahunan'])) {
             abort(404);
+        }
+
+        // Cek apakah tipe periode ini enabled
+        $config = ChecklistPeriodeConfig::byTipe($tipe)->first();
+        
+        // Jika tidak ada config, buat default nonaktif
+        if (!$config) {
+            $config = new ChecklistPeriodeConfig([
+                'tipe_periode' => $tipe,
+                'is_enabled' => false,
+                'is_mandatory' => false,
+                'keterangan' => 'Konfigurasi belum diatur'
+            ]);
         }
 
         $user = Auth::user();
@@ -158,7 +186,8 @@ class PerawatanKaryawanController extends Controller
             'totalChecklist',
             'completedChecklist',
             'progress',
-            'jamKerja'
+            'jamKerja',
+            'config'
         ));
     }
 

@@ -515,9 +515,34 @@
             deviceId = generateDeviceFingerprint();
             console.log('Device ID:', deviceId);
             
+            // ⭐ VALIDASI & LOGGING FOTO JAMAAH
+            console.log('=== FACE RECOGNITION VALIDATION ===');
+            console.log('Has Jamaah Photo:', hasJamaahPhoto);
+            console.log('Jamaah Photo Src:', jamaahPhotoSrc);
+            console.log('Photo Element:', jamaahPhotoElement);
+            
+            // Peringatan jika tidak ada foto
+            if (!hasJamaahPhoto) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '⚠️ Foto Tidak Ditemukan',
+                    html: '<strong>Anda belum memiliki foto di database!</strong><br><br>' +
+                          'Absensi menggunakan <strong>Face Recognition</strong> yang membutuhkan foto referensi.<br><br>' +
+                          'Silakan hubungi admin untuk mendaftarkan foto wajah Anda terlebih dahulu.<br><br>' +
+                          '<small>Anda tidak akan bisa melakukan absensi tanpa foto referensi.</small>',
+                    confirmButtonColor: '#dc3545',
+                    allowOutsideClick: false,
+                    confirmButtonText: 'Saya Mengerti'
+                });
+            }
+            
             // Load Face-API models
             if (hasJamaahPhoto) {
                 loadFaceApiModels();
+            } else {
+                // Disable semua tombol jika tidak ada foto
+                $('#btnStartCamera').prop('disabled', true).text('⚠️ Tidak Ada Foto Referensi');
+                $('#statusFace').html('<i class="ti ti-alert-circle"></i> Anda belum terdaftar di sistem Face Recognition').addClass('status-error').show();
             }
         });
         
@@ -603,61 +628,114 @@
                 stream.getTracks().forEach(track => track.stop());
             }
             
-            // Verify face if jamaah has photo in database
-            if (hasJamaahPhoto && faceApiModelsLoaded) {
-                verifyFace();
-            } else {
-                // No verification needed, mark as valid
-                isFaceValid = true;
-                $('#iconFace').removeClass('icon-pending').addClass('icon-valid');
-                $('#iconFace i').removeClass('ti-camera').addClass('ti-check');
-                $('#statusFace').html('<i class="ti ti-check"></i> Foto wajah berhasil diambil').removeClass('status-pending').addClass('status-success').show();
-                checkSubmitButton();
+            // ⭐ WAJIB VERIFY FACE - TIDAK BOLEH BYPASS!
+            if (!hasJamaahPhoto) {
+                // TOLAK jika tidak ada foto di database
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Tidak Ada Foto Referensi',
+                    text: 'Anda belum memiliki foto di database. Silakan hubungi admin untuk mendaftarkan foto wajah Anda.',
+                    confirmButtonColor: '#dc3545'
+                });
+                isFaceValid = false;
+                $('#iconFace').removeClass('icon-pending icon-valid').addClass('icon-invalid');
+                $('#iconFace i').removeClass('ti-camera ti-check').addClass('ti-alert-circle');
+                $('#statusFace').html('<i class="ti ti-alert-circle"></i> Tidak ada foto referensi di database').removeClass('status-pending status-success').addClass('status-error').show();
+                retakePhoto();
+                return;
             }
+            
+            if (!faceApiModelsLoaded) {
+                // TOLAK jika model face recognition gagal load
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Face Recognition Tidak Siap',
+                    text: 'Model face recognition gagal dimuat. Silakan refresh halaman dan coba lagi.',
+                    confirmButtonColor: '#dc3545'
+                });
+                isFaceValid = false;
+                $('#iconFace').removeClass('icon-pending icon-valid').addClass('icon-invalid');
+                $('#iconFace i').removeClass('ti-camera ti-check').addClass('ti-alert-circle');
+                $('#statusFace').html('<i class="ti ti-alert-circle"></i> Model face recognition gagal dimuat').removeClass('status-pending status-success').addClass('status-error').show();
+                retakePhoto();
+                return;
+            }
+            
+            // Lakukan verifikasi wajah (WAJIB!)
+            verifyFace();
         }
         
         // ===== FACE VERIFICATION WITH FACE-API.JS =====
         async function verifyFace() {
             try {
+                console.log('=== STARTING FACE VERIFICATION ===');
                 $('#statusFace').html('<i class="ti ti-loader"></i> Memverifikasi wajah...').addClass('status-pending').show();
                 
                 // Load images
+                console.log('Loading captured image...');
                 const capturedImage = await faceapi.fetchImage(fotoWajahBase64);
+                console.log('Captured image loaded');
+                
+                console.log('Loading reference image from:', jamaahPhotoSrc);
                 const referenceImage = await faceapi.fetchImage(jamaahPhotoSrc);
+                console.log('Reference image loaded');
                 
                 // Detect faces with landmarks and descriptors
+                console.log('Detecting face in captured image...');
                 const capturedDetection = await faceapi
                     .detectSingleFace(capturedImage, new faceapi.TinyFaceDetectorOptions())
                     .withFaceLandmarks()
                     .withFaceDescriptor();
+                console.log('Captured detection result:', capturedDetection ? 'FOUND' : 'NOT FOUND');
                 
+                console.log('Detecting face in reference image...');
                 const referenceDetection = await faceapi
                     .detectSingleFace(referenceImage, new faceapi.TinyFaceDetectorOptions())
                     .withFaceLandmarks()
                     .withFaceDescriptor();
+                console.log('Reference detection result:', referenceDetection ? 'FOUND' : 'NOT FOUND');
                 
                 if (!capturedDetection) {
+                    console.error('❌ FAILED: No face detected in captured image');
                     Swal.fire({
                         icon: 'error',
                         title: 'Wajah Tidak Terdeteksi',
-                        text: 'Tidak dapat mendeteksi wajah pada foto. Silakan ambil foto ulang dengan pencahayaan yang baik.',
+                        html: 'Tidak dapat mendeteksi wajah pada foto yang Anda ambil.<br><br>' +
+                              '<strong>Tips:</strong><br>' +
+                              '✓ Pastikan pencahayaan cukup<br>' +
+                              '✓ Wajah menghadap kamera<br>' +
+                              '✓ Tidak ada yang menghalangi wajah<br>' +
+                              '✓ Jarak tidak terlalu jauh/dekat',
                         confirmButtonColor: '#dc3545'
                     });
                     isFaceValid = false;
                     $('#iconFace').removeClass('icon-pending icon-valid').addClass('icon-invalid');
                     $('#iconFace i').removeClass('ti-camera ti-check').addClass('ti-alert-circle');
-                    $('#statusFace').html('<i class="ti ti-alert-circle"></i> Wajah tidak terdeteksi').removeClass('status-pending status-success').addClass('status-error').show();
+                    $('#statusFace').html('<i class="ti ti-alert-circle"></i> Wajah tidak terdeteksi pada foto Anda').removeClass('status-pending status-success').addClass('status-error').show();
                     checkSubmitButton();
                     return;
                 }
                 
                 if (!referenceDetection) {
-                    // Reference photo has no face, skip verification
-                    console.warn('Reference photo has no detectable face. Skipping verification.');
-                    isFaceValid = true;
-                    $('#iconFace').removeClass('icon-pending').addClass('icon-valid');
-                    $('#iconFace i').removeClass('ti-camera').addClass('ti-check');
-                    $('#statusFace').html('<i class="ti ti-check"></i> Foto wajah berhasil diambil').removeClass('status-pending').addClass('status-success').show();
+                    // ⭐ TOLAK jika foto referensi tidak valid (tidak ada wajah terdeteksi)
+                    console.error('❌ FAILED: No face detected in reference photo from database');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Foto Referensi Tidak Valid',
+                        html: '<strong>Foto Anda di database tidak dapat dikenali!</strong><br><br>' +
+                              'Tidak ada wajah yang terdeteksi pada foto referensi Anda.<br><br>' +
+                              'Kemungkinan:<br>' +
+                              '• Foto terlalu blur atau gelap<br>' +
+                              '• Foto bukan foto wajah<br>' +
+                              '• Wajah terlalu kecil<br><br>' +
+                              'Silakan hubungi admin untuk memperbarui foto referensi Anda dengan foto yang lebih jelas.',
+                        confirmButtonColor: '#dc3545',
+                        confirmButtonText: 'Saya Mengerti'
+                    });
+                    isFaceValid = false;
+                    $('#iconFace').removeClass('icon-pending icon-valid').addClass('icon-invalid');
+                    $('#iconFace i').removeClass('ti-camera ti-check').addClass('ti-alert-circle');
+                    $('#statusFace').html('<i class="ti ti-alert-circle"></i> Foto referensi di database tidak valid').removeClass('status-pending status-success').addClass('status-error').show();
                     checkSubmitButton();
                     return;
                 }
@@ -665,50 +743,83 @@
                 // Calculate distance between face descriptors (lower = more similar)
                 const distance = faceapi.euclideanDistance(capturedDetection.descriptor, referenceDetection.descriptor);
                 const threshold = 0.6; // Standard threshold for face matching
+                const similarity = Math.round((1 - distance) * 100);
                 
-                console.log('Face matching distance:', distance, 'Threshold:', threshold);
+                console.log('=== FACE MATCHING RESULT ===');
+                console.log('Distance:', distance);
+                console.log('Threshold:', threshold);
+                console.log('Similarity:', similarity + '%');
+                console.log('Match:', distance < threshold ? 'YES ✅' : 'NO ❌');
                 
                 if (distance < threshold) {
-                    // Face match!
+                    // ✅ Face match!
+                    console.log('✅ SUCCESS: Face verified!');
                     isFaceValid = true;
                     $('#iconFace').removeClass('icon-pending').addClass('icon-valid');
                     $('#iconFace i').removeClass('ti-camera').addClass('ti-check');
-                    $('#statusFace').html('<i class="ti ti-check"></i> Wajah terverifikasi! (Similarity: ' + Math.round((1 - distance) * 100) + '%)').removeClass('status-pending').addClass('status-success').show();
+                    $('#statusFace').html('<i class="ti ti-check"></i> ✅ Wajah terverifikasi! (Kecocokan: ' + similarity + '%)').removeClass('status-pending').addClass('status-success').show();
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✅ Wajah Terverifikasi!',
+                        html: '<strong>Wajah Anda cocok dengan database!</strong><br><br>' +
+                              'Tingkat Kecocokan: <strong>' + similarity + '%</strong><br>' +
+                              'Minimum Required: <strong>' + Math.round((1 - threshold) * 100) + '%</strong><br><br>' +
+                              'Silakan lanjutkan untuk melengkapi validasi GPS.',
+                        confirmButtonColor: '#28a745',
+                        timer: 3000
+                    });
+                    
                     checkSubmitButton();
                 } else {
-                    // Face doesn't match
+                    // ❌ Face doesn't match
+                    console.error('❌ FAILED: Face does not match!');
                     Swal.fire({
                         icon: 'error',
-                        title: 'Wajah Tidak Cocok',
-                        html: 'Wajah Anda tidak cocok dengan foto di database.<br><br>' +
-                              'Similarity: <strong>' + Math.round((1 - distance) * 100) + '%</strong><br>' +
-                              'Minimum required: <strong>' + Math.round((1 - threshold) * 100) + '%</strong><br><br>' +
-                              'Silakan ambil foto ulang atau hubungi admin jika ini adalah kesalahan.',
-                        confirmButtonColor: '#dc3545'
+                        title: '❌ Wajah Tidak Cocok',
+                        html: '<strong>Wajah Anda tidak cocok dengan foto di database!</strong><br><br>' +
+                              'Tingkat Kecocokan: <strong>' + similarity + '%</strong><br>' +
+                              'Minimum Required: <strong>' + Math.round((1 - threshold) * 100) + '%</strong><br><br>' +
+                              '<strong>Kemungkinan Penyebab:</strong><br>' +
+                              '• Anda bukan orang yang terdaftar<br>' +
+                              '• Pencahayaan buruk saat scan<br>' +
+                              '• Wajah tertutup (masker, kacamata hitam)<br>' +
+                              '• Posisi wajah terlalu miring<br><br>' +
+                              'Silakan ambil foto ulang dengan kondisi lebih baik, atau hubungi admin jika ini adalah kesalahan.',
+                        confirmButtonColor: '#dc3545',
+                        confirmButtonText: 'Coba Lagi'
                     });
                     isFaceValid = false;
                     $('#iconFace').removeClass('icon-pending icon-valid').addClass('icon-invalid');
                     $('#iconFace i').removeClass('ti-camera ti-check').addClass('ti-alert-circle');
-                    $('#statusFace').html('<i class="ti ti-alert-circle"></i> Wajah tidak cocok dengan database (Similarity: ' + Math.round((1 - distance) * 100) + '%)').removeClass('status-pending status-success').addClass('status-error').show();
+                    $('#statusFace').html('<i class="ti ti-alert-circle"></i> ❌ Wajah tidak cocok (Kecocokan: ' + similarity + '%)').removeClass('status-pending status-success').addClass('status-error').show();
                     checkSubmitButton();
                 }
                 
             } catch (error) {
                 console.error('Face verification error:', error);
                 
-                // On error, allow without verification
+                // ⭐ TOLAK jika verifikasi error - TIDAK BOLEH BYPASS!
                 Swal.fire({
-                    icon: 'warning',
+                    icon: 'error',
                     title: 'Verifikasi Wajah Gagal',
-                    text: 'Tidak dapat memverifikasi wajah. Absensi akan dilanjutkan tanpa verifikasi wajah.',
-                    confirmButtonColor: '#ffc107'
+                    html: 'Terjadi kesalahan saat memverifikasi wajah.<br><br>' +
+                          '<strong>Error:</strong> ' + error.message + '<br><br>' +
+                          'Silakan ambil foto ulang dengan kondisi:<br>' +
+                          '✓ Pencahayaan cukup<br>' +
+                          '✓ Wajah menghadap kamera<br>' +
+                          '✓ Tidak ada yang menghalangi wajah',
+                    confirmButtonColor: '#dc3545'
                 });
                 
-                isFaceValid = true;
-                $('#iconFace').removeClass('icon-pending').addClass('icon-valid');
-                $('#iconFace i').removeClass('ti-camera').addClass('ti-check');
-                $('#statusFace').html('<i class="ti ti-check"></i> Foto wajah berhasil diambil (verifikasi dilewati)').removeClass('status-pending').addClass('status-success').show();
-                checkSubmitButton();
+                // TOLAK absensi
+                isFaceValid = false;
+                $('#iconFace').removeClass('icon-pending icon-valid').addClass('icon-invalid');
+                $('#iconFace i').removeClass('ti-camera ti-check').addClass('ti-alert-circle');
+                $('#statusFace').html('<i class="ti ti-alert-circle"></i> Verifikasi wajah gagal').removeClass('status-pending status-success').addClass('status-error').show();
+                
+                // Auto retake
+                retakePhoto();
             }
         }
         

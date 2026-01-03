@@ -728,6 +728,92 @@
         color: var(--text-secondary);
         font-size: 14px;
     }
+    
+    /* Alert Banner */
+    .alert-banner {
+        background: var(--bg-primary);
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 20px;
+        display: flex;
+        gap: 15px;
+        align-items: start;
+        box-shadow: 8px 8px 16px var(--shadow-dark),
+                   -8px -8px 16px var(--shadow-light);
+        animation: slideIn 0.5s ease-out;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .alert-banner.alert-warning {
+        border-left: 5px solid #ff9800;
+    }
+    
+    .alert-banner.alert-danger {
+        border-left: 5px solid #f44336;
+    }
+    
+    .alert-banner.alert-info {
+        border-left: 5px solid #2196F3;
+    }
+    
+    .alert-icon {
+        font-size: 32px;
+        min-width: 40px;
+    }
+    
+    .alert-content {
+        flex: 1;
+    }
+    
+    .alert-title {
+        color: var(--text-primary);
+        font-weight: 700;
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+    
+    .alert-message {
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.5;
+    }
+    
+    .alert-note {
+        margin-top: 10px;
+        padding: 10px;
+        background: rgba(0,0,0,0.05);
+        border-radius: 10px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        display: flex;
+        gap: 8px;
+        align-items: start;
+    }
+    
+    .alert-note i {
+        margin-top: 2px;
+    }
+    
+    /* Disabled State */
+    .checklist-item.disabled {
+        opacity: 0.4;
+        pointer-events: none;
+    }
+    
+    .checkbox-custom.disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
 </style>
 
 <div class="perawatan-container">
@@ -757,6 +843,62 @@
             </div>
         </div>
     </div>
+
+    <!-- Banner Status Checklist -->
+    @if($config)
+        @if(!$config->is_enabled)
+            <!-- NONAKTIF -->
+            <div class="alert-banner alert-warning">
+                <div class="alert-icon">⚠️</div>
+                <div class="alert-content">
+                    <div class="alert-title">Checklist {{ ucfirst($tipe) }} Sedang Dinonaktifkan</div>
+                    <div class="alert-message">
+                        Checklist tidak aktif untuk saat ini. Anda dapat absen pulang tanpa menyelesaikan checklist.
+                    </div>
+                    @if($config->keterangan)
+                        <div class="alert-note">
+                            <i class="ti ti-info-circle"></i>
+                            <span>{{ $config->keterangan }}</span>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @elseif($config->is_mandatory)
+            <!-- AKTIF & WAJIB -->
+            <div class="alert-banner alert-danger">
+                <div class="alert-icon">⚠️</div>
+                <div class="alert-content">
+                    <div class="alert-title">Checklist {{ ucfirst($tipe) }} WAJIB Diselesaikan</div>
+                    <div class="alert-message">
+                        Anda HARUS menyelesaikan 100% checklist ini sebelum absen pulang.
+                    </div>
+                    @if($config->keterangan)
+                        <div class="alert-note">
+                            <i class="ti ti-info-circle"></i>
+                            <span>{{ $config->keterangan }}</span>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @else
+            <!-- AKTIF & OPSIONAL -->
+            <div class="alert-banner alert-info">
+                <div class="alert-icon">ℹ️</div>
+                <div class="alert-content">
+                    <div class="alert-title">Checklist {{ ucfirst($tipe) }} Opsional (Tidak Wajib)</div>
+                    <div class="alert-message">
+                        Checklist ini tidak wajib diselesaikan. Anda dapat absen pulang meskipun belum menyelesaikan.
+                    </div>
+                    @if($config->keterangan)
+                        <div class="alert-note">
+                            <i class="ti ti-info-circle"></i>
+                            <span>{{ $config->keterangan }}</span>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
+    @endif
 
     <!-- Progress Card dengan Timeline Stepper -->
     <div class="progress-card">
@@ -864,13 +1006,16 @@
         @php
             $isChecked = $checklist->logs->where('status', 'completed')->count() > 0;
             $log = $checklist->logs->first();
+            $isDisabled = !$config || !$config->is_enabled;
         @endphp
         
-        <div class="checklist-item {{ $isChecked ? 'completed' : '' }}" data-kategori="{{ $checklist->kategori }}">
+        <div class="checklist-item {{ $isChecked ? 'completed' : '' }} {{ $isDisabled ? 'disabled' : '' }}" 
+             data-kategori="{{ $checklist->kategori }}">
             <div style="display: flex; align-items: start;">
-                <div class="checkbox-custom {{ $isChecked ? 'checked' : '' }}" 
+                <div class="checkbox-custom {{ $isChecked ? 'checked' : '' }} {{ $isDisabled ? 'disabled' : '' }}" 
                      data-id="{{ $checklist->id }}"
-                     data-checked="{{ $isChecked ? 'true' : 'false' }}">
+                     data-checked="{{ $isChecked ? 'true' : 'false' }}"
+                     data-disabled="{{ $isDisabled ? 'true' : 'false' }}">
                     @if($isChecked)
                         <i class="ti ti-check"></i>
                     @endif
@@ -1035,6 +1180,23 @@ $(document).ready(function() {
     
     // Klik Checkbox - PERBAIKI MODAL
     $('.checkbox-custom').on('click', function() {
+        // Cek apakah disabled
+        const isDisabled = $(this).data('disabled') === 'true' || $(this).data('disabled') === true;
+        if (isDisabled || $(this).hasClass('disabled')) {
+            // Tampilkan alert dengan SweetAlert2 (jika ada) atau modal bootstrap
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Checklist Nonaktif',
+                    text: 'Checklist sedang dinonaktifkan. Tidak dapat melakukan perubahan.',
+                    confirmButtonColor: '#26a69a'
+                });
+            } else {
+                alert('Checklist sedang dinonaktifkan. Tidak dapat melakukan perubahan.');
+            }
+            return false;
+        }
+        
         const isChecked = $(this).data('checked') === 'true' || $(this).data('checked') === true;
         const id = $(this).data('id');
         
@@ -1111,6 +1273,21 @@ $(document).ready(function() {
     $('.btn-uncheck').on('click', function(e) {
         e.preventDefault();
         console.log('Uncheck clicked');
+        
+        // Cek apakah parent checklist-item disabled
+        if ($(this).closest('.checklist-item').hasClass('disabled')) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Checklist Nonaktif',
+                    text: 'Checklist sedang dinonaktifkan. Tidak dapat melakukan perubahan.',
+                    confirmButtonColor: '#26a69a'
+                });
+            } else {
+                alert('Checklist sedang dinonaktifkan. Tidak dapat melakukan perubahan.');
+            }
+            return false;
+        }
         
         uncheckId = $(this).data('id');
         $('#modalKonfirmasi').modal('show');
