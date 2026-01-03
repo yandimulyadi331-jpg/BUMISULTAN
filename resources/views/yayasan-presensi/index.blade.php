@@ -51,9 +51,6 @@
                                     <tr>
                                         <th>Kode</th>
                                         <th>Nama Yayasan</th>
-                                        <th>Dept</th>
-                                        <th>Cbg</th>
-                                        <th>Jam Kerja</th>
                                         <th>Status</th>
                                         <th class="text-center">Method</th>
                                         <th class="text-center">Jam Masuk</th>
@@ -61,8 +58,6 @@
                                         <th class="text-center">Status</th>
                                         {{-- <th class="text-center">Keluar</th> --}}
                                         <th class="text-center">Terlambat</th>
-                                        <th>Denda</th>
-                                        <th>POT. JAM</th>
                                         {{-- <th class="text-center">Total</th> --}}
                                         <th class="text-center">#</th>
                                     </tr>
@@ -105,16 +100,6 @@
                                         <tr>
                                             <td>{{ $d->kode_yayasan }}</td>
                                             <td>{{ $d->nama }}</td>
-                                            <td>{{ $d->kode_dept }}</td>
-                                            <td>{{ $d->kode_cabang }}</td>
-                                            <td>
-                                                @if ($d->kode_jam_kerja != null)
-                                                    {{ $d->nama_jam_kerja }} {{ date('H:i', strtotime($d->jam_masuk)) }} -
-                                                    {{ date('H:i', strtotime($d->jam_pulang)) }}
-                                                @else
-                                                    <i class="ti ti-hourglass-low text-warning"></i>
-                                                @endif
-                                            </td>
                                             <td>
                                                 @if ($d->status == 'h')
                                                     <span class="badge bg-success">H</span>
@@ -225,21 +210,6 @@
                                             <td class="text-center">
 
                                                 {!! $terlambat != null ? $terlambat['show'] : '<i class="ti ti-hourglass-low text-warning"></i>' !!}
-                                            </td>
-                                            <td class="text-end">
-
-                                                {{ formatAngka($denda) }}
-                                            </td>
-                                            <td class="text-center">
-                                                @php
-                                                    $total_potongan_jam = $pulangcepat + $potongan_jam_terlambat + $potongan_tidak_hadir;
-                                                @endphp
-                                                @if ($total_potongan_jam > 0)
-                                                    <span class="badge bg-danger">
-                                                        {{ formatAngkaDesimal($total_potongan_jam) }}
-                                                    </span>
-                                                @endif
-
                                             </td>
                                             <td>
                                                 <div class="d-flex">
