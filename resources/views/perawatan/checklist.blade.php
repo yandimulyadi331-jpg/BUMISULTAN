@@ -27,6 +27,82 @@
         </div>
     </div>
 
+    {{-- Config Status Banner (NEW) --}}
+    @if($config)
+    <div class="row mb-3">
+        <div class="col-12">
+            @if(!$config->is_enabled)
+                {{-- Checklist Nonaktif --}}
+                <div class="alert alert-secondary d-flex align-items-start" role="alert">
+                    <i class="ti ti-power fs-3 me-3 mt-1"></i>
+                    <div class="flex-grow-1">
+                        <h5 class="alert-heading mb-2">
+                            <i class="ti ti-power me-1"></i>Checklist {{ ucfirst($tipe) }} Sedang Nonaktif
+                        </h5>
+                        <p class="mb-2">
+                            Checklist ini telah dinonaktifkan oleh admin. Anda tidak perlu menyelesaikan checklist dan dapat melakukan checkout langsung.
+                        </p>
+                        @if($config->keterangan)
+                        <div class="mt-2 p-2 bg-white rounded border border-secondary">
+                            <strong>Keterangan Admin:</strong>
+                            <p class="mb-0 mt-1">{{ $config->keterangan }}</p>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+            @elseif($config->is_mandatory)
+                {{-- Checklist Aktif & Wajib --}}
+                <div class="alert alert-danger d-flex align-items-start" role="alert">
+                    <i class="ti ti-alert-triangle fs-3 me-3 mt-1"></i>
+                    <div class="flex-grow-1">
+                        <h5 class="alert-heading mb-2">
+                            <i class="ti ti-circle-check me-1"></i>Checklist {{ ucfirst($tipe) }} WAJIB Diselesaikan
+                        </h5>
+                        <p class="mb-2">
+                            <strong>⚠️ PENTING:</strong> Anda harus menyelesaikan <strong>SEMUA</strong> item checklist di bawah ini sebelum dapat melakukan absen pulang (checkout).
+                        </p>
+                        @if($config->keterangan)
+                        <div class="mt-2 p-2 bg-white rounded border border-danger">
+                            <strong>Instruksi Admin:</strong>
+                            <p class="mb-0 mt-1">{{ $config->keterangan }}</p>
+                        </div>
+                        @endif
+                        <div class="mt-3">
+                            <div class="progress" style="height: 30px;">
+                                <div class="progress-bar bg-danger progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" 
+                                     style="width: {{ $statusPeriode->total_checklist > 0 ? ($statusPeriode->total_completed / $statusPeriode->total_checklist) * 100 : 0 }}%">
+                                    <strong>{{ $statusPeriode->total_completed }}/{{ $statusPeriode->total_checklist }} Item Selesai 
+                                        ({{ $statusPeriode->total_checklist > 0 ? number_format(($statusPeriode->total_completed / $statusPeriode->total_checklist) * 100, 0) : 0 }}%)</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @else
+                {{-- Checklist Aktif & Opsional --}}
+                <div class="alert alert-success d-flex align-items-start" role="alert">
+                    <i class="ti ti-info-circle fs-3 me-3 mt-1"></i>
+                    <div class="flex-grow-1">
+                        <h5 class="alert-heading mb-2">
+                            <i class="ti ti-list-check me-1"></i>Checklist {{ ucfirst($tipe) }} Opsional
+                        </h5>
+                        <p class="mb-2">
+                            Checklist ini bersifat opsional. Anda tetap dapat melakukan checkout meskipun belum menyelesaikan semua item, namun dianjurkan untuk menyelesaikannya.
+                        </p>
+                        @if($config->keterangan)
+                        <div class="mt-2 p-2 bg-white rounded border border-success">
+                            <strong>Catatan Admin:</strong>
+                            <p class="mb-0 mt-1">{{ $config->keterangan }}</p>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+            @endif
+        </div>
+    </div>
+    @endif
+
     {{-- Progress Card --}}
     <div class="row mb-3">
         <div class="col-12">

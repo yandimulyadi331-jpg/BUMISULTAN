@@ -100,7 +100,7 @@
     </div>
 
     {{-- Management Cards --}}
-    <div class="row row-cols-1 row-cols-md-2 g-4">
+    <div class="row row-cols-1 row-cols-md-3 g-4">
         {{-- Master Checklist --}}
         <div class="col">
             <div class="card h-100 card-hover">
@@ -114,6 +114,29 @@
                             <p class="text-muted small mb-3">Kelola template checklist perawatan gedung. Tambah, edit, atau hapus kegiatan perawatan.</p>
                             <a href="{{ route('perawatan.master.index') }}" class="btn btn-info btn-sm">
                                 <i class="ti ti-settings me-1"></i> Kelola Master
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Konfigurasi Checklist (NEW) --}}
+        <div class="col">
+            <div class="card h-100 card-hover border-primary" style="border-width: 2px;">
+                <div class="card-body">
+                    <div class="d-flex align-items-start">
+                        <div class="avatar avatar-lg bg-label-primary me-3">
+                            <i class="ti ti-settings-automation ti-lg"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5 class="card-title mb-1">
+                                Konfigurasi Toggle
+                                <span class="badge bg-primary ms-1">NEW</span>
+                            </h5>
+                            <p class="text-muted small mb-3">Aktifkan/nonaktifkan checklist per periode. Atur kewajiban sebelum checkout karyawan.</p>
+                            <a href="{{ route('perawatan.config.index') }}" class="btn btn-primary btn-sm">
+                                <i class="ti ti-toggle-left me-1"></i> Atur Konfigurasi
                             </a>
                         </div>
                     </div>

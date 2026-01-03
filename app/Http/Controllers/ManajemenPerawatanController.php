@@ -6,6 +6,7 @@ use App\Models\MasterPerawatan;
 use App\Models\PerawatanLog;
 use App\Models\PerawatanLaporan;
 use App\Models\PerawatanStatusPeriode;
+use App\Models\ChecklistPeriodeConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -106,6 +107,9 @@ class ManajemenPerawatanController extends Controller
         $periodeKey = $this->generatePeriodeKey($tipe);
         $statusPeriode = $this->getOrCreateStatusPeriode($tipe, $periodeKey);
         
+        // Get config untuk status banner
+        $config = ChecklistPeriodeConfig::byTipe($tipe)->first();
+        
         $masters = MasterPerawatan::active()
             ->byTipe($tipe)
             ->ordered()
@@ -117,7 +121,7 @@ class ManajemenPerawatanController extends Controller
             ->get()
             ->keyBy('master_perawatan_id');
 
-        return view('perawatan.checklist', compact('masters', 'logs', 'tipe', 'periodeKey', 'statusPeriode'));
+        return view('perawatan.checklist', compact('masters', 'logs', 'tipe', 'periodeKey', 'statusPeriode', 'config'));
     }
 
     public function checklistMingguan()
@@ -126,6 +130,9 @@ class ManajemenPerawatanController extends Controller
         $periodeKey = $this->generatePeriodeKey($tipe);
         $statusPeriode = $this->getOrCreateStatusPeriode($tipe, $periodeKey);
         
+        // Get config untuk status banner
+        $config = ChecklistPeriodeConfig::byTipe($tipe)->first();
+        
         $masters = MasterPerawatan::active()
             ->byTipe($tipe)
             ->ordered()
@@ -136,7 +143,7 @@ class ManajemenPerawatanController extends Controller
             ->get()
             ->keyBy('master_perawatan_id');
 
-        return view('perawatan.checklist', compact('masters', 'logs', 'tipe', 'periodeKey', 'statusPeriode'));
+        return view('perawatan.checklist', compact('masters', 'logs', 'tipe', 'periodeKey', 'statusPeriode', 'config'));
     }
 
     public function checklistBulanan()
@@ -145,24 +152,8 @@ class ManajemenPerawatanController extends Controller
         $periodeKey = $this->generatePeriodeKey($tipe);
         $statusPeriode = $this->getOrCreateStatusPeriode($tipe, $periodeKey);
         
-        $masters = MasterPerawatan::active()
-            ->byTipe($tipe)
-            ->ordered()
-            ->get();
-
-        $logs = PerawatanLog::byPeriode($periodeKey)
-            ->with('user:id,name')
-            ->get()
-            ->keyBy('master_perawatan_id');
-
-        return view('perawatan.checklist', compact('masters', 'logs', 'tipe', 'periodeKey', 'statusPeriode'));
-    }
-
-    public function checklistTahunan()
-    {
-        $tipe = 'tahunan';
-        $periodeKey = $this->generatePeriodeKey($tipe);
-        $statusPeriode = $this->getOrCreateStatusPeriode($tipe, $periodeKey);
+        // Get config untuk status banner
+        $config = ChecklistPeriodeConfig::byTipe($tipe)->first();
         
         $masters = MasterPerawatan::active()
             ->byTipe($tipe)
@@ -174,7 +165,29 @@ class ManajemenPerawatanController extends Controller
             ->get()
             ->keyBy('master_perawatan_id');
 
-        return view('perawatan.checklist', compact('masters', 'logs', 'tipe', 'periodeKey', 'statusPeriode'));
+        return view('perawatan.checklist', compact('masters', 'logs', 'tipe', 'periodeKey', 'statusPeriode', 'config'));
+    }
+
+    public function checklistTahunan()
+    {
+        $tipe = 'tahunan';
+        $periodeKey = $this->generatePeriodeKey($tipe);
+        $statusPeriode = $this->getOrCreateStatusPeriode($tipe, $periodeKey);
+        
+        // Get config untuk status banner
+        $config = ChecklistPeriodeConfig::byTipe($tipe)->first();
+        
+        $masters = MasterPerawatan::active()
+            ->byTipe($tipe)
+            ->ordered()
+            ->get();
+
+        $logs = PerawatanLog::byPeriode($periodeKey)
+            ->with('user:id,name')
+            ->get()
+            ->keyBy('master_perawatan_id');
+
+        return view('perawatan.checklist', compact('masters', 'logs', 'tipe', 'periodeKey', 'statusPeriode', 'config'));
     }
 
     public function executeChecklist(Request $request)
@@ -502,5 +515,155 @@ class ManajemenPerawatanController extends Controller
         Storage::disk('public')->put($fileName, $pdf->output());
         
         return $fileName;
+    }
+
+    // ==================== CHECKLIST PERIODE CONFIG ====================
+
+    /**
+     * Show config page untuk toggle checklist periode
+     */
+    public function showConfig()
+    {
+        $configs = ChecklistPeriodeConfig::orderByRaw("
+            CASE tipe_periode
+                WHEN 'harian' THEN 1
+                WHEN 'mingguan' THEN 2
+                WHEN 'bulanan' THEN 3
+                WHEN 'tahunan' THEN 4
+            END
+        ")->get();
+
+        return view('perawatan.config', compact('configs'));
+    }
+
+    /**
+     * Update config toggle (AJAX)
+     */
+    public function updateConfig(Request $request)
+    {
+        $validated = $request->validate([
+            'tipe_periode' => 'required|in:harian,mingguan,bulanan,tahunan',
+            'is_enabled' => 'required|boolean',
+            'is_mandatory' => 'required|boolean',
+            'keterangan' => 'nullable|string|max:500'
+        ]);
+
+        $config = ChecklistPeriodeConfig::where('tipe_periode', $validated['tipe_periode'])->firstOrFail();
+        
+        $config->update([
+            'is_enabled' => $validated['is_enabled'],
+            'is_mandatory' => $validated['is_mandatory'],
+            'keterangan' => $validated['keterangan'],
+            'diubah_oleh' => Auth::id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Konfigurasi checklist ' . strtoupper($validated['tipe_periode']) . ' berhasil diupdate!',
+            'data' => [
+                'status_text' => $config->status_text,
+                'badge_class' => $config->badge_class
+            ]
+        ]);
+    }
+
+    /**
+     * Get status checklist by tipe (API untuk checking)
+     */
+    public function getStatusChecklist($tipe)
+    {
+        $config = ChecklistPeriodeConfig::where('tipe_periode', $tipe)->first();
+
+        if (!$config) {
+            return response()->json([
+                'enabled' => false,
+                'mandatory' => false,
+                'keterangan' => 'Konfigurasi tidak ditemukan'
+            ]);
+        }
+
+        return response()->json([
+            'enabled' => $config->is_enabled,
+            'mandatory' => $config->is_mandatory,
+            'keterangan' => $config->keterangan,
+            'status_text' => $config->status_text,
+            'badge_class' => $config->badge_class
+        ]);
+    }
+
+    /**
+     * Validate checkout - check if mandatory checklist completed
+     */
+    public function validateCheckout(Request $request)
+    {
+        $validated = $request->validate([
+            'tipe_periode' => 'required|in:harian,mingguan,bulanan,tahunan',
+            'periode_key' => 'required|string'
+        ]);
+
+        $config = ChecklistPeriodeConfig::byTipe($validated['tipe_periode'])->first();
+
+        // Jika checklist nonaktif, boleh checkout langsung
+        if (!$config || !$config->is_enabled) {
+            return response()->json([
+                'can_checkout' => true,
+                'reason' => 'skipped',
+                'message' => 'Checklist ' . $validated['tipe_periode'] . ' nonaktif, checkout diizinkan.'
+            ]);
+        }
+
+        // Jika checklist aktif tapi tidak mandatory, boleh checkout
+        if (!$config->is_mandatory) {
+            return response()->json([
+                'can_checkout' => true,
+                'reason' => 'optional',
+                'message' => 'Checklist ' . $validated['tipe_periode'] . ' opsional, checkout diizinkan.'
+            ]);
+        }
+
+        // Checklist mandatory, cek apakah semua item sudah completed
+        $statusPeriode = PerawatanStatusPeriode::where('periode_key', $validated['periode_key'])->first();
+
+        if (!$statusPeriode) {
+            return response()->json([
+                'can_checkout' => false,
+                'reason' => 'not_started',
+                'message' => 'Anda belum memulai checklist ' . $validated['tipe_periode'] . '. Silakan lengkapi terlebih dahulu.'
+            ], 403);
+        }
+
+        // Cek apakah ada item yang belum completed
+        $totalItems = MasterPerawatan::where('tipe_periode', $validated['tipe_periode'])
+            ->where('is_active', true)
+            ->count();
+
+        $completedItems = PerawatanLog::where('periode_key', $validated['periode_key'])
+            ->where('status', 'selesai')
+            ->count();
+
+        if ($completedItems < $totalItems) {
+            return response()->json([
+                'can_checkout' => false,
+                'reason' => 'incomplete',
+                'message' => "Checklist {$validated['tipe_periode']} belum lengkap! ({$completedItems}/{$totalItems} item selesai). Harap lengkapi sebelum checkout.",
+                'progress' => [
+                    'completed' => $completedItems,
+                    'total' => $totalItems,
+                    'percentage' => $totalItems > 0 ? round(($completedItems / $totalItems) * 100) : 0
+                ]
+            ], 403);
+        }
+
+        // Semua item completed
+        return response()->json([
+            'can_checkout' => true,
+            'reason' => 'completed',
+            'message' => 'Semua checklist ' . $validated['tipe_periode'] . ' telah lengkap. Checkout diizinkan.',
+            'progress' => [
+                'completed' => $completedItems,
+                'total' => $totalItems,
+                'percentage' => 100
+            ]
+        ]);
     }
 }

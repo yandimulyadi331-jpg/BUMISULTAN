@@ -100,6 +100,31 @@
         @if(isset($jamaah) && isset($event))
         <div class="info-box">
             <div class="info-row">
+                <span class="info-label">Nama</span>
+                <span class="info-value">{{ $jamaah->nama }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Event</span>
+                <span class="info-value">{{ $event->event_name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Tanggal</span>
+                <span class="info-value">{{ now()->format('d F Y') }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Waktu</span>
+                <span class="info-value">{{ now()->format('H:i') }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label"><strong>Total Kehadiran</strong></span>
+                <span class="info-value" style="color: #51cf66; font-size: 20px;">
+                    <i class="ti ti-check-circle"></i> {{ $jumlahKehadiran ?? 1 }}x
+                </span>
+            </div>
+        </div>
+        @elseif(isset($attendance) && isset($event))
+        <div class="info-box">
+            <div class="info-row">
                 <span class="info-label">Nama:</span>
                 <span class="info-value">{{ $jamaah->nama }}</span>
             </div>

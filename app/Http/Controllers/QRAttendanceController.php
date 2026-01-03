@@ -79,8 +79,8 @@ class QRAttendanceController extends Controller
                 ]);
             }
 
-            // Langsung ke halaman daftar jamaah (tanpa login - untuk umum)
-            return redirect()->route('qr-attendance.jamaah-list', ['token' => $token]);
+            // NEW: Redirect ke halaman dengan pop-up PIN
+            return redirect()->route('qr-attendance.pin-modal', ['token' => $token]);
 
         } catch (\Exception $e) {
             \Log::error('QR Attendance Scan Error: ' . $e->getMessage(), [
@@ -701,5 +701,346 @@ class QRAttendanceController extends Controller
             ], 500);
         }
     }
-}
 
+    /**
+     * NEW METHOD: Tampilkan halaman dengan pop-up PIN
+     */
+    public function showPinModal($token)
+    {
+        try {
+            // Validasi QR Code
+            $qrCode = QRAttendanceCode::with('event')
+                ->where('qr_token', $token)
+                ->where('is_active', true)
+                ->first();
+
+            if (!$qrCode) {
+                return view('qr-attendance.error', [
+                    'title' => 'QR Code Tidak Valid',
+                    'message' => 'QR Code yang Anda scan tidak valid atau sudah tidak aktif.',
+                    'icon' => 'ti-alert-circle'
+                ]);
+            }
+
+            $event = $qrCode->event;
+
+            // Validasi event masih berlangsung
+            if (!$event->event_date->isToday() || !$event->isOngoing()) {
+                return view('qr-attendance.error', [
+                    'title' => 'Event Tidak Tersedia',
+                    'message' => 'Absensi hanya bisa dilakukan saat event berlangsung.',
+                    'icon' => 'ti-calendar-off',
+                    'event' => $event
+                ]);
+            }
+
+            return view('qr-attendance.pin-modal', [
+                'token' => $token,
+                'event' => $event
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('QR Attendance PIN Modal Error: ' . $e->getMessage());
+            
+            return view('qr-attendance.error', [
+                'title' => 'Terjadi Kesalahan',
+                'message' => config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan sistem. Silakan coba lagi.',
+                'icon' => 'ti-alert-triangle'
+            ]);
+        }
+    }
+
+    /**
+     * NEW METHOD: Verifikasi PIN Jamaah
+     */
+    public function verifyPin(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+            'pin' => 'required|numeric',
+        ]);
+
+        try {
+            // Validasi QR Code
+            $qrCode = QRAttendanceCode::with('event')
+                ->where('qr_token', $request->token)
+                ->where('is_active', true)
+                ->first();
+
+            if (!$qrCode) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'QR Code tidak valid'
+                ], 400);
+            }
+
+            // Cari jamaah berdasarkan PIN dari tabel yayasan_masar
+            $jamaah = YayasanMasar::where('pin', $request->pin)
+                ->where('status_aktif', '1')
+                ->first();
+
+            if (!$jamaah) {
+                \Log::warning('PIN not found', [
+                    'pin' => $request->pin,
+                    'token' => $request->token
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'PIN tidak ditemukan atau jamaah tidak aktif. Silakan coba lagi atau pilih dari daftar.'
+                ], 404);
+            }
+            
+            \Log::info('PIN verified successfully', [
+                'pin' => $request->pin,
+                'kode_yayasan' => $jamaah->kode_yayasan,
+                'nama' => $jamaah->nama
+            ]);
+
+            // Redirect ke halaman absensi jamaah
+            return response()->json([
+                'success' => true,
+                'message' => 'PIN valid!',
+                'redirect_url' => route('qr-attendance.jamaah-attendance', [
+                    'token' => $request->token,
+                    'kode_yayasan' => $jamaah->kode_yayasan
+                ])
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * NEW METHOD: Halaman Absensi Jamaah (dengan Face Recognition & GPS)
+     */
+    public function showJamaahAttendance($token, $kode_yayasan)
+    {
+        try {
+            // Validasi QR Code
+            $qrCode = QRAttendanceCode::with('event')
+                ->where('qr_token', $token)
+                ->where('is_active', true)
+                ->firstOrFail();
+
+            $event = $qrCode->event;
+
+            // Validasi event masih berlangsung
+            if (!$event->event_date->isToday() || !$event->isOngoing()) {
+                return view('qr-attendance.error', [
+                    'title' => 'Event Tidak Tersedia',
+                    'message' => 'Absensi hanya bisa dilakukan saat event berlangsung.',
+                    'icon' => 'ti-calendar-off',
+                    'event' => $event
+                ]);
+            }
+
+            // Ambil data jamaah
+            $jamaah = YayasanMasar::where('kode_yayasan', $kode_yayasan)
+                ->where('status_aktif', '1')
+                ->with(['departemen', 'cabang'])
+                ->firstOrFail();
+
+            // Cek apakah sudah absen hari ini untuk event ini
+            $sudahAbsen = PresensiYayasan::where('kode_yayasan', $jamaah->kode_yayasan)
+                ->where('qr_event_id', $event->id)
+                ->whereDate('tanggal', now()->toDateString())
+                ->exists();
+
+            // Hitung jumlah kehadiran total
+            $jumlahKehadiran = PresensiYayasan::where('kode_yayasan', $jamaah->kode_yayasan)
+                ->where('qr_event_id', $event->id)
+                ->count();
+
+            return view('qr-attendance.jamaah-attendance', [
+                'token' => $token,
+                'event' => $event,
+                'jamaah' => $jamaah,
+                'jumlahKehadiran' => $jumlahKehadiran,
+                'sudahAbsen' => $sudahAbsen
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('QR Attendance Jamaah Attendance Error: ' . $e->getMessage());
+            
+            return view('qr-attendance.error', [
+                'title' => 'Jamaah Tidak Ditemukan',
+                'message' => 'Data jamaah tidak ditemukan atau tidak aktif.',
+                'icon' => 'ti-user-off'
+            ]);
+        }
+    }
+
+    /**
+     * NEW METHOD: Submit dengan validasi Face Recognition dan GPS
+     */
+    public function submitWithValidation(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+            'kode_yayasan' => 'required',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'foto_wajah' => 'required|string', // Base64 image
+            'device_id' => 'nullable|string', // Device fingerprint
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Validasi QR Code
+            $qrCode = QRAttendanceCode::with('event')
+                ->where('qr_token', $request->token)
+                ->where('is_active', true)
+                ->firstOrFail();
+
+            $event = $qrCode->event;
+
+            // Validasi jamaah
+            $jamaah = YayasanMasar::where('kode_yayasan', $request->kode_yayasan)
+                ->where('status_aktif', '1')
+                ->firstOrFail();
+
+            // Cek apakah sudah absen hari ini untuk event ini (by kode_yayasan)
+            $sudahAbsenKaryawan = PresensiYayasan::where('kode_yayasan', $jamaah->kode_yayasan)
+                ->where('qr_event_id', $event->id)
+                ->whereDate('tanggal', now()->toDateString())
+                ->exists();
+
+            if ($sudahAbsenKaryawan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda sudah melakukan absensi untuk event ini hari ini'
+                ], 400);
+            }
+
+            // NEW: Cek apakah device sudah digunakan untuk absen event ini hari ini
+            if ($request->device_id) {
+                $sudahAbsenDevice = PresensiYayasan::where('qr_event_id', $event->id)
+                    ->where('device_id', $request->device_id)
+                    ->whereDate('tanggal', now()->toDateString())
+                    ->exists();
+
+                if ($sudahAbsenDevice) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Device ini sudah digunakan untuk absensi event ini hari ini. Satu device hanya bisa digunakan untuk satu absensi per event.'
+                    ], 400);
+                }
+            }
+
+            // Geofencing Validation
+            $geofence = GeolocationService::isWithinGeofence(
+                $request->latitude,
+                $request->longitude,
+                $event->venue_latitude,
+                $event->venue_longitude,
+                $event->venue_radius_meter
+            );
+
+            if (!$geofence['is_within']) {
+                QRAttendanceLog::logAttempt([
+                    'event_id' => $event->id,
+                    'qr_code_id' => $qrCode->id,
+                    'kode_yayasan' => $jamaah->kode_yayasan,
+                    'scan_latitude' => $request->latitude,
+                    'scan_longitude' => $request->longitude,
+                    'distance_from_venue' => $geofence['distance'],
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'status' => 'failed_geofence',
+                    'failure_reason' => 'Lokasi terlalu jauh dari venue (' . round($geofence['distance']) . ' meter)'
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lokasi Anda terlalu jauh dari venue event (' . round($geofence['distance']) . ' meter). Jarak maksimal: ' . $event->venue_radius_meter . ' meter.'
+                ], 400);
+            }
+
+            // Simpan foto wajah
+            $fotoWajah = $request->foto_wajah;
+            $image_parts = explode(";base64,", $fotoWajah);
+            $image_base64 = base64_decode($image_parts[1]);
+            
+            $formatName = $jamaah->kode_yayasan . "-" . date('Y-m-d') . "-" . time();
+            $fileName = $formatName . ".png";
+            $folderPath = "public/uploads/absensi_jamaah/";
+            $file = $folderPath . $fileName;
+            
+            Storage::put($file, $image_base64);
+
+            // Tentukan jam kerja default (gunakan jam kerja pertama yang ada)
+            $jamKerja = Jamkerja::where('kode_jam_kerja', 'JK01')->first();
+            
+            // Jika tidak ada JK01, ambil jam kerja pertama yang tersedia
+            if (!$jamKerja) {
+                $jamKerja = Jamkerja::first();
+            }
+
+            // Simpan presensi dengan foto wajah
+            $presensi = PresensiYayasan::create([
+                'kode_yayasan' => $jamaah->kode_yayasan,
+                'tanggal' => now()->toDateString(),
+                'kode_jam_kerja' => $jamKerja ? $jamKerja->kode_jam_kerja : 'JK01',
+                'jam_in' => now(),
+                'foto_in' => $fileName,
+                'lokasi_in' => $request->latitude . ',' . $request->longitude,
+                'status' => 'h',
+                'attendance_method' => 'qr_code',
+                'qr_event_id' => $event->id,
+                'device_id' => $request->device_id, // Store device fingerprint
+            ]);
+
+            // ⭐ INCREMENT JUMLAH KEHADIRAN DI TABEL YAYASAN_MASAR
+            YayasanMasar::where('kode_yayasan', $jamaah->kode_yayasan)
+                ->increment('jumlah_kehadiran');
+
+            // Log sukses
+            QRAttendanceLog::logAttempt([
+                'event_id' => $event->id,
+                'qr_code_id' => $qrCode->id,
+                'kode_yayasan' => $jamaah->kode_yayasan,
+                'scan_latitude' => $request->latitude,
+                'scan_longitude' => $request->longitude,
+                'distance_from_venue' => $geofence['distance'],
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'status' => 'success',
+                'photo_selfie' => $fileName,
+                'presensi_id' => $presensi->id
+            ]);
+
+            DB::commit();
+
+            // Ambil jumlah kehadiran terbaru
+            $jumlahKehadiranBaru = PresensiYayasan::where('kode_yayasan', $jamaah->kode_yayasan)
+                ->where('qr_event_id', $event->id)
+                ->count();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Absensi berhasil! Terima kasih telah hadir di ' . $event->event_name,
+                'jumlah_kehadiran' => $jumlahKehadiranBaru,
+                'redirect_url' => route('qr-attendance.success', [
+                    'kode_yayasan' => $jamaah->kode_yayasan,
+                    'event_id' => $event->id
+                ])
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('QR Attendance Submit With Validation Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }}

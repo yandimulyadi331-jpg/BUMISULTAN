@@ -136,6 +136,12 @@ Route::controller(\App\Http\Controllers\BarangPublicController::class)->group(fu
 
 // ============ QR CODE ATTENDANCE SYSTEM (PUBLIC - JAMAAH) ============
 Route::prefix('absensi-qr')->name('qr-attendance.')->controller(QRAttendanceController::class)->group(function () {
+    // ⭐ NEW ROUTES - Face Recognition Flow
+    Route::get('/{token}/pin', 'showPinModal')->name('pin-modal');
+    Route::post('/{token}/verify-pin', 'verifyPin')->name('verify-pin');
+    Route::get('/{token}/jamaah/{kode_yayasan}', 'showJamaahAttendance')->name('jamaah-attendance');
+    Route::post('/submit-validation', 'submitWithValidation')->name('submit-validation');
+    
     // Public routes (no auth required - untuk jamaah umum)
     Route::get('/{token}', 'scan')->name('scan');
     Route::get('/jamaah-list/{token}', 'showJamaahList')->name('jamaah-list');
@@ -1784,6 +1790,16 @@ Route::middleware('role:super admin')->prefix('perawatan')->name('perawatan.')->
         Route::post('/generate', 'generateLaporan')->name('generate');
         Route::get('/{id}/download', 'downloadLaporan')->name('download');
     });
+
+    // Checklist Periode Config (NEW - Toggle Feature)
+    Route::prefix('config')->name('config.')->group(function () {
+        Route::get('/', 'showConfig')->name('index');
+        Route::post('/update', 'updateConfig')->name('update');
+        Route::get('/status/{tipe}', 'getStatusChecklist')->name('status');
+    });
+    
+    // Validation API for Checkout
+    Route::post('/validate-checkout', 'validateCheckout')->name('validate-checkout');
 });
 
 // ===================================
