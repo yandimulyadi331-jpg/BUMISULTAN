@@ -290,8 +290,14 @@
             margin-bottom: 20px;
         }
         
+        .search-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
         .search-input {
-            width: 100%;
+            flex: 1;
             padding: 12px 15px;
             border: 2px solid #ddd;
             border-radius: 10px;
@@ -301,6 +307,27 @@
         .search-input:focus {
             outline: none;
             border-color: #667eea;
+        }
+        
+        .btn-search {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-search:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
     </style>
 </head>
@@ -332,7 +359,12 @@
         <!-- Loading Jamaah List -->
         <div class="jamaah-list-container" id="jamaahListContainer">
             <div class="search-box">
-                <input type="text" class="search-input" id="searchJamaah" placeholder="🔍 Cari nama atau NIK jamaah...">
+                <div class="search-input-group">
+                    <input type="text" class="search-input" id="searchJamaah" placeholder="🔍 Cari nama atau NIK jamaah...">
+                    <button class="btn-search" id="btnSearch">
+                        <i class="ti ti-search"></i> Cari
+                    </button>
+                </div>
             </div>
             <div id="jamaahCards">
                 <div style="text-align: center; padding: 20px; color: #999;">
@@ -490,8 +522,8 @@
             }
             
             // Search functionality
-            $(document).on('keyup', '#searchJamaah', function() {
-                const searchValue = $(this).val().toLowerCase();
+            function performSearch() {
+                const searchValue = $('#searchJamaah').val().toLowerCase();
                 
                 $('.jamaah-card').each(function() {
                     const nama = $(this).data('nama') || '';
@@ -503,6 +535,21 @@
                         $(this).hide();
                     }
                 });
+            }
+            
+            // Keyup event untuk search otomatis
+            $(document).on('keyup', '#searchJamaah', function(e) {
+                performSearch();
+                
+                // Trigger search on Enter key
+                if (e.keyCode === 13) {
+                    performSearch();
+                }
+            });
+            
+            // Click event untuk tombol Cari
+            $(document).on('click', '#btnSearch', function() {
+                performSearch();
             });
         });
     </script>
