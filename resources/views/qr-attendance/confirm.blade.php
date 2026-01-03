@@ -279,7 +279,7 @@
                 <i class="ti ti-check"></i> HADIR
             </button>
 
-            <a href="{{ route('qr-attendance.jamaah-list', ['token' => $token]) }}" class="btn btn-link btn-back">
+            <a href="{{ route('qr-attendance.jamaah-list', ['token' => $token]) }}" class="btn btn-link btn-back" id="btnKembali">
                 <i class="ti ti-arrow-left"></i> Kembali
             </a>
         </div>
@@ -462,6 +462,9 @@
                                 navigator.vibrate([100, 50, 100, 50, 100]);
                             }
                             
+                            // Sembunyikan tombol kembali setelah berhasil
+                            document.getElementById('btnKembali').style.display = 'none';
+                            
                             showToast('✓ Absensi Berhasil!', 'success');
                             
                             setTimeout(() => {
@@ -565,6 +568,13 @@
                                 .then(response => response.json())
                                 .then(data => {
                                     console.log('Absensi berhasil:', data);
+                                    
+                                    // Sembunyikan tombol kembali setelah berhasil (Vanilla JS)
+                                    var btnKembali = document.getElementById('btnKembali');
+                                    if (btnKembali) {
+                                        btnKembali.style.display = 'none';
+                                    }
+                                    
                                     if (data.redirect_url) {
                                         window.location.href = data.redirect_url;
                                     } else {
@@ -638,6 +648,10 @@
                                     },
                                     success: function(response) {
                                         console.log('Absensi berhasil:', response);
+                                        
+                                        // Sembunyikan tombol kembali setelah berhasil (jQuery)
+                                        $('#btnKembali').hide();
+                                        
                                         if (response.redirect_url) {
                                             window.location.href = response.redirect_url;
                                         } else {

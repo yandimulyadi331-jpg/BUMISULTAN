@@ -203,10 +203,12 @@
              onclick="window.location.href='{{ route('qr-attendance.jamaah-attendance', ['token' => $token, 'kode_yayasan' => $jamaah->kode_yayasan]) }}'">
             
             <div class="jamaah-card-header">
-                @if($jamaah->foto && file_exists(public_path('storage/yayasan_masar/' . $jamaah->foto)))
-                    <img src="{{ asset('storage/yayasan_masar/' . $jamaah->foto) }}" alt="{{ $jamaah->nama }}" class="jamaah-photo">
-                @elseif($jamaah->foto && file_exists(public_path('storage/jamaah/' . $jamaah->foto)))
-                    <img src="{{ asset('storage/jamaah/' . $jamaah->foto) }}" alt="{{ $jamaah->nama }}" class="jamaah-photo">
+                @if($jamaah->foto && (file_exists(public_path('storage/yayasan_masar/' . $jamaah->foto)) || file_exists(public_path('storage/jamaah/' . $jamaah->foto))))
+                    @if(file_exists(public_path('storage/yayasan_masar/' . $jamaah->foto)))
+                        <img src="{{ asset('storage/yayasan_masar/' . $jamaah->foto) }}" alt="{{ $jamaah->nama }}" class="jamaah-photo">
+                    @else
+                        <img src="{{ asset('storage/jamaah/' . $jamaah->foto) }}" alt="{{ $jamaah->nama }}" class="jamaah-photo">
+                    @endif
                 @else
                     <div class="jamaah-photo-placeholder">
                         {{ strtoupper(substr($jamaah->nama, 0, 1)) }}
@@ -273,7 +275,8 @@
         @empty
         <div class="no-photo">
             <i class="ti ti-mood-sad" style="font-size: 64px; color: #ddd;"></i>
-            <p class="mt-3">Tidak ada data jamaah tersedia</p>
+            <p class="mt-3"><strong>Tidak ada jamaah yang bisa melakukan absensi</strong></p>
+            <p style="font-size: 14px; color: #666;">Hanya jamaah yang sudah memiliki foto yang dapat melakukan absensi.<br>Silakan upload foto jamaah terlebih dahulu.</p>
         </div>
         @endforelse
     </div>

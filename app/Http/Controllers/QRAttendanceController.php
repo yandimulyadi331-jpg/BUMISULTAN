@@ -505,12 +505,21 @@ class QRAttendanceController extends Controller
             }
 
             // Ambil semua jamaah aktif dari YayasanMasar dengan data lengkap
+            // HANYA jamaah yang PUNYA FOTO yang bisa absen
             $jamaahList = YayasanMasar::where('status_aktif', '1')
+                ->whereNotNull('foto')
+                ->where('foto', '!=', '')
                 ->with(['departemen', 'cabang'])
                 ->select('kode_yayasan', 'no_identitas', 'nama', 'no_hp', 'pin', 'foto', 'status', 
                          'tanggal_masuk', 'kode_dept', 'kode_cabang', 'alamat', 'tempat_lahir', 'tanggal_lahir')
                 ->orderBy('nama', 'asc')
                 ->get()
+                ->filter(function ($jamaah) {
+                    // Double check: pastikan file foto benar-benar ada
+                    $fotoPath1 = public_path('storage/yayasan_masar/' . $jamaah->foto);
+                    $fotoPath2 = public_path('storage/jamaah/' . $jamaah->foto);
+                    return file_exists($fotoPath1) || file_exists($fotoPath2);
+                })
                 ->map(function ($jamaah) use ($event) {
                     // Hitung jumlah kehadiran jamaah di event ini
                     $jumlahKehadiran = PresensiYayasan::where('kode_yayasan', $jamaah->kode_yayasan)
