@@ -203,13 +203,20 @@
 }
 </style>
 
+<!-- jQuery (dipastikan load dulu) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 $(document).ready(function() {
+    console.log('Config page loaded, jQuery version:', $.fn.jquery);
+    
     // Toggle enabled/disabled handler
     $('.toggle-enabled').on('change', function() {
         const tipe = $(this).closest('.config-form').data('tipe');
         const isEnabled = $(this).is(':checked');
+        
+        console.log(`Toggle ${tipe}: ${isEnabled ? 'ENABLED' : 'DISABLED'}`);
         
         // Update UI text
         if (isEnabled) {
@@ -227,6 +234,8 @@ $(document).ready(function() {
     $('.toggle-mandatory').on('change', function() {
         const tipe = $(this).closest('.config-form').data('tipe');
         const isMandatory = $(this).is(':checked');
+        
+        console.log(`Mandatory ${tipe}: ${isMandatory ? 'YES' : 'NO'}`);
         
         // Update UI text
         if (isMandatory) {
@@ -254,6 +263,13 @@ $(document).ready(function() {
         const keterangan = form.find('.input-keterangan').val();
         const btnSave = form.find('.btn-save');
 
+        console.log('Saving config:', {
+            tipe: tipe,
+            is_enabled: isEnabled,
+            is_mandatory: isMandatory,
+            keterangan: keterangan
+        });
+
         // Disable button
         btnSave.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...');
 
@@ -268,6 +284,8 @@ $(document).ready(function() {
                 keterangan: keterangan
             },
             success: function(response) {
+                console.log('AJAX Success:', response);
+                
                 // Update badge
                 $(`.status-badge-${tipe}`).removeClass('bg-secondary bg-success bg-danger')
                     .addClass(response.data.badge_class)
@@ -283,6 +301,10 @@ $(document).ready(function() {
                 });
             },
             error: function(xhr) {
+                console.error('AJAX Error:', xhr);
+                console.error('Status:', xhr.status);
+                console.error('Response:', xhr.responseJSON);
+                
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal!',
