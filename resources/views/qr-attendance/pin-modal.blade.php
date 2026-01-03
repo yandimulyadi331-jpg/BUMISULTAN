@@ -362,9 +362,7 @@
                        class="pin-input" 
                        id="pinInput" 
                        name="pin" 
-                       placeholder="••••" 
-                       maxlength="6" 
-                       pattern="[0-9]*"
+                       placeholder="Masukkan PIN" 
                        inputmode="numeric"
                        autocomplete="off"
                        required>
@@ -390,9 +388,10 @@
             // Auto-focus pada input PIN
             $('#pinInput').focus();
             
-            // Hanya izinkan angka
+            // Hanya izinkan angka (unlimited digits)
             $('#pinInput').on('keypress', function(e) {
                 const charCode = e.which || e.keyCode;
+                // Allow only numbers (0-9)
                 if (charCode < 48 || charCode > 57) {
                     e.preventDefault();
                     return false;

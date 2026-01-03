@@ -121,7 +121,7 @@ class QRAttendanceController extends Controller
         $request->validate([
             'token' => 'required',
             'no_hp' => 'required|string',
-            'pin' => 'required|numeric',
+            'pin' => 'required|string',
         ]);
 
         try {
@@ -504,10 +504,11 @@ class QRAttendanceController extends Controller
                 ]);
             }
 
-            // Ambil semua jamaah aktif dari YayasanMasar
+            // Ambil semua jamaah aktif dari YayasanMasar dengan data lengkap
             $jamaahList = YayasanMasar::where('status_aktif', '1')
                 ->with(['departemen', 'cabang'])
-                ->select('kode_yayasan', 'no_identitas', 'nama', 'no_hp', 'pin', 'foto', 'status', 'tanggal_masuk', 'kode_dept', 'kode_cabang')
+                ->select('kode_yayasan', 'no_identitas', 'nama', 'no_hp', 'pin', 'foto', 'status', 
+                         'tanggal_masuk', 'kode_dept', 'kode_cabang', 'alamat', 'tempat_lahir', 'tanggal_lahir')
                 ->orderBy('nama', 'asc')
                 ->get()
                 ->map(function ($jamaah) use ($event) {

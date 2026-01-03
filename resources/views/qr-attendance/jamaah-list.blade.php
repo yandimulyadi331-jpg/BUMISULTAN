@@ -182,9 +182,14 @@
     </div>
 
     <div class="search-box">
-        <div class="input-group">
-            <i class="ti ti-search search-icon"></i>
-            <input type="text" class="form-control" id="searchJamaah" placeholder="Cari nama, NIK, alamat, atau tempat lahir...">
+        <div class="d-flex gap-2">
+            <div class="input-group flex-grow-1">
+                <i class="ti ti-search search-icon"></i>
+                <input type="text" class="form-control" id="searchJamaah" placeholder="Cari nama, NIK, alamat, atau tempat lahir...">
+            </div>
+            <button class="btn btn-primary" id="btnSearch" style="border-radius: 10px; padding: 0 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; white-space: nowrap;">
+                <i class="ti ti-search"></i> Cari
+            </button>
         </div>
     </div>
 
@@ -276,9 +281,9 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Enhanced search functionality with multiple fields
-            $('#searchJamaah').on('keyup', function() {
-                var searchValue = $(this).val().toLowerCase();
+            // Function to perform search
+            function performSearch() {
+                var searchValue = $('#searchJamaah').val().toLowerCase();
                 
                 $('.jamaah-card').each(function() {
                     var nama = $(this).data('nama') || '';
@@ -296,6 +301,22 @@
                         $(this).hide();
                     }
                 });
+            }
+            
+            // Enhanced search functionality with keyup
+            $('#searchJamaah').on('keyup', function(e) {
+                // Trigger search on keyup
+                performSearch();
+                
+                // Also trigger on Enter key
+                if (e.keyCode === 13) {
+                    performSearch();
+                }
+            });
+            
+            // Click tombol Cari
+            $('#btnSearch').on('click', function() {
+                performSearch();
             });
             
             // Auto-focus search input on page load
