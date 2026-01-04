@@ -182,22 +182,31 @@ class RealisasiDanaOperasional extends Model
     
     /**
      * Recalculate saldo harian after transaction changes
+     * LOGIKA BARU: Saldo positif masuk ke Dana Masuk, Saldo negatif masuk ke Dana Keluar
      */
     public static function recalculateSaldoHarian($tanggal)
     {
         $tanggalStr = is_string($tanggal) ? $tanggal : $tanggal->format('Y-m-d');
         
+        // Get saldo kemarin (saldo akhir hari sebelumnya)
+        $saldoKemarin = \App\Models\SaldoHarianOperasional::getSaldoKemarin($tanggalStr);
+        
         // Ensure saldo harian exists
         $saldo = \App\Models\SaldoHarianOperasional::firstOrCreate(
             ['tanggal' => $tanggalStr],
             [
-                'saldo_awal' => \App\Models\SaldoHarianOperasional::getSaldoKemarin($tanggalStr),
+                'saldo_awal' => $saldoKemarin,
                 'dana_masuk' => 0,
                 'total_realisasi' => 0,
                 'saldo_akhir' => 0,
                 'status' => 'open',
             ]
         );
+        
+        // Update saldo_awal jika berbeda (untuk handle perubahan dari hari sebelumnya)
+        if ($saldo->saldo_awal != $saldoKemarin) {
+            $saldo->saldo_awal = $saldoKemarin;
+        }
         
         // Calculate from transactions (ONLY ACTIVE transactions, exclude voided)
         $transaksi = static::whereDate('tanggal_realisasi', $tanggalStr)
@@ -207,25 +216,70 @@ class RealisasiDanaOperasional extends Model
         $totalMasuk = $transaksi->where('tipe_transaksi', 'masuk')->sum('nominal');
         $totalKeluar = $transaksi->where('tipe_transaksi', 'keluar')->sum('nominal');
         
-        $saldo->dana_masuk = $totalMasuk;
-        $saldo->total_realisasi = $totalKeluar;
+        // LOGIKA BARU: Include saldo_awal dalam perhitungan dana_masuk/dana_keluar
+        // Jika saldo_awal POSITIF → masuk ke dana_masuk (ada uang tersisa)
+        // Jika saldo_awal NEGATIF → masuk ke total_realisasi/dana_keluar (ada kekurangan)
+        if ($saldo->saldo_awal >= 0) {
+            // Saldo positif = Dana Masuk
+            $saldo->dana_masuk = $saldo->saldo_awal + $totalMasuk;
+            $saldo->total_realisasi = $totalKeluar;
+        } else {
+            // Saldo negatif = Dana Keluar (kekurangan)
+            $saldo->dana_masuk = $totalMasuk;
+            $saldo->total_realisasi = abs($saldo->saldo_awal) + $totalKeluar;
+        }
+        
+        // Hitung saldo akhir: Saldo Awal + Dana Masuk - Dana Keluar
         $saldo->saldo_akhir = $saldo->saldo_awal + $totalMasuk - $totalKeluar;
         $saldo->save();
         
-        // Update next day's saldo_awal (cascade effect)
-        $besok = \Carbon\Carbon::parse($tanggalStr)->addDay()->format('Y-m-d');
-        $saldoBesok = \App\Models\SaldoHarianOperasional::where('tanggal', $besok)->first();
+        \Log::info('Recalculate Saldo Harian', [
+            'tanggal' => $tanggalStr,
+            'saldo_awal' => $saldo->saldo_awal,
+            'dana_masuk' => $saldo->dana_masuk,
+            'total_realisasi' => $saldo->total_realisasi,
+            'saldo_akhir' => $saldo->saldo_akhir,
+        ]);
         
-        if ($saldoBesok) {
-            $saldoBesok->saldo_awal = $saldo->saldo_akhir;
-            $saldoBesok->saldo_akhir = $saldoBesok->saldo_awal + $saldoBesok->dana_masuk - $saldoBesok->total_realisasi;
-            $saldoBesok->save();
+        // CASCADE UPDATE: Update semua hari setelah tanggal ini
+        $hariBerikutnya = \App\Models\SaldoHarianOperasional::where('tanggal', '>', $tanggalStr)
+            ->orderBy('tanggal', 'asc')
+            ->get();
+        
+        $saldoSebelumnya = $saldo->saldo_akhir;
+        
+        foreach ($hariBerikutnya as $hariNext) {
+            // Update saldo_awal hari berikutnya = saldo_akhir hari ini
+            $hariNext->saldo_awal = $saldoSebelumnya;
             
-            // Recursive cascade for days after tomorrow
-            $lusa = \Carbon\Carbon::parse($besok)->addDay()->format('Y-m-d');
-            if (\App\Models\SaldoHarianOperasional::where('tanggal', $lusa)->exists()) {
-                static::recalculateSaldoHarian($besok);
+            // Recalculate transaksi hari tersebut
+            $transaksiNext = static::whereDate('tanggal_realisasi', $hariNext->tanggal)
+                ->where('status', 'active')
+                ->get();
+            
+            $totalMasukNext = $transaksiNext->where('tipe_transaksi', 'masuk')->sum('nominal');
+            $totalKeluarNext = $transaksiNext->where('tipe_transaksi', 'keluar')->sum('nominal');
+            
+            // LOGIKA BARU: Include saldo_awal dalam perhitungan dana_masuk/dana_keluar
+            if ($hariNext->saldo_awal >= 0) {
+                $hariNext->dana_masuk = $hariNext->saldo_awal + $totalMasukNext;
+                $hariNext->total_realisasi = $totalKeluarNext;
+            } else {
+                $hariNext->dana_masuk = $totalMasukNext;
+                $hariNext->total_realisasi = abs($hariNext->saldo_awal) + $totalKeluarNext;
             }
+            
+            $hariNext->saldo_akhir = $hariNext->saldo_awal + $totalMasukNext - $totalKeluarNext;
+            $hariNext->save();
+            
+            // Update saldo untuk hari selanjutnya
+            $saldoSebelumnya = $hariNext->saldo_akhir;
+            
+            \Log::info('Cascade Update Saldo', [
+                'tanggal' => $hariNext->tanggal->format('Y-m-d'),
+                'saldo_awal' => $hariNext->saldo_awal,
+                'saldo_akhir' => $hariNext->saldo_akhir,
+            ]);
         }
     }
 }
