@@ -323,6 +323,9 @@
                             <button type="button" class="btn" onclick="downloadPDF()" style="border: 1px solid #d1d5db; border-radius: 0.375rem; height: 38px; padding: 0.375rem 0.75rem; font-size: 1rem; background: #fff; color: #374151;">
                                 <i class="bx bxs-file-pdf me-1"></i> Download PDF
                             </button>
+                            <button type="button" class="btn" onclick="downloadPDFTahunan()" id="btnPdfTahunan" style="border: 1px solid #d1d5db; border-radius: 0.375rem; height: 38px; padding: 0.375rem 0.75rem; font-size: 1rem; background: #dc3545; color: #fff; display: none;">
+                                <i class="bx bxs-file-pdf me-1"></i> Download PDF Tahunan (Summary)
+                            </button>
                             <button type="button" class="btn" onclick="kirimEmailLaporan()" style="border: 1px solid #d1d5db; border-radius: 0.375rem; height: 38px; padding: 0.375rem 0.75rem; font-size: 1rem; background: #fff; color: #374151;">
                                 <i class="bx bx-envelope me-1"></i> Kirim Email
                             </button>
@@ -2311,6 +2314,45 @@ function downloadPDF() {
     // Open PDF in new tab/download
     window.open(url, '_blank');
 }
+
+// Download PDF Tahunan Summary - Alternative untuk data yang banyak
+function downloadPDFTahunan() {
+    const tahun = document.querySelector('input[name="tahun"]')?.value || '';
+    
+    if (!tahun) {
+        alert('Pilih tahun terlebih dahulu!');
+        return;
+    }
+    
+    // Build URL dengan route khusus
+    const url = '{{ route("dana-operasional.export-pdf-tahunan") }}?tahun=' + tahun;
+    
+    // Open PDF in new tab/download
+    window.open(url, '_blank');
+}
+
+// Show/hide tombol PDF Tahunan based on filter type
+function togglePdfTahunanButton() {
+    const filterType = document.querySelector('select[name="filter_type"]').value;
+    const btnPdfTahunan = document.getElementById('btnPdfTahunan');
+    
+    if (filterType === 'tahun') {
+        btnPdfTahunan.style.display = 'inline-block';
+    } else {
+        btnPdfTahunan.style.display = 'none';
+    }
+}
+
+// Call on page load and filter change
+document.addEventListener('DOMContentLoaded', function() {
+    togglePdfTahunanButton();
+    
+    // Add event listener to filter type select
+    const filterTypeSelect = document.querySelector('select[name="filter_type"]');
+    if (filterTypeSelect) {
+        filterTypeSelect.addEventListener('change', togglePdfTahunanButton);
+    }
+});
 
 // ===== UPDATE KATEGORI TRANSAKSI (AJAX) =====
 
