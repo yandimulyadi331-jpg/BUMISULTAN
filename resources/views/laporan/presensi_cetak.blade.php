@@ -281,12 +281,12 @@
                                             ? $d[$tanggal_presensi]['keterangan_izin_absen'] 
                                             : 'Tidak ada keterangan';
                                         $ket =
-                                            '<h4 style="font-weight: bold; margin-bottom:10px">IZIN</h4><p>' .
+                                            '<h4 style="font-weight: bold; margin-bottom:10px; background-color:#dea51f; color:white; padding:5px; border-radius:3px; text-align:center;">I - IJIN</h4><p style="margin-top:8px;">' .
                                             $keterangan_izin .
                                             '</p>
-                                            <p style="color:#ffe066">PJ : ' .
+                                            <p style="color:#ffe066; margin-top:5px;"><strong>PJ : ' .
                                             formatAngkaDesimal($potongan_jam) .
-                                            ' Jam</p>';
+                                            ' Jam</strong></p>';
                                     @endphp
                                 @elseif($d[$tanggal_presensi]['status'] == 's')
                                     @php
@@ -297,7 +297,7 @@
                                             ? $d[$tanggal_presensi]['keterangan_izin_sakit'] 
                                             : 'Tidak ada keterangan';
                                         $ket =
-                                            '<h4 style="font-weight: bold; margin-bottom:10px">SAKIT</h4><p>' .
+                                            '<h4 style="font-weight: bold; margin-bottom:10px; background-color:#c8075b; color:white; padding:5px; border-radius:3px; text-align:center;">S - SAKIT</h4><p style="margin-top:8px;">' .
                                             $keterangan_sakit .
                                             '</p>';
                                     @endphp
@@ -310,7 +310,7 @@
                                             ? $d[$tanggal_presensi]['keterangan_izin_dinas'] 
                                             : 'Ijin Dinas';
                                         $ket =
-                                            '<h4 style="font-weight: bold; margin-bottom:10px">IJIN DINAS</h4><p>' .
+                                            '<h4 style="font-weight: bold; margin-bottom:10px; background-color:#7b68ee; color:white; padding:5px; border-radius:3px; text-align:center;">ID - IJIN DINAS</h4><p style="margin-top:8px;">' .
                                             $keterangan_dinas .
                                             '</p>';
                                     @endphp
@@ -323,7 +323,7 @@
                                             ? $d[$tanggal_presensi]['keterangan_izin_cuti'] 
                                             : 'Tidak ada keterangan';
                                         $ket =
-                                            '<h4 style="font-weight: bold; margin-bottom:10px">CUTI</h4><p>' .
+                                            '<h4 style="font-weight: bold; margin-bottom:10px; background-color:#0164b5; color:white; padding:5px; border-radius:3px; text-align:center;">C - CUTI</h4><p style="margin-top:8px;">' .
                                             $keterangan_cuti .
                                             '</p>';
                                     @endphp
@@ -334,11 +334,11 @@
                                         $jml_alfa++;
                                         $potongan_jam = $d[$tanggal_presensi]['total_jam'];
                                         $ket =
-                                            '<h4 style="font-weight: bold; margin-bottom:10px">TIDAK ABSEN</h4>
-                                        <p>Tidak ada keterangan</p>
-                                        <p style="color:#ffcccc">PJ : ' .
+                                            '<h4 style="font-weight: bold; margin-bottom:10px; background-color:red; color:white; padding:5px; border-radius:3px; text-align:center;">A - TIDAK ABSEN / ALPA</h4>
+                                        <p style="margin-top:8px;">Tidak ada keterangan</p>
+                                        <p style="color:#ffcccc; margin-top:5px;"><strong>PJ : ' .
                                             formatAngkaDesimal($potongan_jam) .
-                                            ' Jam</p>';
+                                            ' Jam</strong></p>';
                                     @endphp
                                 @endif
                             @else
