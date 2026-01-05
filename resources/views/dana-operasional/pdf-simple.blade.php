@@ -397,8 +397,7 @@
         <table style="width: 100%; text-align: center; font-size: 7pt;">
             <tr>
                 <td style="width: 50%; padding: 0 10px;">
-                    <p style="color: #64748b; margin-bottom: 5px;">Mengetahui,</p>
-                    <p style="font-weight: bold; margin-bottom: 50px;">Bagian Keuangan</p>
+                    <p style="font-weight: bold; margin-bottom: 50px; margin-top: 20px;">Bagian Keuangan</p>
                     <div style="border-top: 1px solid #334155; padding-top: 5px; font-weight: bold; display: inline-block; min-width: 150px;">
                         (____________________)
                     </div>
