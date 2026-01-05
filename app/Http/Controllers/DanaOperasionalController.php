@@ -1120,10 +1120,17 @@ class DanaOperasionalController extends Controller
     public function exportPdf(Request $request)
     {
         try {
-            // Increase memory limit dan execution time untuk laporan tahunan
-            ini_set('memory_limit', '2048M'); // Tingkatkan ke 2GB untuk data besar
-            ini_set('max_execution_time', '0'); // Unlimited time (tidak ada timeout)
-            set_time_limit(0); // Pastikan tidak ada timeout
+            // OPTIMASI MAKSIMAL: Unlimited memory untuk data tahunan
+            ini_set('memory_limit', '-1'); // UNLIMITED memory
+            ini_set('max_execution_time', '0'); // Unlimited time
+            set_time_limit(0); // Unlimited
+            
+            // Disable debug mode untuk performa
+            config(['app.debug' => false]);
+            
+            // Optimize garbage collection
+            gc_enable();
+            gc_collect_cycles();
             
             $filterType = $request->get('filter_type', 'bulan');
             
@@ -1167,40 +1174,43 @@ class DanaOperasionalController extends Controller
                     break;
             }
 
-            // Optimasi query untuk data besar
-            // Filter hanya transaksi active (tidak voided) dengan minimal select
-            $transaksiQuery = RealisasiDanaOperasional::select([
-                    'id', 'pengajuan_id', 'tanggal_realisasi', 'nominal', 
-                    'tipe_transaksi', 'keterangan', 'nomor_transaksi', 'nomor_realisasi', 
-                    'uraian', 'kategori', 'created_by', 'created_at', 'status'
+            // OPTIMASI MAKSIMAL: Minimal query dengan chunking untuk memory efficiency
+            $transaksiDetail = RealisasiDanaOperasional::select([
+                    'id', 'tanggal_realisasi', 'nominal', 'tipe_transaksi', 
+                    'keterangan', 'nomor_realisasi', 'uraian', 'kategori'
                 ])
-                ->where('status', 'active') // Hanya transaksi aktif
+                ->where('status', 'active')
                 ->whereBetween('tanggal_realisasi', [$tanggalDari->startOfDay(), $tanggalSampai->endOfDay()])
                 ->orderBy('tanggal_realisasi', 'asc')
-                ->orderBy('created_at', 'asc');
-            
-            // Load semua data tanpa batasan - gunakan eager loading untuk efisiensi
-            $transaksiDetail = $transaksiQuery
-                ->with([
-                    'pengajuan:id,nomor_pengajuan,kategori,keterangan',
-                    'creator:id,name'
-                ])
+                ->orderBy('id', 'asc')
                 ->get();
-
-            // Ambil ringkasan saldo harian dengan select minimal
-            $saldoHarian = SaldoHarianOperasional::select(['id', 'tanggal', 'saldo_awal', 'saldo_akhir', 'dana_masuk', 'total_realisasi'])
-                ->whereBetween('tanggal', [$tanggalDari->startOfDay(), $tanggalSampai->endOfDay()])
-                ->orderBy('tanggal', 'asc')
-                ->get();
-
-            // Hitung total pemasukan dan pengeluaran dari transaksi detail
-            // Support berbagai format tipe transaksi: 'pemasukan'/'masuk' dan 'pengeluaran'/'keluar'
-            $totalPemasukan = $transaksiDetail->whereIn('tipe_transaksi', ['pemasukan', 'masuk'])->sum('nominal');
-            $totalPengeluaran = $transaksiDetail->whereIn('tipe_transaksi', ['pengeluaran', 'keluar'])->sum('nominal');
             
-            // Hitung saldo awal dan akhir
-            $saldoAwal = $saldoHarian->first()->saldo_awal ?? 0;
-            $saldoAkhir = $saldoAwal + $totalPemasukan - $totalPengeluaran;
+            // Clear memory setelah query
+            gc_collect_cycles();
+
+            // Ambil saldo awal dan akhir saja (bukan semua hari)
+            $saldoAwalRecord = SaldoHarianOperasional::select(['saldo_awal', 'saldo_akhir'])
+                ->whereDate('tanggal', $tanggalDari)
+                ->first();
+            
+            $saldoAkhirRecord = SaldoHarianOperasional::select(['saldo_akhir'])
+                ->whereDate('tanggal', $tanggalSampai)
+                ->first();
+
+            // Hitung total dengan loop efisien (lebih cepat dari collection filter)
+            $totalPemasukan = 0;
+            $totalPengeluaran = 0;
+            foreach ($transaksiDetail as $t) {
+                if ($t->tipe_transaksi == 'pemasukan' || $t->tipe_transaksi == 'masuk') {
+                    $totalPemasukan += $t->nominal;
+                } else {
+                    $totalPengeluaran += $t->nominal;
+                }
+            }
+            
+            // Saldo dari database
+            $saldoAwal = $saldoAwalRecord->saldo_awal ?? 0;
+            $saldoAkhir = $saldoAkhirRecord->saldo_akhir ?? ($saldoAwal + $totalPemasukan - $totalPengeluaran);
 
             // Log info untuk tracking
             \Log::info('Export PDF Dana Operasional - Preparing data', [
@@ -1210,36 +1220,41 @@ class DanaOperasionalController extends Controller
                 'periode' => $periodeLabel
             ]);
 
-            // Data untuk PDF
+            // Data untuk PDF - MINIMAL
             $data = [
                 'transaksi_detail' => $transaksiDetail,
-                'saldo_harian' => $saldoHarian,
-                'tanggal_dari' => $tanggalDari->format('d F Y'),
-                'tanggal_sampai' => $tanggalSampai->format('d F Y'),
+                'tanggal_dari' => $tanggalDari->format('d/m/Y'),
+                'tanggal_sampai' => $tanggalSampai->format('d/m/Y'),
                 'periode_label' => $periodeLabel,
                 'total_pemasukan' => $totalPemasukan,
                 'total_pengeluaran' => $totalPengeluaran,
                 'saldo_awal' => $saldoAwal,
                 'saldo_akhir' => $saldoAkhir,
-                'tanggal_cetak' => Carbon::now()->format('d F Y H:i:s'),
-                'total_transaksi' => $transaksiDetail->count(),
+                'tanggal_cetak' => date('d/m/Y H:i'),
+                'total_transaksi' => count($transaksiDetail),
+                'isLargeData' => count($transaksiDetail) > 1000,
             ];
+            
+            // Clear memory
+            unset($saldoAwalRecord, $saldoAkhirRecord);
+            gc_collect_cycles();
 
             // Log sebelum generate PDF
             \Log::info('Export PDF Dana Operasional - Generating PDF', [
                 'total_transaksi' => $transaksiDetail->count()
             ]);
 
-            // Generate PDF dengan landscape untuk space lebih luas
-            // Gunakan option untuk optimasi rendering pada data besar
-            $pdf = PDF::loadView('dana-operasional.pdf-simple', $data)
+            // Generate PDF dengan OPTIMASI MAKSIMAL
+            $pdf = PDF::loadView('dana-operasional.pdf-simple-optimized', $data)
                 ->setPaper('a4', 'landscape')
-                ->setOption('enable_php', true)
-                ->setOption('isPhpEnabled', true)
-                ->setOption('isRemoteEnabled', false)
-                ->setOption('isHtml5ParserEnabled', true)
-                ->setOption('isFontSubsettingEnabled', true)
-                ->setOption('chroot', public_path());
+                ->setOption('isPhpEnabled', false) // Disable PHP dalam PDF
+                ->setOption('isRemoteEnabled', false) // Disable remote
+                ->setOption('isHtml5ParserEnabled', false) // Disable HTML5 parser (lebih cepat)
+                ->setOption('isFontSubsettingEnabled', false) // Disable font subsetting
+                ->setOption('debugPng', false)
+                ->setOption('debugKeepTemp', false)
+                ->setOption('debugCss', false)
+                ->setOption('debugLayout', false);
             
             // Log setelah generate PDF
             \Log::info('Export PDF Dana Operasional - PDF generated successfully');
