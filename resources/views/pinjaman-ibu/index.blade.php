@@ -277,20 +277,27 @@
                                     $emailTujuan = $item->email_peminjam;
                                 }
                                 
-                                // Cek email terakhir dikirim (tanpa filter status untuk avoid column error)
-                                $lastEmail = $item->emailNotifications()->whereNotNull('sent_at')->latest('sent_at')->first();
+                                // Cek email terakhir dikirim - dengan try catch untuk handle table/column yang belum ada
+                                $lastEmail = null;
+                                try {
+                                    $lastEmail = $item->emailNotifications()->latest('id')->first();
+                                } catch (\Exception $e) {
+                                    // Ignore error jika tabel/kolom belum ada
+                                }
                             @endphp
                             
                             @if($emailTersedia)
                                 <div class="text-center">
                                     @if($lastEmail)
-                                        <span class="badge bg-success" title="Email terakhir dikirim: {{ $lastEmail->sent_at->format('d M Y H:i') }}">
+                                        <span class="badge bg-success">
                                             <i class="bi bi-check-circle"></i> Terkirim
                                         </span>
-                                        <br>
-                                        <small class="text-muted" style="font-size: 10px;">
-                                            {{ $lastEmail->sent_at->diffForHumans() }}
-                                        </small>
+                                        @if(isset($lastEmail->sent_at))
+                                            <br>
+                                            <small class="text-muted" style="font-size: 10px;">
+                                                {{ \Carbon\Carbon::parse($lastEmail->sent_at)->diffForHumans() }}
+                                            </small>
+                                        @endif
                                     @else
                                         <span class="badge bg-info text-white">
                                             <i class="bi bi-robot"></i> Otomatis
