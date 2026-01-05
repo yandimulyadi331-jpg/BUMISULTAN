@@ -48,6 +48,7 @@ use App\Http\Controllers\IconGeneratorController;
 use App\Http\Controllers\BersihkanfotoController;
 use App\Http\Controllers\TrackingPresensiController;
 use App\Http\Controllers\AktivitasKaryawanController;
+use App\Http\Controllers\AgendaPerusahaanController;
 use App\Http\Controllers\KpiCrewController;
 use App\Http\Controllers\YayasanMasarController;
 use App\Http\Controllers\GedungController;
@@ -86,6 +87,7 @@ use App\Http\Controllers\TukangController;
 use App\Http\Controllers\KehadiranTukangController;
 use App\Http\Controllers\KeuanganTukangController;
 use App\Http\Controllers\PinjamanController;
+use App\Http\Controllers\PinjamanIbuController;
 use App\Http\Controllers\LaporanKeuanganController;
 use App\Http\Controllers\LaporanKeuanganKaryawanController;
 use App\Http\Controllers\ManajemenPerawatanController;
@@ -1757,6 +1759,52 @@ Route::middleware('role:super admin')->prefix('pinjaman')->name('pinjaman.')->co
 });
 
 // ===================================
+// PINJAMAN VIA IBU (Same logic as regular Pinjaman)
+// ===================================
+Route::middleware('role:super admin')->prefix('pinjaman-ibu')->name('pinjaman-ibu.')->controller(PinjamanIbuController::class)->group(function () {
+    // List & Dashboard
+    Route::get('/', 'index')->name('index');
+    
+    // Download Formulir Kosong (Global)
+    Route::get('/download-formulir-blank', 'downloadFormulirBlank')->name('download-formulir-blank');
+    
+    // CRUD Pinjaman
+    Route::get('/create', 'create')->name('create');
+    Route::post('/store', 'store')->name('store');
+    Route::get('/{pinjaman}', 'show')->name('show');
+    Route::get('/{pinjaman}/edit', 'edit')->name('edit');
+    Route::put('/{pinjaman}', 'update')->name('update');
+    Route::delete('/{pinjaman}', 'destroy')->name('destroy');
+    
+    // Download Formulir Terisi
+    Route::get('/{pinjaman}/download-formulir', 'downloadFormulir')->name('download-formulir');
+    
+    // Workflow Approval
+    Route::post('/{pinjaman}/review', 'review')->name('review');
+    Route::post('/{pinjaman}/approve', 'approve')->name('approve');
+    Route::post('/{pinjaman}/cairkan', 'cairkan')->name('cairkan');
+    
+    // Pembayaran Cicilan
+    Route::post('/cicilan/{cicilan}/bayar', 'bayarCicilan')->name('cicilan.bayar');
+    
+    // Tunda Cicilan
+    Route::post('/cicilan/{cicilan}/tunda', 'tundaCicilan')->name('cicilan.tunda');
+    
+    // Tambah Pinjaman (ke pinjaman yang sudah ada)
+    Route::post('/{pinjaman}/tambah-pinjaman', 'tambahPinjaman')->name('tambah-pinjaman');
+    
+    // Kirim Email Notifikasi Manual
+    Route::post('/{pinjaman}/kirim-email', 'kirimEmailManual')->name('kirim-email');
+    
+    // Orphan Pinjaman Management
+    Route::delete('/orphan/{id}/force-delete', 'forceDelete')->name('orphan.force-delete');
+    Route::put('/orphan/{id}/update', 'updateOrphan')->name('orphan.update');
+    
+    // Laporan
+    Route::get('/laporan/index', 'laporan')->name('laporan');
+});
+
+// ===================================
 // MANAJEMEN PERAWATAN GEDUNG
 // ===================================
 Route::middleware('role:super admin')->prefix('perawatan')->name('perawatan.')->controller(ManajemenPerawatanController::class)->group(function () {
@@ -1862,6 +1910,28 @@ Route::middleware('auth')->prefix('temuan/karyawan')->name('temuan.karyawan.')->
     Route::get('/list', 'karyawanList')->name('list');
     Route::get('/{id}', 'karyawanShow')->name('show');
     Route::delete('/{id}', 'karyawanDestroy')->name('destroy');
+});
+
+// ===================================
+// JADWAL & AGENDA PERUSAHAAN
+// ===================================
+Route::middleware('role:super admin')->prefix('agenda')->name('agenda.')->controller(AgendaPerusahaanController::class)->group(function () {
+    // Dashboard & List
+    Route::get('/', 'index')->name('index');
+    Route::get('/kalender', 'kalender')->name('kalender');
+    
+    // CRUD Agenda
+    Route::get('/create', 'create')->name('create');
+    Route::post('/store', 'store')->name('store');
+    Route::get('/{agenda}', 'show')->name('show');
+    Route::get('/{agenda}/edit', 'edit')->name('edit');
+    Route::put('/{agenda}', 'update')->name('update');
+    Route::delete('/{agenda}', 'destroy')->name('destroy');
+    
+    // Actions
+    Route::post('/{agenda}/konfirmasi-kehadiran', 'konfirmasiKehadiran')->name('konfirmasi-kehadiran');
+    Route::post('/{agenda}/input-hasil', 'inputHasil')->name('input-hasil');
+    Route::post('/{agenda}/batalkan', 'batalkan')->name('batalkan');
 });
 
 // Route::get('/storage/{path}', function ($path) {

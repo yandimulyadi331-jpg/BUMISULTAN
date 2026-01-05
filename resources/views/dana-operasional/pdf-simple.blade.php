@@ -272,6 +272,18 @@
 
     <!-- Transactions -->
     @if($transaksi_detail->count() > 0)
+    
+    @php
+        // Untuk laporan tahunan dengan banyak data, tampilkan warning
+        $isLargeData = $transaksi_detail->count() > 500;
+    @endphp
+    
+    @if($isLargeData)
+    <div class="alert" style="background: #dbeafe; border-left: 4px solid #3b82f6;">
+        <strong>ℹ️ Laporan Data Besar:</strong> Laporan ini berisi {{ $transaksi_detail->count() }} transaksi. Proses generate memerlukan waktu lebih lama.
+    </div>
+    @endif
+    
     <table class="data">
         <thead>
             <tr>
@@ -288,15 +300,15 @@
             @foreach($transaksi_detail as $index => $item)
             <tr>
                 <td class="text-center">{{ $index + 1 }}</td>
-                <td class="kode">{{ $item->nomor_realisasi ?? 'N/A' }}</td>
+                <td class="kode">{{ $item->nomor_realisasi ?? $item->nomor_transaksi ?? 'N/A' }}</td>
                 <td>
                     <strong>{{ \Carbon\Carbon::parse($item->tanggal_realisasi)->format('d/m/Y') }}</strong><br>
                     <span class="timestamp">{{ \Carbon\Carbon::parse($item->created_at)->format('H:i:s') }}</span>
                 </td>
-                <td><strong style="color: #1e3a8a;">{{ strtoupper($item->kategori ?? 'Umum') }}</strong></td>
+                <td><strong style="color: #1e3a8a;">{{ $item->kategori ? strtoupper($item->kategori) : (isset($item->pengajuan->kategori) ? strtoupper($item->pengajuan->kategori) : 'UMUM') }}</strong></td>
                 <td>
-                    {{ $item->uraian ?? $item->keterangan ?? '-' }}
-                    @if($item->keterangan && $item->uraian != $item->keterangan)
+                    {{ $item->uraian ?? $item->pengajuan->keterangan ?? $item->keterangan ?? '-' }}
+                    @if(isset($item->keterangan) && $item->keterangan != ($item->uraian ?? $item->pengajuan->keterangan ?? ''))
                     <br><span style="color: #64748b; font-style: italic;">Catatan: {{ $item->keterangan }}</span>
                     @endif
                 </td>
@@ -380,15 +392,26 @@
     </div>
 
     <!-- Signature -->
-    <div class="signature">
-        <div class="sig-box">
-            <p style="margin-bottom: 8px; font-size: 7pt;">Jonggol, {{ date('d F Y') }}</p>
-            <p style="font-size: 7pt; color: #64748b; margin-bottom: 5px;">Mengetahui,</p>
-            <div class="sig-line">
-                <div style="font-size: 8pt;">(__________________)</div>
-                <div style="font-size: 7pt; color: #64748b; margin-top: 3px;">Finance Manager</div>
-            </div>
-        </div>
+    <div class="signature" style="margin-top: 25px;">
+        <p style="text-align: right; margin-bottom: 15px; font-size: 7pt;">Jonggol, {{ date('d F Y') }}</p>
+        <table style="width: 100%; text-align: center; font-size: 7pt;">
+            <tr>
+                <td style="width: 50%; padding: 0 10px;">
+                    <p style="color: #64748b; margin-bottom: 5px;">Mengetahui,</p>
+                    <p style="font-weight: bold; margin-bottom: 50px;">Bagian Keuangan</p>
+                    <div style="border-top: 1px solid #334155; padding-top: 5px; font-weight: bold; display: inline-block; min-width: 150px;">
+                        (____________________)
+                    </div>
+                </td>
+                <td style="width: 50%; padding: 0 10px;">
+                    <p style="color: #64748b; margin-bottom: 5px;">Mengetahui,</p>
+                    <p style="font-weight: bold; margin-bottom: 50px;">Pimpinan</p>
+                    <div style="border-top: 1px solid #334155; padding-top: 5px; font-weight: bold; display: inline-block; min-width: 150px;">
+                        (____________________)
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 
     <!-- Footer -->

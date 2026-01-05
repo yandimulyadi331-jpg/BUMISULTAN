@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Pinjaman extends Model
+class PinjamanIbu extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'pinjaman';
+    protected $table = 'pinjaman_ibu';
 
     protected $fillable = [
         'nomor_pinjaman',
@@ -29,7 +29,7 @@ class Pinjaman extends Model
         'tujuan_pinjaman',
         'tenor_bulan',
         'tenor',
-        'tanggal_jatuh_tempo_setiap_bulan', // NEW: Tanggal jatuh tempo setiap bulan (1-31)
+        'tanggal_jatuh_tempo_setiap_bulan',
         'bunga_persen',
         'tipe_bunga',
         'total_pokok',
@@ -60,7 +60,6 @@ class Pinjaman extends Model
         'dokumen_ktp',
         'dokumen_slip_gaji',
         'dokumen_pendukung_lain',
-        // Jaminan
         'jenis_jaminan',
         'nomor_jaminan',
         'deskripsi_jaminan',
@@ -68,7 +67,6 @@ class Pinjaman extends Model
         'atas_nama_jaminan',
         'kondisi_jaminan',
         'keterangan_jaminan',
-        // Penjamin
         'nama_penjamin',
         'hubungan_penjamin',
         'no_telp_penjamin',
@@ -138,27 +136,27 @@ class Pinjaman extends Model
     }
 
     /**
-     * Relasi ke tabel PinjamanCicilan
+     * Relasi ke tabel PinjamanIbuCicilan
      */
     public function cicilan()
     {
-        return $this->hasMany(PinjamanCicilan::class, 'pinjaman_id');
+        return $this->hasMany(PinjamanIbuCicilan::class, 'pinjaman_ibu_id');
     }
 
     /**
-     * Relasi ke tabel PinjamanHistory
+     * Relasi ke tabel PinjamanIbuHistory
      */
     public function history()
     {
-        return $this->hasMany(PinjamanHistory::class, 'pinjaman_id');
+        return $this->hasMany(PinjamanIbuHistory::class, 'pinjaman_ibu_id');
     }
 
     /**
-     * Relasi ke tabel PinjamanEmailNotification
+     * Relasi ke tabel PinjamanIbuEmailNotification
      */
     public function emailNotifications()
     {
-        return $this->hasMany(PinjamanEmailNotification::class, 'pinjaman_id');
+        return $this->hasMany(PinjamanIbuEmailNotification::class, 'pinjaman_ibu_id');
     }
 
     /**
@@ -194,13 +192,12 @@ class Pinjaman extends Model
     }
 
     /**
-     * Generate nomor pinjaman otomatis
+     * Generate nomor pinjaman otomatis (PNJI = Pinjaman Ibu)
      */
     public static function generateNomorPinjaman()
     {
-        $prefix = 'PNJ-' . date('Ym') . '-';
+        $prefix = 'PNJI-' . date('Ym') . '-';
         
-        // Include soft-deleted records to avoid duplicate numbers
         $lastPinjaman = self::withTrashed()
             ->where('nomor_pinjaman', 'like', $prefix . '%')
             ->orderBy('nomor_pinjaman', 'desc')
@@ -217,34 +214,25 @@ class Pinjaman extends Model
     }
 
     /**
-     * Generate jadwal cicilan (tanpa bunga)
+     * Generate jadwal cicilan
      */
     public function generateJadwalCicilan()
     {
-        // Hapus jadwal cicilan lama jika ada
         $this->cicilan()->delete();
 
         $tanggalMulai = $this->tanggal_pencairan ?? $this->tanggal_pengajuan;
-        
-        // Ambil tanggal jatuh tempo yang di-set (default tanggal 1)
         $tanggalJatuhTempoSetiapBulan = $this->tanggal_jatuh_tempo_setiap_bulan ?? 1;
-        
-        // Cicilan tetap setiap bulan (tanpa bunga)
         $cicilanPerBulan = $this->cicilan_per_bulan;
         
         for ($i = 1; $i <= $this->tenor_bulan; $i++) {
-            // Hitung bulan berikutnya
             $bulanBerikutnya = $tanggalMulai->copy()->addMonths($i);
-            
-            // Set tanggal jatuh tempo sesuai setting
-            // Jika tanggal yang di-set melebihi jumlah hari di bulan tersebut, gunakan hari terakhir bulan
             $hariTerakhirBulan = $bulanBerikutnya->daysInMonth;
             $tanggalJatuhTempo = $bulanBerikutnya->copy()->day(
                 min($tanggalJatuhTempoSetiapBulan, $hariTerakhirBulan)
             );
             
-            PinjamanCicilan::create([
-                'pinjaman_id' => $this->id,
+            PinjamanIbuCicilan::create([
+                'pinjaman_ibu_id' => $this->id,
                 'cicilan_ke' => $i,
                 'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
                 'jumlah_pokok' => round($cicilanPerBulan, 2),
@@ -255,7 +243,6 @@ class Pinjaman extends Model
             ]);
         }
 
-        // Update tanggal jatuh tempo pertama dan terakhir
         $this->tanggal_jatuh_tempo_pertama = $this->cicilan()->orderBy('cicilan_ke')->first()->tanggal_jatuh_tempo;
         $this->tanggal_jatuh_tempo_terakhir = $this->cicilan()->orderBy('cicilan_ke', 'desc')->first()->tanggal_jatuh_tempo;
         $this->save();
@@ -266,8 +253,8 @@ class Pinjaman extends Model
      */
     public function logHistory($aksi, $statusLama, $statusBaru, $keterangan = null, $dataPerubahan = null)
     {
-        PinjamanHistory::create([
-            'pinjaman_id' => $this->id,
+        PinjamanIbuHistory::create([
+            'pinjaman_ibu_id' => $this->id,
             'aksi' => $aksi,
             'status_lama' => $statusLama,
             'status_baru' => $statusBaru,
@@ -283,22 +270,18 @@ class Pinjaman extends Model
      */
     public function getNamaPeminjamLengkapAttribute()
     {
-        // Prioritas 1: Field nama_peminjam_lengkap (untuk data baru)
         if (!empty($this->attributes['nama_peminjam_lengkap'])) {
             return $this->attributes['nama_peminjam_lengkap'];
         }
         
-        // Prioritas 2: Dari relasi karyawan (untuk data lama crew)
         if ($this->kategori_peminjam == 'crew' && $this->karyawan) {
             return $this->karyawan->nama_karyawan ?? $this->karyawan->nama_lengkap ?? 'Nama tidak tersedia';
         }
         
-        // Prioritas 3: Field nama_peminjam (fallback)
         if (!empty($this->attributes['nama_peminjam'])) {
             return $this->attributes['nama_peminjam'];
         }
         
-        // Default jika semua kosong
         return 'Nama tidak tersedia';
     }
 

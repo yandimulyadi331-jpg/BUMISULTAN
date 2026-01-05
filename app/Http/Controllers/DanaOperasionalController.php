@@ -1080,95 +1080,127 @@ class DanaOperasionalController extends Controller
      */
     public function exportPdf(Request $request)
     {
-        $filterType = $request->get('filter_type', 'bulan');
-        
-        // Tentukan range tanggal berdasarkan tipe filter (sama seperti index)
-        switch ($filterType) {
-            case 'tahun':
-                $tahun = $request->get('tahun', date('Y'));
-                $tanggalDari = Carbon::create($tahun, 1, 1)->startOfYear();
-                $tanggalSampai = Carbon::create($tahun, 12, 31)->endOfYear();
-                $periodeLabel = "Tahun $tahun";
-                break;
-                
-            case 'minggu':
-                if ($request->has('minggu')) {
-                    list($tahun, $minggu) = explode('-W', $request->minggu);
-                    $tanggalDari = Carbon::now()->setISODate($tahun, $minggu)->startOfWeek();
-                    $tanggalSampai = Carbon::now()->setISODate($tahun, $minggu)->endOfWeek();
-                } else {
-                    $tanggalDari = Carbon::now()->startOfWeek();
-                    $tanggalSampai = Carbon::now()->endOfWeek();
-                }
-                $periodeLabel = "Minggu " . $tanggalDari->format('d M') . " - " . $tanggalSampai->format('d M Y');
-                break;
-                
-            case 'range':
-                if ($request->has('start_date') && $request->has('end_date')) {
-                    $tanggalDari = Carbon::parse($request->start_date)->startOfDay();
-                    $tanggalSampai = Carbon::parse($request->end_date)->endOfDay();
-                } else {
-                    $tanggalDari = Carbon::now()->startOfMonth();
-                    $tanggalSampai = Carbon::now()->endOfMonth();
-                }
-                $periodeLabel = $tanggalDari->format('d M Y') . " - " . $tanggalSampai->format('d M Y');
-                break;
-                
-            default: // 'bulan'
-                $bulan = $request->get('bulan', date('Y-m'));
-                $tanggalDari = Carbon::parse($bulan . '-01')->startOfMonth();
-                $tanggalSampai = Carbon::parse($bulan . '-01')->endOfMonth();
-                $periodeLabel = $tanggalDari->locale('id')->isoFormat('MMMM YYYY');
-                break;
+        try {
+            // Increase memory limit dan execution time untuk laporan tahunan
+            ini_set('memory_limit', '512M');
+            ini_set('max_execution_time', '300'); // 5 menit
+            
+            $filterType = $request->get('filter_type', 'bulan');
+            
+            // Tentukan range tanggal berdasarkan tipe filter (sama seperti index)
+            switch ($filterType) {
+                case 'tahun':
+                    $tahun = $request->get('tahun', date('Y'));
+                    $tanggalDari = Carbon::create($tahun, 1, 1)->startOfYear();
+                    $tanggalSampai = Carbon::create($tahun, 12, 31)->endOfYear();
+                    $periodeLabel = "Tahun $tahun";
+                    break;
+                    
+                case 'minggu':
+                    if ($request->has('minggu')) {
+                        list($tahun, $minggu) = explode('-W', $request->minggu);
+                        $tanggalDari = Carbon::now()->setISODate($tahun, $minggu)->startOfWeek();
+                        $tanggalSampai = Carbon::now()->setISODate($tahun, $minggu)->endOfWeek();
+                    } else {
+                        $tanggalDari = Carbon::now()->startOfWeek();
+                        $tanggalSampai = Carbon::now()->endOfWeek();
+                    }
+                    $periodeLabel = "Minggu " . $tanggalDari->format('d M') . " - " . $tanggalSampai->format('d M Y');
+                    break;
+                    
+                case 'range':
+                    if ($request->has('start_date') && $request->has('end_date')) {
+                        $tanggalDari = Carbon::parse($request->start_date)->startOfDay();
+                        $tanggalSampai = Carbon::parse($request->end_date)->endOfDay();
+                    } else {
+                        $tanggalDari = Carbon::now()->startOfMonth();
+                        $tanggalSampai = Carbon::now()->endOfMonth();
+                    }
+                    $periodeLabel = $tanggalDari->format('d M Y') . " - " . $tanggalSampai->format('d M Y');
+                    break;
+                    
+                default: // 'bulan'
+                    $bulan = $request->get('bulan', date('Y-m'));
+                    $tanggalDari = Carbon::parse($bulan . '-01')->startOfMonth();
+                    $tanggalSampai = Carbon::parse($bulan . '-01')->endOfMonth();
+                    $periodeLabel = $tanggalDari->locale('id')->isoFormat('MMMM YYYY');
+                    break;
+            }
+
+            // Optimasi query untuk data besar - select only needed columns
+            $transaksiDetail = RealisasiDanaOperasional::select([
+                    'id', 'pengajuan_id', 'tanggal_realisasi', 'nominal', 
+                    'tipe_transaksi', 'keterangan', 'nomor_transaksi', 'nomor_realisasi', 
+                    'uraian', 'kategori', 'created_by', 'created_at'
+                ])
+                ->with([
+                    'pengajuan:id,nomor_pengajuan,kategori,keterangan',
+                    'creator:id,name'
+                ])
+                ->whereBetween('tanggal_realisasi', [$tanggalDari->startOfDay(), $tanggalSampai->endOfDay()])
+                ->orderBy('tanggal_realisasi', 'asc')
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            // Ambil ringkasan saldo harian dengan select minimal
+            $saldoHarian = SaldoHarianOperasional::select(['id', 'tanggal', 'saldo_awal', 'saldo_akhir', 'dana_masuk', 'total_realisasi'])
+                ->whereBetween('tanggal', [$tanggalDari->startOfDay(), $tanggalSampai->endOfDay()])
+                ->orderBy('tanggal', 'asc')
+                ->get();
+
+            // Hitung total pemasukan dan pengeluaran dari transaksi detail
+            // Support berbagai format tipe transaksi: 'pemasukan'/'masuk' dan 'pengeluaran'/'keluar'
+            $totalPemasukan = $transaksiDetail->whereIn('tipe_transaksi', ['pemasukan', 'masuk'])->sum('nominal');
+            $totalPengeluaran = $transaksiDetail->whereIn('tipe_transaksi', ['pengeluaran', 'keluar'])->sum('nominal');
+            
+            // Hitung saldo awal dan akhir
+            $saldoAwal = $saldoHarian->first()->saldo_awal ?? 0;
+            $saldoAkhir = $saldoAwal + $totalPemasukan - $totalPengeluaran;
+
+            // Data untuk PDF
+            $data = [
+                'transaksi_detail' => $transaksiDetail,
+                'saldo_harian' => $saldoHarian,
+                'tanggal_dari' => $tanggalDari->format('d F Y'),
+                'tanggal_sampai' => $tanggalSampai->format('d F Y'),
+                'periode_label' => $periodeLabel,
+                'total_pemasukan' => $totalPemasukan,
+                'total_pengeluaran' => $totalPengeluaran,
+                'saldo_awal' => $saldoAwal,
+                'saldo_akhir' => $saldoAkhir,
+                'tanggal_cetak' => Carbon::now()->format('d F Y H:i:s'),
+                'total_transaksi' => $transaksiDetail->count(),
+            ];
+
+            // Generate PDF dengan landscape untuk space lebih luas
+            // Gunakan option untuk optimasi rendering
+            $pdf = PDF::loadView('dana-operasional.pdf-simple', $data)
+                ->setPaper('a4', 'landscape')
+                ->setOption('enable_php', true)
+                ->setOption('isPhpEnabled', true)
+                ->setOption('isRemoteEnabled', false)
+                ->setOption('chroot', public_path());
+            
+            // Nama file dengan tanggal
+            $filename = 'Laporan_Keuangan_' . $tanggalDari->format('Ymd') . '_' . $tanggalSampai->format('Ymd') . '.pdf';
+            
+            // Save PDF to storage dan database untuk publish ke karyawan
+            $this->saveDanaOperasionalToDatabase($filterType, $filename, $periodeLabel, $tanggalDari, $tanggalSampai, $pdf);
+            
+            return $pdf->download($filename);
+            
+        } catch (\Exception $e) {
+            // Log error untuk debugging
+            \Log::error('Export PDF Dana Operasional Error: ' . $e->getMessage(), [
+                'filter_type' => $filterType ?? 'unknown',
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Return user-friendly error
+            return back()->with('error', 'Gagal menggenerate PDF: ' . $e->getMessage() . '. Silakan coba lagi atau hubungi admin jika masalah berlanjut.');
         }
-
-        // Ambil SEMUA transaksi detail (realisasi) berdasarkan filter tanggal
-        $transaksiDetail = RealisasiDanaOperasional::with(['pengajuan', 'creator'])
-            ->whereBetween('tanggal_realisasi', [$tanggalDari->startOfDay(), $tanggalSampai->endOfDay()])
-            ->orderBy('tanggal_realisasi', 'asc')
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        // Ambil ringkasan saldo harian
-        $saldoHarian = SaldoHarianOperasional::whereBetween('tanggal', [$tanggalDari->startOfDay(), $tanggalSampai->endOfDay()])
-            ->orderBy('tanggal', 'asc')
-            ->get();
-
-        // Hitung total pemasukan dan pengeluaran dari transaksi detail
-        // Support berbagai format tipe transaksi: 'pemasukan'/'masuk' dan 'pengeluaran'/'keluar'
-        $totalPemasukan = $transaksiDetail->whereIn('tipe_transaksi', ['pemasukan', 'masuk'])->sum('nominal');
-        $totalPengeluaran = $transaksiDetail->whereIn('tipe_transaksi', ['pengeluaran', 'keluar'])->sum('nominal');
-        
-        // Hitung saldo awal dan akhir
-        $saldoAwal = $saldoHarian->first()->saldo_awal ?? 0;
-        $saldoAkhir = $saldoAwal + $totalPemasukan - $totalPengeluaran;
-
-        // Data untuk PDF
-        $data = [
-            'transaksi_detail' => $transaksiDetail,
-            'saldo_harian' => $saldoHarian,
-            'tanggal_dari' => $tanggalDari->format('d F Y'),
-            'tanggal_sampai' => $tanggalSampai->format('d F Y'),
-            'periode_label' => $periodeLabel,
-            'total_pemasukan' => $totalPemasukan,
-            'total_pengeluaran' => $totalPengeluaran,
-            'saldo_awal' => $saldoAwal,
-            'saldo_akhir' => $saldoAkhir,
-            'tanggal_cetak' => Carbon::now()->format('d F Y H:i:s'),
-            'total_transaksi' => $transaksiDetail->count(),
-        ];
-
-        // Generate PDF dengan landscape untuk space lebih luas
-        $pdf = PDF::loadView('dana-operasional.pdf-simple', $data);
-        $pdf->setPaper('a4', 'landscape');
-        
-        // Nama file dengan tanggal
-        $filename = 'Laporan_Keuangan_' . $tanggalDari->format('Ymd') . '_' . $tanggalSampai->format('Ymd') . '.pdf';
-        
-        // Save PDF to storage dan database untuk publish ke karyawan
-        $this->saveDanaOperasionalToDatabase($filterType, $filename, $periodeLabel, $tanggalDari, $tanggalSampai, $pdf);
-        
-        return $pdf->download($filename);
     }
 
     /**

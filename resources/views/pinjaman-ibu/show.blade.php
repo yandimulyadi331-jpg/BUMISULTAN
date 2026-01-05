@@ -72,7 +72,7 @@
                 <p class="text-white-50 mb-0">{{ $pinjaman->nomor_pinjaman }}</p>
             </div>
             <div>
-                <a href="{{ route('pinjaman.index') }}" class="btn btn-light">
+                <a href="{{ route('pinjaman-ibu.index') }}" class="btn btn-light">
                     <i class="bi bi-arrow-left"></i> Kembali
                 </a>
             </div>
@@ -456,7 +456,7 @@
                             <div class="modal fade" id="modalBayar{{ $cicilan->id }}" tabindex="-1">
                                 <div class="modal-dialog">
                                     <div class="modal-content">
-                                        <form action="{{ route('pinjaman.cicilan.bayar', $cicilan->id) }}" method="POST" enctype="multipart/form-data">
+                                        <form action="{{ route('pinjaman-ibu.cicilan.bayar', $cicilan->id) }}" method="POST" enctype="multipart/form-data">
                                             @csrf
                                             <div class="modal-header bg-success text-white">
                                                 <h5 class="modal-title">Pembayaran Cicilan ke-{{ $cicilan->cicilan_ke }}</h5>
@@ -513,7 +513,7 @@
                             <div class="modal fade" id="modalTunda{{ $cicilan->id }}" tabindex="-1">
                                 <div class="modal-dialog">
                                     <div class="modal-content">
-                                        <form action="{{ route('pinjaman.cicilan.tunda', $cicilan->id) }}" method="POST">
+                                        <form action="{{ route('pinjaman-ibu.cicilan.tunda', $cicilan->id) }}" method="POST">
                                             @csrf
                                             <div class="modal-header bg-warning text-dark">
                                                 <h5 class="modal-title">
@@ -658,7 +658,7 @@
                     @endif
 
                     @if(in_array($pinjaman->status, ['pengajuan', 'review']))
-                        <a href="{{ route('pinjaman.edit', $pinjaman->id) }}" class="btn btn-warning">
+                        <a href="{{ route('pinjaman-ibu.edit', $pinjaman->id) }}" class="btn btn-warning">
                             <i class="bi bi-pencil"></i> Edit Pinjaman
                         </a>
                     @endif
@@ -674,7 +674,7 @@
                         </button>
                         
                         <!-- Tombol Hapus Paksa -->
-                        <form action="{{ route('pinjaman.orphan.force-delete', $pinjaman->id) }}" method="POST" style="display:inline;">
+                        <form action="{{ route('pinjaman-ibu.orphan.force-delete', $pinjaman->id) }}" method="POST" style="display:inline;">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-sm btn-outline-danger w-100" onclick="return confirm('Yakin ingin menghapus pinjaman ini secara permanen?')">
@@ -723,7 +723,7 @@
             </div>
             <div class="card-body">
                 <p class="mb-3 small text-muted">Download formulir pinjaman resmi dengan kop perusahaan dan tanda tangan</p>
-                <a href="{{ route('pinjaman.download-formulir', $pinjaman->id) }}" 
+                <a href="{{ route('pinjaman-ibu.download-formulir', $pinjaman->id) }}" 
                    class="btn btn-danger w-100" target="_blank">
                     <i class="bi bi-download"></i> Download Formulir PDF
                 </a>
@@ -780,7 +780,7 @@
 <!-- Modal Review -->
 <div class="modal fade" id="modalReview" tabindex="-1">
     <div class="modal-dialog">
-        <form action="{{ route('pinjaman.review', $pinjaman->id) }}" method="POST">
+        <form action="{{ route('pinjaman-ibu.review', $pinjaman->id) }}" method="POST">
             @csrf
             <div class="modal-content">
                 <div class="modal-header bg-info text-white">
@@ -805,7 +805,7 @@
 <!-- Modal Approve -->
 <div class="modal fade" id="modalApprove" tabindex="-1">
     <div class="modal-dialog">
-        <form action="{{ route('pinjaman.approve', $pinjaman->id) }}" method="POST">
+        <form action="{{ route('pinjaman-ibu.approve', $pinjaman->id) }}" method="POST">
             @csrf
             <input type="hidden" name="action" value="approve">
             <div class="modal-content">
@@ -841,7 +841,7 @@
 <!-- Modal Reject -->
 <div class="modal fade" id="modalReject" tabindex="-1">
     <div class="modal-dialog">
-        <form action="{{ route('pinjaman.approve', $pinjaman->id) }}" method="POST">
+        <form action="{{ route('pinjaman-ibu.approve', $pinjaman->id) }}" method="POST">
             @csrf
             <input type="hidden" name="action" value="reject">
             <div class="modal-content">
@@ -868,7 +868,7 @@
 <!-- Modal Cairkan -->
 <div class="modal fade" id="modalCairkan" tabindex="-1">
     <div class="modal-dialog">
-        <form action="{{ route('pinjaman.cairkan', $pinjaman->id) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('pinjaman-ibu.cairkan', $pinjaman->id) }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
@@ -934,7 +934,7 @@
 <!-- Modal Tambah Pinjaman -->
 <div class="modal fade" id="modalTambahPinjaman" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <form action="{{ route('pinjaman.tambah-pinjaman', $pinjaman->id) }}" method="POST">
+        <form action="{{ route('pinjaman-ibu.tambah-pinjaman', $pinjaman->id) }}" method="POST">
             @csrf
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
@@ -1023,7 +1023,7 @@
 @if($pinjaman->kategori_peminjam == 'crew' && !$pinjaman->karyawan)
 <div class="modal fade" id="modalUpdateOrphan" tabindex="-1">
     <div class="modal-dialog">
-        <form action="{{ route('pinjaman.orphan.update', $pinjaman->id) }}" method="POST">
+        <form action="{{ route('pinjaman-ibu.orphan.update', $pinjaman->id) }}" method="POST">
             @csrf
             @method('PUT')
             <div class="modal-content">
@@ -1119,3 +1119,4 @@ $(document).ready(function() {
 });
 </script>
 @endpush
+

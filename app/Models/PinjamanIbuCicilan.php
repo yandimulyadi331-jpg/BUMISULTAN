@@ -5,14 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class PinjamanCicilan extends Model
+class PinjamanIbuCicilan extends Model
 {
     use HasFactory;
 
-    protected $table = 'pinjaman_cicilan';
+    protected $table = 'pinjaman_ibu_cicilan';
 
     protected $fillable = [
-        'pinjaman_id',
+        'pinjaman_ibu_id',
         'cicilan_ke',
         'tanggal_jatuh_tempo',
         'jumlah_pokok',
@@ -53,11 +53,11 @@ class PinjamanCicilan extends Model
     ];
 
     /**
-     * Relasi ke tabel Pinjaman
+     * Relasi ke tabel PinjamanIbu
      */
     public function pinjaman()
     {
-        return $this->belongsTo(Pinjaman::class, 'pinjaman_id');
+        return $this->belongsTo(PinjamanIbu::class, 'pinjaman_ibu_id');
     }
 
     /**

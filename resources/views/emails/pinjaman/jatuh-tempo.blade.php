@@ -65,7 +65,7 @@ Cicilan pinjaman Anda akan jatuh tempo dalam **7 hari**.
 @component('mail::panel')
 ⚠️ **Peringatan Keterlambatan**
 
-Pembayaran Anda sudah melewati tanggal jatuh tempo. Mohon segera lakukan pembayaran untuk menghindari denda keterlambatan.
+Pembayaran Anda sudah melewati tanggal jatuh tempo. Mohon segera lakukan pembayaran.
 @endcomponent
 @endif
 

@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pinjaman;
-use App\Models\PinjamanCicilan;
-use App\Models\PinjamanHistory;
-use App\Models\PinjamanEmailNotification;
+use App\Models\PinjamanIbu;
+use App\Models\PinjamanIbuCicilan;
+use App\Models\PinjamanIbuHistory;
+use App\Models\PinjamanIbuEmailNotification;
 use App\Models\Karyawan;
 use App\Models\TransaksiKeuangan;
 use App\Services\NotificationService;
@@ -19,14 +19,14 @@ use App\Mail\PinjamanJatuhTempoMail;
 use Carbon\Carbon;
 use PDF;
 
-class PinjamanController extends Controller
+class PinjamanIbuController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        $query = Pinjaman::with(['karyawan', 'pengaju', 'penyetuju', 'emailNotifications'])->orderBy('created_at', 'desc');
+        $query = PinjamanIbu::with(['karyawan', 'pengaju', 'penyetuju', 'emailNotifications'])->orderBy('created_at', 'desc');
 
         // Filter berdasarkan kategori
         if ($request->has('kategori') && $request->kategori != '') {
@@ -65,16 +65,16 @@ class PinjamanController extends Controller
 
         // Statistik
         $stats = [
-            'total_pengajuan' => Pinjaman::where('status', 'pengajuan')->count(),
-            'total_review' => Pinjaman::where('status', 'review')->count(),
-            'total_disetujui' => Pinjaman::where('status', 'disetujui')->count(),
-            'total_berjalan' => Pinjaman::whereIn('status', ['dicairkan', 'berjalan'])->count(),
-            'total_lunas' => Pinjaman::where('status', 'lunas')->count(),
-            'total_nominal_berjalan' => Pinjaman::whereIn('status', ['dicairkan', 'berjalan'])->sum('sisa_pinjaman'),
-            'total_nominal_dicairkan' => Pinjaman::whereIn('status', ['dicairkan', 'berjalan', 'lunas'])->sum('jumlah_disetujui'),
+            'total_pengajuan' => PinjamanIbu::where('status', 'pengajuan')->count(),
+            'total_review' => PinjamanIbu::where('status', 'review')->count(),
+            'total_disetujui' => PinjamanIbu::where('status', 'disetujui')->count(),
+            'total_berjalan' => PinjamanIbu::whereIn('status', ['dicairkan', 'berjalan'])->count(),
+            'total_lunas' => PinjamanIbu::where('status', 'lunas')->count(),
+            'total_nominal_berjalan' => PinjamanIbu::whereIn('status', ['dicairkan', 'berjalan'])->sum('sisa_pinjaman'),
+            'total_nominal_dicairkan' => PinjamanIbu::whereIn('status', ['dicairkan', 'berjalan', 'lunas'])->sum('jumlah_disetujui'),
         ];
 
-        return view('pinjaman.index', compact('pinjaman', 'stats'));
+        return view('pinjaman-ibu.index', compact('pinjaman', 'stats'));
     }
 
     /**
@@ -89,7 +89,7 @@ class PinjamanController extends Controller
         $pinjamanAktif = [];
         
         if ($request->has('duplicate_from')) {
-            $pinjamanLama = Pinjaman::find($request->duplicate_from);
+            $pinjamanLama = PinjamanIbu::find($request->duplicate_from);
             
             if ($pinjamanLama) {
                 // Ambil data peminjam saja, TIDAK termasuk dokumen
@@ -105,7 +105,7 @@ class PinjamanController extends Controller
                 ];
                 
                 // Cek pinjaman aktif peminjam ini
-                $pinjamanAktif = Pinjaman::where(function($q) use ($pinjamanLama) {
+                $pinjamanAktif = PinjamanIbu::where(function($q) use ($pinjamanLama) {
                     if ($pinjamanLama->kategori_peminjam == 'crew') {
                         $q->where('karyawan_id', $pinjamanLama->karyawan_id);
                     } else {
@@ -118,7 +118,7 @@ class PinjamanController extends Controller
             }
         }
         
-        return view('pinjaman.create', compact('karyawans', 'duplicateData', 'pinjamanAktif'));
+        return view('pinjaman-ibu.create', compact('karyawans', 'duplicateData', 'pinjamanAktif'));
     }
 
     /**
@@ -184,7 +184,7 @@ class PinjamanController extends Controller
             }
 
             // Generate nomor pinjaman
-            $validated['nomor_pinjaman'] = Pinjaman::generateNomorPinjaman();
+            $validated['nomor_pinjaman'] = PinjamanIbu::generateNomorPinjaman();
             $validated['diajukan_oleh'] = auth()->id();
             
             // Set bunga dan tipe bunga ke 0 dan flat (default, tidak digunakan)
@@ -197,7 +197,7 @@ class PinjamanController extends Controller
             $validated['total_bunga'] = 0;
 
             // Create pinjaman
-            $pinjaman = Pinjaman::create($validated);
+            $pinjaman = PinjamanIbu::create($validated);
 
             // Log history
             $pinjaman->logHistory('pengajuan', null, 'pengajuan', 'Pengajuan pinjaman dibuat');
@@ -244,7 +244,7 @@ class PinjamanController extends Controller
             }
         }
 
-        return view('pinjaman.show', compact('pinjaman'));
+        return view('pinjaman-ibu.show', compact('pinjaman'));
     }
 
     /**
@@ -258,7 +258,7 @@ class PinjamanController extends Controller
         }
 
         $karyawans = Karyawan::where('status_aktif_karyawan', '1')->orderBy('nama_karyawan')->get();
-        return view('pinjaman.edit', compact('pinjaman', 'karyawans'));
+        return view('pinjaman-ibu.edit', compact('pinjaman', 'karyawans'));
     }
 
     /**
@@ -503,7 +503,7 @@ class PinjamanController extends Controller
                     $master = PotonganPinjamanMaster::create([
                         'kode_potongan' => $kodePotongan,
                         'nik' => $pinjaman->karyawan_id,
-                        'pinjaman_id' => $pinjaman->id,
+                        'pinjaman_ibu_id' => $pinjaman->id,
                         'jumlah_pinjaman' => $pinjaman->jumlah_disetujui,
                         'cicilan_per_bulan' => $pinjaman->cicilan_per_bulan,
                         'jumlah_bulan' => $pinjaman->tenor_bulan,
@@ -577,7 +577,7 @@ class PinjamanController extends Controller
     /**
      * Tunda cicilan
      */
-    public function tundaCicilan(Request $request, PinjamanCicilan $cicilan)
+    public function tundaCicilan(Request $request, PinjamanIbuCicilan $cicilan)
     {
         // Validasi: Cek apakah cicilan sudah lunas
         if ($cicilan->status == 'lunas') {
@@ -625,8 +625,8 @@ class PinjamanController extends Controller
             $tanggalJatuhTempoBaru->day(min($tanggalJatuhTempoSetiapBulan, $hariTerakhirBulan));
 
             // 4. Buat cicilan baru di akhir tenor (hasil dari penundaan)
-            $cicilanBaru = PinjamanCicilan::create([
-                'pinjaman_id' => $pinjaman->id,
+            $cicilanBaru = PinjamanIbuCicilan::create([
+                'pinjaman_ibu_id' => $pinjaman->id,
                 'cicilan_ke' => $nomorCicilanBaru,
                 'tanggal_jatuh_tempo' => $tanggalJatuhTempoBaru,
                 'jumlah_pokok' => $cicilan->jumlah_pokok,
@@ -670,7 +670,7 @@ class PinjamanController extends Controller
     /**
      * Bayar cicilan
      */
-    public function bayarCicilan(Request $request, PinjamanCicilan $cicilan)
+    public function bayarCicilan(Request $request, PinjamanIbuCicilan $cicilan)
     {
         // Validasi: Cek apakah cicilan sudah lunas
         if ($cicilan->status == 'lunas') {
@@ -743,7 +743,7 @@ class PinjamanController extends Controller
         $tahun = $request->get('tahun', date('Y'));
         $kategori = $request->get('kategori', 'all');
 
-        $query = Pinjaman::with(['karyawan', 'cicilan']);
+        $query = PinjamanIbu::with(['karyawan', 'cicilan']);
 
         if ($bulan != 'all') {
             $query->whereMonth('tanggal_pengajuan', $bulan);
@@ -772,7 +772,7 @@ class PinjamanController extends Controller
             return $pdf->download('Laporan_Pinjaman_' . $bulan . '_' . $tahun . '.pdf');
         }
 
-        return view('pinjaman.laporan', compact('pinjaman', 'stats', 'bulan', 'tahun', 'kategori'));
+        return view('pinjaman-ibu.laporan', compact('pinjaman', 'stats', 'bulan', 'tahun', 'kategori'));
     }
 
     /**
@@ -864,12 +864,12 @@ class PinjamanController extends Controller
             $pinjaman->save();
 
             // Hapus semua cicilan yang belum dibayar
-            PinjamanCicilan::where('pinjaman_id', $pinjaman->id)
+            PinjamanIbuCicilan::where('pinjaman_ibu_id', $pinjaman->id)
                 ->where('status', 'belum_bayar')
                 ->delete();
 
             // Hitung ulang dari cicilan yang sudah dibayar
-            $cicilanTerbayar = PinjamanCicilan::where('pinjaman_id', $pinjaman->id)
+            $cicilanTerbayar = PinjamanIbuCicilan::where('pinjaman_ibu_id', $pinjaman->id)
                 ->whereIn('status', ['lunas', 'sebagian'])
                 ->orderBy('cicilan_ke', 'asc')
                 ->get();
@@ -893,8 +893,8 @@ class PinjamanController extends Controller
             while ($sisaBayar > 0) {
                 $jumlahCicilan = min($cicilanBaru, $sisaBayar);
                 
-                PinjamanCicilan::create([
-                    'pinjaman_id' => $pinjaman->id,
+                PinjamanIbuCicilan::create([
+                    'pinjaman_ibu_id' => $pinjaman->id,
                     'cicilan_ke' => $cicilanKeBaru,
                     'jumlah_pokok' => $jumlahCicilan, // Karena tidak ada bunga, jumlah pokok = jumlah cicilan
                     'jumlah_bunga' => 0, // Tidak ada bunga
@@ -912,7 +912,7 @@ class PinjamanController extends Controller
             }
 
             // Update tenor sesuai dengan jumlah cicilan aktual
-            $totalCicilan = PinjamanCicilan::where('pinjaman_id', $pinjaman->id)->count();
+            $totalCicilan = PinjamanIbuCicilan::where('pinjaman_ibu_id', $pinjaman->id)->count();
             $pinjaman->tenor = $totalCicilan;
             
             // Hitung persentase pembayaran
@@ -920,8 +920,8 @@ class PinjamanController extends Controller
             $pinjaman->save();
 
             // Catat history
-            PinjamanHistory::create([
-                'pinjaman_id' => $pinjaman->id,
+            PinjamanIbuHistory::create([
+                'pinjaman_ibu_id' => $pinjaman->id,
                 'user_id' => auth()->id(),
                 'aksi' => 'tambah_pinjaman',
                 'status_lama' => $pinjaman->status === 'berjalan' ? 'dicairkan' : $pinjaman->status,
@@ -979,7 +979,7 @@ class PinjamanController extends Controller
     public function kirimEmailManual(Request $request, $id)
     {
         try {
-            $pinjaman = Pinjaman::with(['karyawan'])->findOrFail($id);
+            $pinjaman = PinjamanIbu::with(['karyawan'])->findOrFail($id);
             
             // Validasi: pastikan ada email tujuan
             $emailTujuan = null;
@@ -1039,8 +1039,8 @@ class PinjamanController extends Controller
             );
 
             // Simpan log notifikasi
-            PinjamanEmailNotification::create([
-                'pinjaman_id' => $pinjaman->id,
+            PinjamanIbuEmailNotification::create([
+                'pinjaman_ibu_id' => $pinjaman->id,
                 'email_tujuan' => $emailTujuan,
                 'tipe_notifikasi' => $tipeNotifikasi,
                 'tanggal_jatuh_tempo' => Carbon::create(
@@ -1062,8 +1062,8 @@ class PinjamanController extends Controller
 
         } catch (\Exception $e) {
             // Log error
-            PinjamanEmailNotification::create([
-                'pinjaman_id' => $pinjaman->id ?? $id,
+            PinjamanIbuEmailNotification::create([
+                'pinjaman_ibu_id' => $pinjaman->id ?? $id,
                 'email_tujuan' => $emailTujuan ?? 'unknown',
                 'tipe_notifikasi' => 'manual',
                 'tanggal_jatuh_tempo' => Carbon::now(),
@@ -1085,7 +1085,7 @@ class PinjamanController extends Controller
      */
     public function forceDelete(Request $request, $id)
     {
-        $pinjaman = Pinjaman::find($id);
+        $pinjaman = PinjamanIbu::find($id);
         
         if (!$pinjaman) {
             return redirect()->back()->with('error', 'Pinjaman tidak ditemukan');
@@ -1114,8 +1114,8 @@ class PinjamanController extends Controller
             }
 
             // Hapus cicilan dan history terlebih dahulu
-            PinjamanCicilan::where('pinjaman_id', $pinjaman->id)->forceDelete();
-            PinjamanHistory::where('pinjaman_id', $pinjaman->id)->forceDelete();
+            PinjamanIbuCicilan::where('pinjaman_ibu_id', $pinjaman->id)->forceDelete();
+            PinjamanIbuHistory::where('pinjaman_ibu_id', $pinjaman->id)->forceDelete();
 
             // Hapus pinjaman
             $pinjaman->forceDelete();
@@ -1140,7 +1140,7 @@ class PinjamanController extends Controller
      */
     public function updateOrphan(Request $request, $id)
     {
-        $pinjaman = Pinjaman::find($id);
+        $pinjaman = PinjamanIbu::find($id);
         
         if (!$pinjaman) {
             return redirect()->back()->with('error', 'Pinjaman tidak ditemukan');
@@ -1176,4 +1176,8 @@ class PinjamanController extends Controller
         }
     }
 }
+
+
+
+
 

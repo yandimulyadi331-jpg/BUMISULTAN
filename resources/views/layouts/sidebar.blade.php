@@ -516,6 +516,26 @@
             </li>
         @endif
 
+        <!-- Pinjaman via Ibu -->
+        @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('pinjaman.index'))
+            <li class="menu-item {{ request()->is(['pinjaman-ibu', 'pinjaman-ibu/*']) ? 'active' : '' }}">
+                <a href="{{ route('pinjaman-ibu.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons ti ti-cash-banknote"></i>
+                    <div>Pinjaman via Ibu</div>
+                </a>
+            </li>
+        @endif
+
+        <!-- Jadwal & Agenda Perusahaan -->
+        @if (auth()->user()->hasRole(['super admin']))
+            <li class="menu-item {{ request()->is(['agenda', 'agenda/*']) ? 'active' : '' }}">
+                <a href="{{ route('agenda.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons ti ti-calendar-event"></i>
+                    <div>Jadwal & Agenda</div>
+                </a>
+            </li>
+        @endif
+
         <!-- Manajemen Perawatan Gedung -->
         @if (auth()->user()->hasRole(['super admin']) || auth()->user()->can('perawatan.index'))
             <li class="menu-item {{ request()->is(['perawatan', 'perawatan/*']) ? 'active' : '' }}">
