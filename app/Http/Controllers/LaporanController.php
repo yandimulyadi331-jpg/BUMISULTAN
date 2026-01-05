@@ -37,8 +37,17 @@ class LaporanController extends Controller
 
     public function cetakpresensi(Request $request)
     {
-
-        $user = User::where('id', Auth::user()->id)->first();
+        // Increase memory limit dan execution time untuk laporan besar (1 tahun)
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', '300'); // 5 menit
+        
+        // Disable debugbar untuk mengurangi memory usage
+        if (class_exists('\Debugbar')) {
+            \Debugbar::disable();
+        }
+        
+        try {
+            $user = User::where('id', Auth::user()->id)->first();
         $userkaryawan = Userkaryawan::where('id_user', $user->id)->first();
         $generalsetting = Pengaturanumum::where('id', 1)->first();
         $periode_laporan_dari = $generalsetting->periode_laporan_dari;
@@ -268,16 +277,25 @@ class LaporanController extends Controller
         }
         $q_presensi->orderBy('karyawan.nama_karyawan');
         $q_presensi->orderBy('presensi.tanggal', 'asc');
+        
+        // Disable query log untuk performa lebih baik pada data besar
+        DB::connection()->disableQueryLog();
+        
         $presensi = $q_presensi->get();
 
 
         $data['periode_dari'] = $periode_dari;
         $data['periode_sampai'] = $periode_sampai;
         $data['jmlhari'] = hitungJumlahHari($periode_dari, $periode_sampai) + 1;
+        
+        // Cache data yang sering digunakan
         $data['denda_list'] = Denda::all()->toArray();
         $data['datalibur'] = getdatalibur($periode_dari, $periode_sampai);
         $data['datalembur'] = getlembur($periode_dari, $periode_sampai);
         $data['generalsetting'] = $generalsetting;
+        
+        // Clear unnecessary data dari memory
+        unset($gaji_pokok, $bpjs_kesehatan, $bpjs_tenagakerja, $tunjangan, $penyesuaian_gaji, $potongan_pinjaman);
 
         if (isset($_POST['exportButton'])) {
             header("Content-type: application/vnd-ms-excel");
@@ -358,6 +376,16 @@ class LaporanController extends Controller
                     return view('laporan.slip_cetak', $data);
                 }
             }
+        } catch (\Exception $e) {
+            // Log error untuk debugging
+            \Log::error('Error cetakpresensi: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            // Tampilkan error yang user friendly
+            return response()->view('errors.500', [
+                'message' => 'Terjadi kesalahan saat membuat laporan. Data terlalu besar, silakan pilih periode lebih pendek atau filter berdasarkan cabang/departemen.',
+                'technical_message' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
     }
 }
