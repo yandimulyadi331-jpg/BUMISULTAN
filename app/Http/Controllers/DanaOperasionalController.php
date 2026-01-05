@@ -1215,8 +1215,7 @@ class DanaOperasionalController extends Controller
             // Log info untuk tracking
             \Log::info('Export PDF Dana Operasional - Preparing data', [
                 'filter_type' => $filterType,
-                'total_transaksi' => $transaksiDetail->count(),
-                'total_saldo_harian' => $saldoHarian->count(),
+                'total_transaksi' => count($transaksiDetail),
                 'periode' => $periodeLabel
             ]);
 
