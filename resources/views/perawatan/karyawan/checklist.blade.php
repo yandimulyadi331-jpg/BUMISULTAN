@@ -1113,10 +1113,10 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label"><i class="ti ti-camera"></i> Foto Bukti (Opsional)</label>
-                        <input type="file" class="form-control" name="foto_bukti" accept="image/*" capture="environment">
+                        <label class="form-label"><i class="ti ti-camera"></i> Foto Bukti <span style="color: #f44336;">*</span></label>
+                        <input type="file" class="form-control" name="foto_bukti" accept="image/*" capture="environment" required>
                         <small style="color: #666; font-size: 11px; margin-top: 5px; display: block;">
-                            Format: JPG, PNG. Max: 2MB
+                            Format: JPG, PNG. Max: 2MB. <strong style="color: #f44336;">Wajib diisi!</strong>
                         </small>
                     </div>
                 </form>
@@ -1212,6 +1212,23 @@ $(document).ready(function() {
     $('#btnSubmitChecklist').on('click', function() {
         const $btn = $(this);
         const form = $('#formChecklist')[0];
+        
+        // Validasi foto wajib
+        const fotoInput = $('input[name="foto_bukti"]')[0];
+        if (!fotoInput.files || fotoInput.files.length === 0) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Foto Wajib!',
+                    text: 'Silakan upload foto bukti terlebih dahulu.',
+                    confirmButtonColor: '#26a69a'
+                });
+            } else {
+                alert('Foto bukti wajib diupload!');
+            }
+            return;
+        }
+        
         const formData = new FormData(form);
         
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Menyimpan...');
