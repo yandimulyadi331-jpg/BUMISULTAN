@@ -46,8 +46,7 @@ class LaporanController extends Controller
             \Debugbar::disable();
         }
         
-        try {
-            $user = User::where('id', Auth::user()->id)->first();
+        $user = User::where('id', Auth::user()->id)->first();
         $userkaryawan = Userkaryawan::where('id_user', $user->id)->first();
         $generalsetting = Pengaturanumum::where('id', 1)->first();
         $periode_laporan_dari = $generalsetting->periode_laporan_dari;
@@ -376,16 +375,6 @@ class LaporanController extends Controller
                     return view('laporan.slip_cetak', $data);
                 }
             }
-        } catch (\Exception $e) {
-            // Log error untuk debugging
-            \Log::error('Error cetakpresensi: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
-            
-            // Tampilkan error yang user friendly
-            return response()->view('errors.500', [
-                'message' => 'Terjadi kesalahan saat membuat laporan. Data terlalu besar, silakan pilih periode lebih pendek atau filter berdasarkan cabang/departemen.',
-                'technical_message' => config('app.debug') ? $e->getMessage() : null
-            ], 500);
         }
     }
 }
