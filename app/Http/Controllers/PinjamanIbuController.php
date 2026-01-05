@@ -221,7 +221,7 @@ class PinjamanIbuController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Pinjaman $pinjaman)
+    public function show(PinjamanIbu $pinjaman)
     {
         $pinjaman->load([
             'karyawan', 
@@ -250,7 +250,7 @@ class PinjamanIbuController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Pinjaman $pinjaman)
+    public function edit(PinjamanIbu $pinjaman)
     {
         // Hanya bisa edit jika status masih pengajuan
         if (!in_array($pinjaman->status, ['pengajuan', 'review'])) {
@@ -264,7 +264,7 @@ class PinjamanIbuController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Pinjaman $pinjaman)
+    public function update(Request $request, PinjamanIbu $pinjaman)
     {
         // Hanya bisa update jika status masih pengajuan
         if (!in_array($pinjaman->status, ['pengajuan', 'review'])) {
@@ -340,7 +340,7 @@ class PinjamanIbuController extends Controller
     /**
      * Review pinjaman
      */
-    public function review(Request $request, Pinjaman $pinjaman)
+    public function review(Request $request, PinjamanIbu $pinjaman)
     {
         if ($pinjaman->status != 'pengajuan') {
             return redirect()->back()->with('error', 'Pinjaman tidak dapat direview');
@@ -376,7 +376,7 @@ class PinjamanIbuController extends Controller
     /**
      * Approve atau reject pinjaman
      */
-    public function approve(Request $request, Pinjaman $pinjaman)
+    public function approve(Request $request, PinjamanIbu $pinjaman)
     {
         if (!in_array($pinjaman->status, ['pengajuan', 'review'])) {
             return redirect()->back()->with('error', 'Pinjaman tidak dapat diproses');
@@ -436,7 +436,7 @@ class PinjamanIbuController extends Controller
     /**
      * Proses pencairan pinjaman
      */
-    public function cairkan(Request $request, Pinjaman $pinjaman)
+    public function cairkan(Request $request, PinjamanIbu $pinjaman)
     {
         if ($pinjaman->status != 'disetujui') {
             return redirect()->back()->with('error', 'Pinjaman belum disetujui');
@@ -778,7 +778,7 @@ class PinjamanIbuController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Pinjaman $pinjaman)
+    public function destroy(PinjamanIbu $pinjaman)
     {
         // Hanya bisa hapus jika status sudah selesai (lunas, ditolak, atau dibatalkan)
         if (!in_array($pinjaman->status, ['lunas', 'ditolak', 'dibatalkan'])) {
@@ -815,7 +815,7 @@ class PinjamanIbuController extends Controller
      * Tambah jumlah pinjaman ke pinjaman yang sudah ada
      * dan merge dengan angsuran sebelumnya
      */
-    public function tambahPinjaman(Request $request, Pinjaman $pinjaman)
+    public function tambahPinjaman(Request $request, PinjamanIbu $pinjaman)
     {
         // Validasi status pinjaman
         if (!in_array($pinjaman->status, ['dicairkan', 'berjalan'])) {
@@ -952,7 +952,7 @@ class PinjamanIbuController extends Controller
     /**
      * Download formulir pinjaman resmi dengan kop surat
      */
-    public function downloadFormulir(Pinjaman $pinjaman)
+    public function downloadFormulir(PinjamanIbu $pinjaman)
     {
         $pinjaman->load(['karyawan', 'pengaju', 'penyetuju', 'cicilan']);
 
