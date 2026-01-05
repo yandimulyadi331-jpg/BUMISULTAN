@@ -187,4 +187,28 @@ class PinjamanCicilan extends Model
         }
         return max(0, now()->diffInDays($this->tanggal_jatuh_tempo, false) * -1);
     }
+
+    /**
+     * Hitung dan update hari terlambat (tanpa denda)
+     * Method ini hanya untuk update status keterlambatan, tidak ada perhitungan denda
+     */
+    public function hitungDenda()
+    {
+        // Jika sudah lunas atau ditunda, skip
+        if ($this->status == 'lunas' || $this->is_ditunda) {
+            return;
+        }
+
+        // Hitung hari terlambat saja (tanpa denda)
+        $hariTerlambat = 0;
+        if (now()->isAfter($this->tanggal_jatuh_tempo)) {
+            $hariTerlambat = now()->diffInDays($this->tanggal_jatuh_tempo);
+        }
+
+        // Update hari terlambat untuk tracking saja
+        if ($this->hari_terlambat != $hariTerlambat) {
+            $this->hari_terlambat = $hariTerlambat;
+            $this->save();
+        }
+    }
 }
