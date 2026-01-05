@@ -271,54 +271,181 @@ class DanaOperasionalController extends Controller
     // Export ke Excel
     public function exportExcel(Request $request)
     {
-        $filterType = $request->get('filter_type', 'bulan');
+        $startDate = $request->start_date ? Carbon::parse($request->start_date) : Carbon::now()->startOfMonth();
+        $endDate = $request->end_date ? Carbon::parse($request->end_date) : Carbon::now()->endOfMonth();
         
-        // Tentukan range tanggal berdasarkan tipe filter (sama seperti index dan exportPdf)
-        switch ($filterType) {
-            case 'tahun':
-                $tahun = $request->get('tahun', date('Y'));
-                $startDate = Carbon::create($tahun, 1, 1)->startOfYear();
-                $endDate = Carbon::create($tahun, 12, 31)->endOfYear();
-                $periodeLabel = "Tahun_$tahun";
-                break;
-                
-            case 'minggu':
-                if ($request->has('minggu')) {
-                    list($tahun, $minggu) = explode('-W', $request->minggu);
-                    $startDate = Carbon::now()->setISODate($tahun, $minggu)->startOfWeek();
-                    $endDate = Carbon::now()->setISODate($tahun, $minggu)->endOfWeek();
-                } else {
-                    $startDate = Carbon::now()->startOfWeek();
-                    $endDate = Carbon::now()->endOfWeek();
-                }
-                $periodeLabel = "Minggu_" . $startDate->format('Ymd') . "_" . $endDate->format('Ymd');
-                break;
-                
-            case 'range':
-                if ($request->has('start_date') && $request->has('end_date')) {
-                    $startDate = Carbon::parse($request->start_date)->startOfDay();
-                    $endDate = Carbon::parse($request->end_date)->endOfDay();
-                } else {
-                    $startDate = Carbon::now()->startOfMonth();
-                    $endDate = Carbon::now()->endOfMonth();
-                }
-                $periodeLabel = $startDate->format('Ymd') . "_" . $endDate->format('Ymd');
-                break;
-                
-            default: // 'bulan'
-                $bulan = $request->get('bulan', date('Y-m'));
-                $startDate = Carbon::parse($bulan . '-01')->startOfMonth();
-                $endDate = Carbon::parse($bulan . '-01')->endOfMonth();
-                $periodeLabel = $startDate->format('Y_m');
-                break;
-        }
-        
-        $filename = 'Transaksi_Operasional_' . $periodeLabel . '.xlsx';
+        $filename = 'Transaksi_Operasional_' . $startDate->format('Y-m-d') . '_to_' . $endDate->format('Y-m-d') . '.xlsx';
         
         return Excel::download(
             new TransaksiOperasionalExport($startDate, $endDate),
             $filename
         );
+    }
+
+    // Generate Link untuk Download PDF (Background Processing)
+    public function generatePdfLink(Request $request)
+    {
+        try {
+            $filterType = $request->get('filter_type', 'bulan');
+            
+            // Tentukan range tanggal
+            switch ($filterType) {
+                case 'tahun':
+                    $tahun = $request->get('tahun', date('Y'));
+                    $tanggalDari = Carbon::create($tahun, 1, 1)->startOfYear();
+                    $tanggalSampai = Carbon::create($tahun, 12, 31)->endOfYear();
+                    $periodeLabel = "Tahun_$tahun";
+                    break;
+                case 'minggu':
+                    if ($request->has('minggu')) {
+                        list($tahun, $minggu) = explode('-W', $request->minggu);
+                        $tanggalDari = Carbon::now()->setISODate($tahun, $minggu)->startOfWeek();
+                        $tanggalSampai = Carbon::now()->setISODate($tahun, $minggu)->endOfWeek();
+                    } else {
+                        $tanggalDari = Carbon::now()->startOfWeek();
+                        $tanggalSampai = Carbon::now()->endOfWeek();
+                    }
+                    $periodeLabel = "Minggu_" . $tanggalDari->format('Ymd');
+                    break;
+                case 'range':
+                    if ($request->has('start_date') && $request->has('end_date')) {
+                        $tanggalDari = Carbon::parse($request->start_date)->startOfDay();
+                        $tanggalSampai = Carbon::parse($request->end_date)->endOfDay();
+                    } else {
+                        $tanggalDari = Carbon::now()->startOfMonth();
+                        $tanggalSampai = Carbon::now()->endOfMonth();
+                    }
+                    $periodeLabel = $tanggalDari->format('Ymd') . "_" . $tanggalSampai->format('Ymd');
+                    break;
+                default: // bulan
+                    $bulan = $request->get('bulan', date('Y-m'));
+                    $tanggalDari = Carbon::parse($bulan . '-01')->startOfMonth();
+                    $tanggalSampai = Carbon::parse($bulan . '-01')->endOfMonth();
+                    $periodeLabel = $tanggalDari->format('Y_m');
+                    break;
+            }
+            
+            // Generate unique token untuk link
+            $token = md5($periodeLabel . time() . auth()->id());
+            $filename = "Laporan_Keuangan_{$periodeLabel}_{$token}.pdf";
+            
+            // Simpan info ke session untuk proses nanti
+            session([
+                "pdf_generate_{$token}" => [
+                    'filter_type' => $filterType,
+                    'bulan' => $request->get('bulan'),
+                    'tahun' => $request->get('tahun'),
+                    'minggu' => $request->get('minggu'),
+                    'start_date' => $request->get('start_date'),
+                    'end_date' => $request->get('end_date'),
+                    'tanggal_dari' => $tanggalDari->toDateTimeString(),
+                    'tanggal_sampai' => $tanggalSampai->toDateTimeString(),
+                    'periode_label' => $periodeLabel,
+                    'filename' => $filename,
+                    'status' => 'pending',
+                    'created_at' => now()->toDateTimeString()
+                ]
+            ]);
+            
+            // Generate link download
+            $downloadUrl = route('dana-operasional.download-pdf-link', ['token' => $token]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Link download berhasil dibuat! Klik link untuk download PDF.',
+                'download_url' => $downloadUrl,
+                'token' => $token,
+                'periode' => $periodeLabel
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Generate PDF Link Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat link: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    // Download PDF via Link (Background Generated)
+    public function downloadPdfLink($token)
+    {
+        try {
+            // Ambil info dari session
+            $pdfInfo = session("pdf_generate_{$token}");
+            
+            if (!$pdfInfo) {
+                abort(404, 'Link download tidak valid atau sudah expired.');
+            }
+            
+            // Set unlimited memory dan timeout
+            ini_set('memory_limit', '-1');
+            ini_set('max_execution_time', '0');
+            set_time_limit(0);
+            config(['app.debug' => false]);
+            
+            // Parse tanggal
+            $tanggalDari = Carbon::parse($pdfInfo['tanggal_dari']);
+            $tanggalSampai = Carbon::parse($pdfInfo['tanggal_sampai']);
+            
+            // Query transaksi - MINIMAL FIELDS
+            $transaksiDetail = RealisasiDanaOperasional::select([
+                    'id', 'tanggal_realisasi', 'nominal', 'tipe_transaksi', 
+                    'keterangan', 'nomor_realisasi', 'uraian', 'kategori'
+                ])
+                ->where('status', 'active')
+                ->whereBetween('tanggal_realisasi', [$tanggalDari, $tanggalSampai])
+                ->orderBy('tanggal_realisasi', 'asc')
+                ->get();
+            
+            // Ambil saldo
+            $saldoAwal = SaldoHarianOperasional::whereDate('tanggal', $tanggalDari)->value('saldo_awal') ?? 0;
+            $saldoAkhir = SaldoHarianOperasional::whereDate('tanggal', $tanggalSampai)->value('saldo_akhir') ?? 0;
+            
+            // Hitung total
+            $totalPemasukan = 0;
+            $totalPengeluaran = 0;
+            foreach ($transaksiDetail as $t) {
+                if (in_array($t->tipe_transaksi, ['pemasukan', 'masuk'])) {
+                    $totalPemasukan += $t->nominal;
+                } else {
+                    $totalPengeluaran += $t->nominal;
+                }
+            }
+            
+            if ($saldoAkhir == 0) {
+                $saldoAkhir = $saldoAwal + $totalPemasukan - $totalPengeluaran;
+            }
+            
+            // Data untuk PDF
+            $data = [
+                'transaksi_detail' => $transaksiDetail,
+                'tanggal_dari' => $tanggalDari->format('d/m/Y'),
+                'tanggal_sampai' => $tanggalSampai->format('d/m/Y'),
+                'periode_label' => $pdfInfo['periode_label'],
+                'total_pemasukan' => $totalPemasukan,
+                'total_pengeluaran' => $totalPengeluaran,
+                'saldo_awal' => $saldoAwal,
+                'saldo_akhir' => $saldoAkhir,
+                'tanggal_cetak' => date('d/m/Y H:i'),
+                'total_transaksi' => count($transaksiDetail),
+                'isLargeData' => count($transaksiDetail) > 1000,
+            ];
+            
+            // Generate PDF
+            $pdf = PDF::loadView('dana-operasional.pdf-simple', $data)
+                ->setPaper('a4', 'landscape');
+            
+            // Update status
+            $pdfInfo['status'] = 'completed';
+            session(["pdf_generate_{$token}" => $pdfInfo]);
+            
+            return $pdf->download($pdfInfo['filename']);
+            
+        } catch (\Exception $e) {
+            \Log::error('Download PDF Link Error: ' . $e->getMessage());
+            abort(500, 'Gagal generate PDF: ' . $e->getMessage());
+        }
     }
 
     // Template Excel untuk Import
@@ -1120,17 +1247,10 @@ class DanaOperasionalController extends Controller
     public function exportPdf(Request $request)
     {
         try {
-            // OPTIMASI MAKSIMAL: Unlimited memory untuk data tahunan
-            ini_set('memory_limit', '-1'); // UNLIMITED memory
-            ini_set('max_execution_time', '0'); // Unlimited time
-            set_time_limit(0); // Unlimited
-            
-            // Disable debug mode untuk performa
-            config(['app.debug' => false]);
-            
-            // Optimize garbage collection
-            gc_enable();
-            gc_collect_cycles();
+            // Increase memory limit dan execution time untuk laporan tahunan
+            ini_set('memory_limit', '1024M'); // Tingkatkan ke 1GB
+            ini_set('max_execution_time', '0'); // Unlimited time (tidak ada timeout)
+            set_time_limit(0); // Pastikan tidak ada timeout
             
             $filterType = $request->get('filter_type', 'bulan');
             
@@ -1174,86 +1294,84 @@ class DanaOperasionalController extends Controller
                     break;
             }
 
-            // OPTIMASI MAKSIMAL: Minimal query dengan chunking untuk memory efficiency
-            $transaksiDetail = RealisasiDanaOperasional::select([
-                    'id', 'tanggal_realisasi', 'nominal', 'tipe_transaksi', 
-                    'keterangan', 'nomor_realisasi', 'uraian', 'kategori'
+            // Optimasi query untuk data besar - gunakan chunk untuk laporan tahunan
+            // Filter hanya transaksi active (tidak voided)
+            $transaksiQuery = RealisasiDanaOperasional::select([
+                    'id', 'pengajuan_id', 'tanggal_realisasi', 'nominal', 
+                    'tipe_transaksi', 'keterangan', 'nomor_transaksi', 'nomor_realisasi', 
+                    'uraian', 'kategori', 'created_by', 'created_at', 'status'
                 ])
-                ->where('status', 'active')
+                ->where('status', 'active') // Hanya transaksi aktif
                 ->whereBetween('tanggal_realisasi', [$tanggalDari->startOfDay(), $tanggalSampai->endOfDay()])
                 ->orderBy('tanggal_realisasi', 'asc')
-                ->orderBy('id', 'asc')
-                ->get();
+                ->orderBy('created_at', 'asc');
             
-            // Clear memory setelah query
-            gc_collect_cycles();
-
-            // Ambil saldo awal dan akhir saja (bukan semua hari)
-            $saldoAwalRecord = SaldoHarianOperasional::select(['saldo_awal', 'saldo_akhir'])
-                ->whereDate('tanggal', $tanggalDari)
-                ->first();
-            
-            $saldoAkhirRecord = SaldoHarianOperasional::select(['saldo_akhir'])
-                ->whereDate('tanggal', $tanggalSampai)
-                ->first();
-
-            // Hitung total dengan loop efisien (lebih cepat dari collection filter)
-            $totalPemasukan = 0;
-            $totalPengeluaran = 0;
-            foreach ($transaksiDetail as $t) {
-                if ($t->tipe_transaksi == 'pemasukan' || $t->tipe_transaksi == 'masuk') {
-                    $totalPemasukan += $t->nominal;
-                } else {
-                    $totalPengeluaran += $t->nominal;
-                }
+            // Untuk laporan tahunan, batasi jumlah data jika terlalu banyak
+            $countTotal = $transaksiQuery->count();
+            if ($filterType === 'tahun' && $countTotal > 5000) {
+                // Jika lebih dari 5000 transaksi, gunakan eager loading tanpa detail relation
+                $transaksiDetail = $transaksiQuery->get();
+            } else {
+                // Gunakan eager loading untuk data yang lebih kecil
+                $transaksiDetail = $transaksiQuery
+                    ->with([
+                        'pengajuan:id,nomor_pengajuan,kategori,keterangan',
+                        'creator:id,name'
+                    ])
+                    ->get();
             }
+
+            // Ambil ringkasan saldo harian dengan select minimal
+            $saldoHarian = SaldoHarianOperasional::select(['id', 'tanggal', 'saldo_awal', 'saldo_akhir', 'dana_masuk', 'total_realisasi'])
+                ->whereBetween('tanggal', [$tanggalDari->startOfDay(), $tanggalSampai->endOfDay()])
+                ->orderBy('tanggal', 'asc')
+                ->get();
+
+            // Hitung total pemasukan dan pengeluaran dari transaksi detail
+            // Support berbagai format tipe transaksi: 'pemasukan'/'masuk' dan 'pengeluaran'/'keluar'
+            $totalPemasukan = $transaksiDetail->whereIn('tipe_transaksi', ['pemasukan', 'masuk'])->sum('nominal');
+            $totalPengeluaran = $transaksiDetail->whereIn('tipe_transaksi', ['pengeluaran', 'keluar'])->sum('nominal');
             
-            // Saldo dari database
-            $saldoAwal = $saldoAwalRecord->saldo_awal ?? 0;
-            $saldoAkhir = $saldoAkhirRecord->saldo_akhir ?? ($saldoAwal + $totalPemasukan - $totalPengeluaran);
+            // Hitung saldo awal dan akhir
+            $saldoAwal = $saldoHarian->first()->saldo_awal ?? 0;
+            $saldoAkhir = $saldoAwal + $totalPemasukan - $totalPengeluaran;
 
             // Log info untuk tracking
             \Log::info('Export PDF Dana Operasional - Preparing data', [
                 'filter_type' => $filterType,
-                'total_transaksi' => count($transaksiDetail),
+                'total_transaksi' => $transaksiDetail->count(),
+                'total_saldo_harian' => $saldoHarian->count(),
                 'periode' => $periodeLabel
             ]);
 
-            // Data untuk PDF - MINIMAL
+            // Data untuk PDF
             $data = [
                 'transaksi_detail' => $transaksiDetail,
-                'tanggal_dari' => $tanggalDari->format('d/m/Y'),
-                'tanggal_sampai' => $tanggalSampai->format('d/m/Y'),
+                'saldo_harian' => $saldoHarian,
+                'tanggal_dari' => $tanggalDari->format('d F Y'),
+                'tanggal_sampai' => $tanggalSampai->format('d F Y'),
                 'periode_label' => $periodeLabel,
                 'total_pemasukan' => $totalPemasukan,
                 'total_pengeluaran' => $totalPengeluaran,
                 'saldo_awal' => $saldoAwal,
                 'saldo_akhir' => $saldoAkhir,
-                'tanggal_cetak' => date('d/m/Y H:i'),
-                'total_transaksi' => count($transaksiDetail),
-                'isLargeData' => count($transaksiDetail) > 1000,
+                'tanggal_cetak' => Carbon::now()->format('d F Y H:i:s'),
+                'total_transaksi' => $transaksiDetail->count(),
             ];
-            
-            // Clear memory
-            unset($saldoAwalRecord, $saldoAkhirRecord);
-            gc_collect_cycles();
 
             // Log sebelum generate PDF
             \Log::info('Export PDF Dana Operasional - Generating PDF', [
                 'total_transaksi' => $transaksiDetail->count()
             ]);
 
-            // Generate PDF dengan OPTIMASI MAKSIMAL
-            $pdf = PDF::loadView('dana-operasional.pdf-simple-optimized', $data)
+            // Generate PDF dengan landscape untuk space lebih luas
+            // Gunakan option untuk optimasi rendering
+            $pdf = PDF::loadView('dana-operasional.pdf-simple', $data)
                 ->setPaper('a4', 'landscape')
-                ->setOption('isPhpEnabled', false) // Disable PHP dalam PDF
-                ->setOption('isRemoteEnabled', false) // Disable remote
-                ->setOption('isHtml5ParserEnabled', false) // Disable HTML5 parser (lebih cepat)
-                ->setOption('isFontSubsettingEnabled', false) // Disable font subsetting
-                ->setOption('debugPng', false)
-                ->setOption('debugKeepTemp', false)
-                ->setOption('debugCss', false)
-                ->setOption('debugLayout', false);
+                ->setOption('enable_php', true)
+                ->setOption('isPhpEnabled', true)
+                ->setOption('isRemoteEnabled', false)
+                ->setOption('chroot', public_path());
             
             // Log setelah generate PDF
             \Log::info('Export PDF Dana Operasional - PDF generated successfully');
@@ -1282,114 +1400,6 @@ class DanaOperasionalController extends Controller
             
             // Return user-friendly error
             return back()->with('error', 'Gagal menggenerate PDF: ' . $e->getMessage() . '. Silakan coba lagi atau hubungi admin jika masalah berlanjut.');
-        }
-    }
-
-    /**
-     * Export PDF TAHUNAN dengan data SUMMARY per bulan (lebih ringan)
-     * Khusus untuk laporan setahun penuh yang bisa di-download tanpa timeout
-     */
-    public function exportPdfTahunan(Request $request)
-    {
-        try {
-            // Increase memory limit dan execution time
-            ini_set('memory_limit', '1024M');
-            ini_set('max_execution_time', '0');
-            set_time_limit(0);
-            
-            $tahun = $request->get('tahun', date('Y'));
-            $tanggalDari = Carbon::create($tahun, 1, 1)->startOfYear();
-            $tanggalSampai = Carbon::create($tahun, 12, 31)->endOfYear();
-            $periodeLabel = "Tahun $tahun";
-            
-            \Log::info('Export PDF Tahunan - Start', ['tahun' => $tahun]);
-            
-            // Summary per bulan (lebih ringan dari per transaksi)
-            $summaryPerBulan = [];
-            
-            for ($bulan = 1; $bulan <= 12; $bulan++) {
-                $startOfMonth = Carbon::create($tahun, $bulan, 1)->startOfMonth();
-                $endOfMonth = Carbon::create($tahun, $bulan, 1)->endOfMonth();
-                
-                // Hitung total per bulan
-                $pemasukan = RealisasiDanaOperasional::where('status', 'active')
-                    ->whereIn('tipe_transaksi', ['pemasukan', 'masuk'])
-                    ->whereBetween('tanggal_realisasi', [$startOfMonth, $endOfMonth])
-                    ->sum('nominal');
-                
-                $pengeluaran = RealisasiDanaOperasional::where('status', 'active')
-                    ->whereIn('tipe_transaksi', ['pengeluaran', 'keluar'])
-                    ->whereBetween('tanggal_realisasi', [$startOfMonth, $endOfMonth])
-                    ->sum('nominal');
-                
-                $jumlahTransaksi = RealisasiDanaOperasional::where('status', 'active')
-                    ->whereBetween('tanggal_realisasi', [$startOfMonth, $endOfMonth])
-                    ->count();
-                
-                // Saldo awal dan akhir bulan
-                $saldoAwalBulan = SaldoHarianOperasional::where('tanggal', $startOfMonth->format('Y-m-d'))
-                    ->value('saldo_awal') ?? 0;
-                
-                $saldoAkhirBulan = SaldoHarianOperasional::where('tanggal', $endOfMonth->format('Y-m-d'))
-                    ->value('saldo_akhir') ?? ($saldoAwalBulan + $pemasukan - $pengeluaran);
-                
-                $summaryPerBulan[] = [
-                    'bulan' => $bulan,
-                    'nama_bulan' => $startOfMonth->locale('id')->isoFormat('MMMM'),
-                    'pemasukan' => $pemasukan,
-                    'pengeluaran' => $pengeluaran,
-                    'saldo_awal' => $saldoAwalBulan,
-                    'saldo_akhir' => $saldoAkhirBulan,
-                    'selisih' => $pemasukan - $pengeluaran,
-                    'jumlah_transaksi' => $jumlahTransaksi,
-                ];
-            }
-            
-            // Total tahun
-            $totalPemasukan = array_sum(array_column($summaryPerBulan, 'pemasukan'));
-            $totalPengeluaran = array_sum(array_column($summaryPerBulan, 'pengeluaran'));
-            $totalTransaksi = array_sum(array_column($summaryPerBulan, 'jumlah_transaksi'));
-            $saldoAwalTahun = $summaryPerBulan[0]['saldo_awal'] ?? 0;
-            $saldoAkhirTahun = $summaryPerBulan[11]['saldo_akhir'] ?? 0;
-            
-            $data = [
-                'summary_per_bulan' => $summaryPerBulan,
-                'tahun' => $tahun,
-                'periode_label' => $periodeLabel,
-                'total_pemasukan' => $totalPemasukan,
-                'total_pengeluaran' => $totalPengeluaran,
-                'total_transaksi' => $totalTransaksi,
-                'saldo_awal_tahun' => $saldoAwalTahun,
-                'saldo_akhir_tahun' => $saldoAkhirTahun,
-                'tanggal_cetak' => Carbon::now()->format('d F Y H:i:s'),
-            ];
-            
-            \Log::info('Export PDF Tahunan - Data prepared', [
-                'total_transaksi' => $totalTransaksi,
-                'total_pemasukan' => $totalPemasukan,
-            ]);
-            
-            // Generate PDF dengan view simplified
-            $pdf = PDF::loadView('dana-operasional.pdf-tahunan-summary', $data)
-                ->setPaper('a4', 'portrait')
-                ->setOption('enable_php', true)
-                ->setOption('isPhpEnabled', true)
-                ->setOption('isRemoteEnabled', false);
-            
-            $filename = 'Laporan_Keuangan_Tahunan_' . $tahun . '.pdf';
-            
-            \Log::info('Export PDF Tahunan - Success');
-            
-            return $pdf->download($filename);
-            
-        } catch (\Exception $e) {
-            \Log::error('Export PDF Tahunan Error: ' . $e->getMessage(), [
-                'tahun' => $request->get('tahun'),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ]);
-            
-            return back()->with('error', 'Gagal menggenerate PDF Tahunan: ' . $e->getMessage());
         }
     }
 

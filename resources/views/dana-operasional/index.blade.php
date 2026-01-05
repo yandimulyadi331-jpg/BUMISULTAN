@@ -323,11 +323,8 @@
                             <button type="button" class="btn" onclick="downloadPDF()" style="border: 1px solid #d1d5db; border-radius: 0.375rem; height: 38px; padding: 0.375rem 0.75rem; font-size: 1rem; background: #fff; color: #374151;">
                                 <i class="bx bxs-file-pdf me-1"></i> Download PDF
                             </button>
-                            <button type="button" class="btn" onclick="downloadExcel()" style="border: 1px solid #d1d5db; border-radius: 0.375rem; height: 38px; padding: 0.375rem 0.75rem; font-size: 1rem; background: #fff; color: #374151;">
-                                <i class="bx bxs-file me-1"></i> Download Excel
-                            </button>
-                            <button type="button" class="btn" onclick="downloadPDFTahunan()" id="btnPdfTahunan" style="border: 1px solid #d1d5db; border-radius: 0.375rem; height: 38px; padding: 0.375rem 0.75rem; font-size: 1rem; background: #dc3545; color: #fff; display: none;">
-                                <i class="bx bxs-file-pdf me-1"></i> Download PDF Tahunan (Summary)
+                            <button type="button" class="btn" onclick="generatePdfLink()" style="border: 1px solid #d1d5db; border-radius: 0.375rem; height: 38px; padding: 0.375rem 0.75rem; font-size: 1rem; background: #28a745; color: #fff;">
+                                <i class="bx bx-link me-1"></i> Generate Link PDF
                             </button>
                             <button type="button" class="btn" onclick="kirimEmailLaporan()" style="border: 1px solid #d1d5db; border-radius: 0.375rem; height: 38px; padding: 0.375rem 0.75rem; font-size: 1rem; background: #fff; color: #374151;">
                                 <i class="bx bx-envelope me-1"></i> Kirim Email
@@ -2318,25 +2315,9 @@ function downloadPDF() {
     window.open(url, '_blank');
 }
 
-// Download PDF Tahunan Summary - Alternative untuk data yang banyak
-function downloadPDFTahunan() {
-    const tahun = document.querySelector('input[name="tahun"]')?.value || '';
-    
-    if (!tahun) {
-        alert('Pilih tahun terlebih dahulu!');
-        return;
-    }
-    
-    // Build URL dengan route khusus
-    const url = '{{ route("dana-operasional.export-pdf-tahunan") }}?tahun=' + tahun;
-    
-    // Open PDF in new tab/download
-    window.open(url, '_blank');
-}
-
-// Download Excel dengan filter yang sama seperti tampilan
-function downloadExcel() {
-    // Get filter values from the form
+// Generate Link PDF (Background Processing) - SOLUSI UNTUK DATA BESAR
+async function generatePdfLink() {
+    // Get filter values
     const filterType = document.querySelector('select[name="filter_type"]').value;
     const bulan = document.querySelector('input[name="bulan"]')?.value || '';
     const tahun = document.querySelector('input[name="tahun"]')?.value || '';
@@ -2344,45 +2325,87 @@ function downloadExcel() {
     const startDate = document.querySelector('input[name="start_date"]')?.value || '';
     const endDate = document.querySelector('input[name="end_date"]')?.value || '';
     
-    // Build URL with query parameters
-    let url = '{{ route("dana-operasional.export-excel") }}?filter_type=' + filterType;
+    // Build params
+    const params = new URLSearchParams({
+        filter_type: filterType,
+        ...(filterType === 'bulan' && bulan && { bulan }),
+        ...(filterType === 'tahun' && tahun && { tahun }),
+        ...(filterType === 'minggu' && minggu && { minggu }),
+        ...(filterType === 'range' && startDate && endDate && { start_date: startDate, end_date: endDate })
+    });
     
-    if (filterType === 'bulan' && bulan) {
-        url += '&bulan=' + bulan;
-    } else if (filterType === 'tahun' && tahun) {
-        url += '&tahun=' + tahun;
-    } else if (filterType === 'minggu' && minggu) {
-        url += '&minggu=' + minggu;
-    } else if (filterType === 'range' && startDate && endDate) {
-        url += '&start_date=' + startDate + '&end_date=' + endDate;
+    try {
+        // Show loading
+        Swal.fire({
+            title: 'Generating Link...',
+            html: 'Sedang membuat link download PDF<br><small>Proses ini tidak akan timeout</small>',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        // Call API
+        const response = await fetch('{{ route("dana-operasional.generate-pdf-link") }}?' + params.toString(), {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Show link
+            Swal.fire({
+                icon: 'success',
+                title: 'Link Berhasil Dibuat!',
+                html: `
+                    <p>Klik tombol di bawah untuk download PDF</p>
+                    <p><small class="text-muted">Link dapat dibuka di device lain</small></p>
+                    <div class="mt-3">
+                        <input type="text" class="form-control mb-2" value="${result.download_url}" readonly onclick="this.select()">
+                        <button class="btn btn-success btn-sm" onclick="window.open('${result.download_url}', '_blank')">
+                            <i class="bx bx-download"></i> Download PDF
+                        </button>
+                        <button class="btn btn-info btn-sm" onclick="copyToClipboard('${result.download_url}')">
+                            <i class="bx bx-copy"></i> Copy Link
+                        </button>
+                    </div>
+                `,
+                showConfirmButton: false,
+                showCloseButton: true,
+                width: 600
+            });
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: error.message || 'Gagal membuat link download',
+            confirmButtonColor: '#d33'
+        });
     }
-    
-    // Open Excel in new tab/download
-    window.open(url, '_blank');
 }
 
-// Show/hide tombol PDF Tahunan based on filter type
-function togglePdfTahunanButton() {
-    const filterType = document.querySelector('select[name="filter_type"]').value;
-    const btnPdfTahunan = document.getElementById('btnPdfTahunan');
-    
-    if (filterType === 'tahun') {
-        btnPdfTahunan.style.display = 'inline-block';
-    } else {
-        btnPdfTahunan.style.display = 'none';
-    }
+// Copy link to clipboard
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        toastr.success('Link berhasil dicopy!');
+    }).catch(err => {
+        // Fallback untuk browser lama
+        const input = document.createElement('input');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        toastr.success('Link berhasil dicopy!');
+    });
 }
-
-// Call on page load and filter change
-document.addEventListener('DOMContentLoaded', function() {
-    togglePdfTahunanButton();
-    
-    // Add event listener to filter type select
-    const filterTypeSelect = document.querySelector('select[name="filter_type"]');
-    if (filterTypeSelect) {
-        filterTypeSelect.addEventListener('change', togglePdfTahunanButton);
-    }
-});
 
 // ===== UPDATE KATEGORI TRANSAKSI (AJAX) =====
 

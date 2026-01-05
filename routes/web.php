@@ -1665,7 +1665,10 @@ Route::middleware('role:super admin')->prefix('dana-operasional')->name('dana-op
     // Import/Export Excel
     Route::get('/export-excel', 'exportExcel')->name('export-excel');
     Route::get('/export-pdf', 'exportPdf')->name('export-pdf');
-    Route::get('/export-pdf-tahunan', 'exportPdfTahunan')->name('export-pdf-tahunan'); // PDF Tahunan Summary
+    
+    // Generate Link untuk Download PDF (Background)
+    Route::post('/generate-pdf-link', 'generatePdfLink')->name('generate-pdf-link');
+    Route::get('/download-pdf/{token}', 'downloadPdfLink')->name('download-pdf-link');
     
     // Alias untuk backward compatibility (jika ada link lama yang pakai report-pdf)
     Route::get('/report-pdf/{params?}', function ($params = null) {
