@@ -271,10 +271,49 @@ class DanaOperasionalController extends Controller
     // Export ke Excel
     public function exportExcel(Request $request)
     {
-        $startDate = $request->start_date ? Carbon::parse($request->start_date) : Carbon::now()->startOfMonth();
-        $endDate = $request->end_date ? Carbon::parse($request->end_date) : Carbon::now()->endOfMonth();
+        $filterType = $request->get('filter_type', 'bulan');
         
-        $filename = 'Transaksi_Operasional_' . $startDate->format('Y-m-d') . '_to_' . $endDate->format('Y-m-d') . '.xlsx';
+        // Tentukan range tanggal berdasarkan tipe filter (sama seperti index dan exportPdf)
+        switch ($filterType) {
+            case 'tahun':
+                $tahun = $request->get('tahun', date('Y'));
+                $startDate = Carbon::create($tahun, 1, 1)->startOfYear();
+                $endDate = Carbon::create($tahun, 12, 31)->endOfYear();
+                $periodeLabel = "Tahun_$tahun";
+                break;
+                
+            case 'minggu':
+                if ($request->has('minggu')) {
+                    list($tahun, $minggu) = explode('-W', $request->minggu);
+                    $startDate = Carbon::now()->setISODate($tahun, $minggu)->startOfWeek();
+                    $endDate = Carbon::now()->setISODate($tahun, $minggu)->endOfWeek();
+                } else {
+                    $startDate = Carbon::now()->startOfWeek();
+                    $endDate = Carbon::now()->endOfWeek();
+                }
+                $periodeLabel = "Minggu_" . $startDate->format('Ymd') . "_" . $endDate->format('Ymd');
+                break;
+                
+            case 'range':
+                if ($request->has('start_date') && $request->has('end_date')) {
+                    $startDate = Carbon::parse($request->start_date)->startOfDay();
+                    $endDate = Carbon::parse($request->end_date)->endOfDay();
+                } else {
+                    $startDate = Carbon::now()->startOfMonth();
+                    $endDate = Carbon::now()->endOfMonth();
+                }
+                $periodeLabel = $startDate->format('Ymd') . "_" . $endDate->format('Ymd');
+                break;
+                
+            default: // 'bulan'
+                $bulan = $request->get('bulan', date('Y-m'));
+                $startDate = Carbon::parse($bulan . '-01')->startOfMonth();
+                $endDate = Carbon::parse($bulan . '-01')->endOfMonth();
+                $periodeLabel = $startDate->format('Y_m');
+                break;
+        }
+        
+        $filename = 'Transaksi_Operasional_' . $periodeLabel . '.xlsx';
         
         return Excel::download(
             new TransaksiOperasionalExport($startDate, $endDate),

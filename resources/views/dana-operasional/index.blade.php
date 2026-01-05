@@ -323,6 +323,9 @@
                             <button type="button" class="btn" onclick="downloadPDF()" style="border: 1px solid #d1d5db; border-radius: 0.375rem; height: 38px; padding: 0.375rem 0.75rem; font-size: 1rem; background: #fff; color: #374151;">
                                 <i class="bx bxs-file-pdf me-1"></i> Download PDF
                             </button>
+                            <button type="button" class="btn" onclick="downloadExcel()" style="border: 1px solid #d1d5db; border-radius: 0.375rem; height: 38px; padding: 0.375rem 0.75rem; font-size: 1rem; background: #fff; color: #374151;">
+                                <i class="bx bxs-file me-1"></i> Download Excel
+                            </button>
                             <button type="button" class="btn" onclick="downloadPDFTahunan()" id="btnPdfTahunan" style="border: 1px solid #d1d5db; border-radius: 0.375rem; height: 38px; padding: 0.375rem 0.75rem; font-size: 1rem; background: #dc3545; color: #fff; display: none;">
                                 <i class="bx bxs-file-pdf me-1"></i> Download PDF Tahunan (Summary)
                             </button>
@@ -2328,6 +2331,33 @@ function downloadPDFTahunan() {
     const url = '{{ route("dana-operasional.export-pdf-tahunan") }}?tahun=' + tahun;
     
     // Open PDF in new tab/download
+    window.open(url, '_blank');
+}
+
+// Download Excel dengan filter yang sama seperti tampilan
+function downloadExcel() {
+    // Get filter values from the form
+    const filterType = document.querySelector('select[name="filter_type"]').value;
+    const bulan = document.querySelector('input[name="bulan"]')?.value || '';
+    const tahun = document.querySelector('input[name="tahun"]')?.value || '';
+    const minggu = document.querySelector('input[name="minggu"]')?.value || '';
+    const startDate = document.querySelector('input[name="start_date"]')?.value || '';
+    const endDate = document.querySelector('input[name="end_date"]')?.value || '';
+    
+    // Build URL with query parameters
+    let url = '{{ route("dana-operasional.export-excel") }}?filter_type=' + filterType;
+    
+    if (filterType === 'bulan' && bulan) {
+        url += '&bulan=' + bulan;
+    } else if (filterType === 'tahun' && tahun) {
+        url += '&tahun=' + tahun;
+    } else if (filterType === 'minggu' && minggu) {
+        url += '&minggu=' + minggu;
+    } else if (filterType === 'range' && startDate && endDate) {
+        url += '&start_date=' + startDate + '&end_date=' + endDate;
+    }
+    
+    // Open Excel in new tab/download
     window.open(url, '_blank');
 }
 
