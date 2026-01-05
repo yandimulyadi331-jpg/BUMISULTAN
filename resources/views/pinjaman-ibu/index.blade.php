@@ -277,8 +277,8 @@
                                     $emailTujuan = $item->email_peminjam;
                                 }
                                 
-                                // Cek email terakhir dikirim
-                                $lastEmail = $item->emailNotifications()->where('status', 'sent')->latest('sent_at')->first();
+                                // Cek email terakhir dikirim (tanpa filter status untuk avoid column error)
+                                $lastEmail = $item->emailNotifications()->whereNotNull('sent_at')->latest('sent_at')->first();
                             @endphp
                             
                             @if($emailTersedia)
