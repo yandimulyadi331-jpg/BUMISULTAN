@@ -1082,7 +1082,7 @@ class DanaOperasionalController extends Controller
     {
         try {
             // Increase memory limit dan execution time untuk laporan tahunan
-            ini_set('memory_limit', '1024M'); // Tingkatkan ke 1GB
+            ini_set('memory_limit', '2048M'); // Tingkatkan ke 2GB untuk data besar
             ini_set('max_execution_time', '0'); // Unlimited time (tidak ada timeout)
             set_time_limit(0); // Pastikan tidak ada timeout
             
@@ -1128,8 +1128,8 @@ class DanaOperasionalController extends Controller
                     break;
             }
 
-            // Optimasi query untuk data besar - gunakan chunk untuk laporan tahunan
-            // Filter hanya transaksi active (tidak voided)
+            // Optimasi query untuk data besar
+            // Filter hanya transaksi active (tidak voided) dengan minimal select
             $transaksiQuery = RealisasiDanaOperasional::select([
                     'id', 'pengajuan_id', 'tanggal_realisasi', 'nominal', 
                     'tipe_transaksi', 'keterangan', 'nomor_transaksi', 'nomor_realisasi', 
@@ -1140,20 +1140,13 @@ class DanaOperasionalController extends Controller
                 ->orderBy('tanggal_realisasi', 'asc')
                 ->orderBy('created_at', 'asc');
             
-            // Untuk laporan tahunan, batasi jumlah data jika terlalu banyak
-            $countTotal = $transaksiQuery->count();
-            if ($filterType === 'tahun' && $countTotal > 5000) {
-                // Jika lebih dari 5000 transaksi, gunakan eager loading tanpa detail relation
-                $transaksiDetail = $transaksiQuery->get();
-            } else {
-                // Gunakan eager loading untuk data yang lebih kecil
-                $transaksiDetail = $transaksiQuery
-                    ->with([
-                        'pengajuan:id,nomor_pengajuan,kategori,keterangan',
-                        'creator:id,name'
-                    ])
-                    ->get();
-            }
+            // Load semua data tanpa batasan - gunakan eager loading untuk efisiensi
+            $transaksiDetail = $transaksiQuery
+                ->with([
+                    'pengajuan:id,nomor_pengajuan,kategori,keterangan',
+                    'creator:id,name'
+                ])
+                ->get();
 
             // Ambil ringkasan saldo harian dengan select minimal
             $saldoHarian = SaldoHarianOperasional::select(['id', 'tanggal', 'saldo_awal', 'saldo_akhir', 'dana_masuk', 'total_realisasi'])
@@ -1199,12 +1192,14 @@ class DanaOperasionalController extends Controller
             ]);
 
             // Generate PDF dengan landscape untuk space lebih luas
-            // Gunakan option untuk optimasi rendering
+            // Gunakan option untuk optimasi rendering pada data besar
             $pdf = PDF::loadView('dana-operasional.pdf-simple', $data)
                 ->setPaper('a4', 'landscape')
                 ->setOption('enable_php', true)
                 ->setOption('isPhpEnabled', true)
                 ->setOption('isRemoteEnabled', false)
+                ->setOption('isHtml5ParserEnabled', true)
+                ->setOption('isFontSubsettingEnabled', true)
                 ->setOption('chroot', public_path());
             
             // Log setelah generate PDF
