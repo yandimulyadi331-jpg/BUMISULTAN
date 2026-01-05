@@ -305,10 +305,10 @@
                     <strong>{{ \Carbon\Carbon::parse($item->tanggal_realisasi)->format('d/m/Y') }}</strong><br>
                     <span class="timestamp">{{ \Carbon\Carbon::parse($item->created_at)->format('H:i:s') }}</span>
                 </td>
-                <td><strong style="color: #1e3a8a;">{{ $item->kategori ? strtoupper($item->kategori) : (isset($item->pengajuan->kategori) ? strtoupper($item->pengajuan->kategori) : 'UMUM') }}</strong></td>
+                <td><strong style="color: #1e3a8a;">{{ $item->kategori ? strtoupper($item->kategori) : (optional($item->pengajuan)->kategori ? strtoupper($item->pengajuan->kategori) : 'UMUM') }}</strong></td>
                 <td>
-                    {{ $item->uraian ?? $item->pengajuan->keterangan ?? $item->keterangan ?? '-' }}
-                    @if(isset($item->keterangan) && $item->keterangan != ($item->uraian ?? $item->pengajuan->keterangan ?? ''))
+                    {{ $item->uraian ?? optional($item->pengajuan)->keterangan ?? $item->keterangan ?? '-' }}
+                    @if(isset($item->keterangan) && $item->keterangan != ($item->uraian ?? optional($item->pengajuan)->keterangan ?? ''))
                     <br><span style="color: #64748b; font-style: italic;">Catatan: {{ $item->keterangan }}</span>
                     @endif
                 </td>

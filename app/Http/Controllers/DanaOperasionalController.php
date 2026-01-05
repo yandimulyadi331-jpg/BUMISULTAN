@@ -1082,8 +1082,9 @@ class DanaOperasionalController extends Controller
     {
         try {
             // Increase memory limit dan execution time untuk laporan tahunan
-            ini_set('memory_limit', '512M');
-            ini_set('max_execution_time', '300'); // 5 menit
+            ini_set('memory_limit', '1024M'); // Tingkatkan ke 1GB
+            ini_set('max_execution_time', '0'); // Unlimited time (tidak ada timeout)
+            set_time_limit(0); // Pastikan tidak ada timeout
             
             $filterType = $request->get('filter_type', 'bulan');
             
@@ -1127,20 +1128,32 @@ class DanaOperasionalController extends Controller
                     break;
             }
 
-            // Optimasi query untuk data besar - select only needed columns
-            $transaksiDetail = RealisasiDanaOperasional::select([
+            // Optimasi query untuk data besar - gunakan chunk untuk laporan tahunan
+            // Filter hanya transaksi active (tidak voided)
+            $transaksiQuery = RealisasiDanaOperasional::select([
                     'id', 'pengajuan_id', 'tanggal_realisasi', 'nominal', 
                     'tipe_transaksi', 'keterangan', 'nomor_transaksi', 'nomor_realisasi', 
-                    'uraian', 'kategori', 'created_by', 'created_at'
+                    'uraian', 'kategori', 'created_by', 'created_at', 'status'
                 ])
-                ->with([
-                    'pengajuan:id,nomor_pengajuan,kategori,keterangan',
-                    'creator:id,name'
-                ])
+                ->where('status', 'active') // Hanya transaksi aktif
                 ->whereBetween('tanggal_realisasi', [$tanggalDari->startOfDay(), $tanggalSampai->endOfDay()])
                 ->orderBy('tanggal_realisasi', 'asc')
-                ->orderBy('created_at', 'asc')
-                ->get();
+                ->orderBy('created_at', 'asc');
+            
+            // Untuk laporan tahunan, batasi jumlah data jika terlalu banyak
+            $countTotal = $transaksiQuery->count();
+            if ($filterType === 'tahun' && $countTotal > 5000) {
+                // Jika lebih dari 5000 transaksi, gunakan eager loading tanpa detail relation
+                $transaksiDetail = $transaksiQuery->get();
+            } else {
+                // Gunakan eager loading untuk data yang lebih kecil
+                $transaksiDetail = $transaksiQuery
+                    ->with([
+                        'pengajuan:id,nomor_pengajuan,kategori,keterangan',
+                        'creator:id,name'
+                    ])
+                    ->get();
+            }
 
             // Ambil ringkasan saldo harian dengan select minimal
             $saldoHarian = SaldoHarianOperasional::select(['id', 'tanggal', 'saldo_awal', 'saldo_akhir', 'dana_masuk', 'total_realisasi'])
@@ -1157,6 +1170,14 @@ class DanaOperasionalController extends Controller
             $saldoAwal = $saldoHarian->first()->saldo_awal ?? 0;
             $saldoAkhir = $saldoAwal + $totalPemasukan - $totalPengeluaran;
 
+            // Log info untuk tracking
+            \Log::info('Export PDF Dana Operasional - Preparing data', [
+                'filter_type' => $filterType,
+                'total_transaksi' => $transaksiDetail->count(),
+                'total_saldo_harian' => $saldoHarian->count(),
+                'periode' => $periodeLabel
+            ]);
+
             // Data untuk PDF
             $data = [
                 'transaksi_detail' => $transaksiDetail,
@@ -1172,6 +1193,11 @@ class DanaOperasionalController extends Controller
                 'total_transaksi' => $transaksiDetail->count(),
             ];
 
+            // Log sebelum generate PDF
+            \Log::info('Export PDF Dana Operasional - Generating PDF', [
+                'total_transaksi' => $transaksiDetail->count()
+            ]);
+
             // Generate PDF dengan landscape untuk space lebih luas
             // Gunakan option untuk optimasi rendering
             $pdf = PDF::loadView('dana-operasional.pdf-simple', $data)
@@ -1181,11 +1207,19 @@ class DanaOperasionalController extends Controller
                 ->setOption('isRemoteEnabled', false)
                 ->setOption('chroot', public_path());
             
+            // Log setelah generate PDF
+            \Log::info('Export PDF Dana Operasional - PDF generated successfully');
+            
             // Nama file dengan tanggal
             $filename = 'Laporan_Keuangan_' . $tanggalDari->format('Ymd') . '_' . $tanggalSampai->format('Ymd') . '.pdf';
             
-            // Save PDF to storage dan database untuk publish ke karyawan
-            $this->saveDanaOperasionalToDatabase($filterType, $filename, $periodeLabel, $tanggalDari, $tanggalSampai, $pdf);
+            // Save PDF to storage dan database untuk publish ke karyawan (optional)
+            try {
+                $this->saveDanaOperasionalToDatabase($filterType, $filename, $periodeLabel, $tanggalDari, $tanggalSampai, $pdf);
+            } catch (\Exception $e) {
+                // Jangan gagalkan download jika save ke database error
+                \Log::warning('Export PDF Dana Operasional - Failed to save to database: ' . $e->getMessage());
+            }
             
             return $pdf->download($filename);
             

@@ -177,9 +177,54 @@ class IzindinasController extends Controller
         DB::beginTransaction();
         try {
             if (isset($request->approve)) {
+                // Update status ijin dinas
+                $izindinas = Izindinas::where('kode_izin_dinas', $kode_izin_dinas)->first();
+                
                 Izindinas::where('kode_izin_dinas', $kode_izin_dinas)->update([
                     'status' => 1
                 ]);
+                
+                // AUTO-GENERATE presensi untuk range tanggal ijin dinas
+                if ($izindinas) {
+                    $dari = $izindinas->dari;
+                    $sampai = $izindinas->sampai;
+                    $nik = $izindinas->nik;
+                    
+                    // Get jam kerja default karyawan
+                    $karyawan = \App\Models\Karyawan::where('nik', $nik)->first();
+                    $kode_jam_kerja = $karyawan->kode_jam_kerja ?? 'JK01'; // Default jam kerja
+                    
+                    // Loop untuk setiap tanggal dalam range
+                    $current_date = $dari;
+                    while (strtotime($current_date) <= strtotime($sampai)) {
+                        // Cek apakah sudah ada presensi untuk tanggal ini
+                        $presensi_exists = \App\Models\Presensi::where('nik', $nik)
+                            ->where('tanggal', $current_date)
+                            ->first();
+                        
+                        if (!$presensi_exists) {
+                            // Buat presensi baru dengan status 'd' (dinas)
+                            \App\Models\Presensi::create([
+                                'nik' => $nik,
+                                'tanggal' => $current_date,
+                                'status' => 'd', // Status dinas
+                                'kode_jam_kerja' => $kode_jam_kerja,
+                                'jam_in' => null,
+                                'jam_out' => null,
+                            ]);
+                        } else {
+                            // Update presensi yang sudah ada ke status 'd' jika masih alfa/tidak ada scan
+                            if ($presensi_exists->status == 'a' || ($presensi_exists->status == 'h' && empty($presensi_exists->jam_in) && empty($presensi_exists->jam_out))) {
+                                $presensi_exists->update([
+                                    'status' => 'd'
+                                ]);
+                            }
+                        }
+                        
+                        // Next day
+                        $current_date = date('Y-m-d', strtotime('+1 day', strtotime($current_date)));
+                    }
+                }
             } else {
                 Izindinas::where('kode_izin_dinas', $kode_izin_dinas)->update([
                     'status' => 2

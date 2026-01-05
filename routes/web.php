@@ -1665,6 +1665,13 @@ Route::middleware('role:super admin')->prefix('dana-operasional')->name('dana-op
     // Import/Export Excel
     Route::get('/export-excel', 'exportExcel')->name('export-excel');
     Route::get('/export-pdf', 'exportPdf')->name('export-pdf');
+    
+    // Alias untuk backward compatibility (jika ada link lama yang pakai report-pdf)
+    Route::get('/report-pdf/{params?}', function ($params = null) {
+        // Redirect ke export-pdf dengan semua query parameters
+        return redirect()->route('dana-operasional.export-pdf', request()->all());
+    })->where('params', '.*');
+    
     Route::post('/send-email', 'sendEmail')->name('send-email');
     Route::get('/download-template', 'downloadTemplate')->name('download-template');
     Route::post('/import-excel', 'importExcel')->name('import-excel');

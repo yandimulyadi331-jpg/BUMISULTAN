@@ -219,6 +219,7 @@ class LaporanController extends Controller
             'presensi.keterangan_izin_absen',
             'presensi.keterangan_izin_sakit',
             'presensi.keterangan_izin_cuti',
+            'presensi.keterangan_izin_dinas', // FIX: Tambah ijin dinas ke select
             'presensi.total_jam',
             'gaji_pokok.jumlah as gaji_pokok',
             'bpjs_kesehatan.jumlah as bpjs_kesehatan',
@@ -354,6 +355,7 @@ class LaporanController extends Controller
                         'keterangan_izin_absen' => $row->keterangan_izin_absen,
                         'keterangan_izin_sakit' => $row->keterangan_izin_sakit,
                         'keterangan_izin_cuti' => $row->keterangan_izin_cuti,
+                        'keterangan_izin_dinas' => $row->keterangan_izin_dinas, // FIX: Tambah ijin dinas
                         'total_jam' => $row->total_jam
                     ];
                 }
