@@ -1666,6 +1666,9 @@ Route::middleware('role:super admin')->prefix('dana-operasional')->name('dana-op
     Route::get('/export-excel', 'exportExcel')->name('export-excel');
     Route::get('/export-pdf', 'exportPdf')->name('export-pdf');
     
+    // FITUR BARU: Export PDF Ringkasan (hanya total per bulan)
+    Route::get('/export-pdf-summary', 'exportPdfSummary')->name('export-pdf-summary');
+    
     // Generate Link untuk Download PDF (Background)
     Route::post('/generate-pdf-link', 'generatePdfLink')->name('generate-pdf-link');
     Route::get('/download-pdf/{token}', 'downloadPdfLink')->name('download-pdf-link');

@@ -1262,6 +1262,25 @@ class DanaOperasionalController extends Controller
                     $tanggalSampai = Carbon::create($tahun, 12, 31)->endOfYear();
                     $periodeLabel = "Tahun $tahun";
                     break;
+                
+                case 'kuartal':
+                    // FITUR BARU: Export per Kuartal (Q1, Q2, Q3, Q4)
+                    $tahun = $request->get('tahun', date('Y'));
+                    $kuartal = $request->get('kuartal', 1); // 1, 2, 3, atau 4
+                    
+                    // Mapping kuartal ke bulan
+                    $kuartalMap = [
+                        1 => ['start' => 1, 'end' => 3, 'label' => 'Q1 (Januari - Maret)'],
+                        2 => ['start' => 4, 'end' => 6, 'label' => 'Q2 (April - Juni)'],
+                        3 => ['start' => 7, 'end' => 9, 'label' => 'Q3 (Juli - September)'],
+                        4 => ['start' => 10, 'end' => 12, 'label' => 'Q4 (Oktober - Desember)'],
+                    ];
+                    
+                    $quarter = $kuartalMap[$kuartal] ?? $kuartalMap[1];
+                    $tanggalDari = Carbon::create($tahun, $quarter['start'], 1)->startOfMonth();
+                    $tanggalSampai = Carbon::create($tahun, $quarter['end'], 1)->endOfMonth();
+                    $periodeLabel = $quarter['label'] . " $tahun";
+                    break;
                     
                 case 'minggu':
                     if ($request->has('minggu')) {
@@ -1435,6 +1454,132 @@ class DanaOperasionalController extends Controller
             
             // Return user-friendly error
             return back()->with('error', 'Gagal menggenerate PDF: ' . $e->getMessage() . '. Silakan coba lagi atau hubungi admin jika masalah berlanjut.');
+        }
+    }
+
+    /**
+     * Export PDF RINGKASAN - Hanya total per bulan (BUKAN detail transaksi)
+     * Cocok untuk data besar: tampilkan akumulasi per bulan saja
+     * Super cepat karena hanya 12 baris data maksimal per tahun
+     */
+    public function exportPdfSummary(Request $request)
+    {
+        try {
+            $filterType = $request->get('filter_type', 'tahun');
+            
+            // Tentukan range tanggal
+            switch ($filterType) {
+                case 'tahun':
+                    $tahun = $request->get('tahun', date('Y'));
+                    $tanggalDari = Carbon::create($tahun, 1, 1)->startOfYear();
+                    $tanggalSampai = Carbon::create($tahun, 12, 31)->endOfYear();
+                    $periodeLabel = "Ringkasan Tahun $tahun";
+                    break;
+                    
+                case 'kuartal':
+                    $tahun = $request->get('tahun', date('Y'));
+                    $kuartal = $request->get('kuartal', 1);
+                    
+                    $kuartalMap = [
+                        1 => ['start' => 1, 'end' => 3, 'label' => 'Q1'],
+                        2 => ['start' => 4, 'end' => 6, 'label' => 'Q2'],
+                        3 => ['start' => 7, 'end' => 9, 'label' => 'Q3'],
+                        4 => ['start' => 10, 'end' => 12, 'label' => 'Q4'],
+                    ];
+                    
+                    $quarter = $kuartalMap[$kuartal] ?? $kuartalMap[1];
+                    $tanggalDari = Carbon::create($tahun, $quarter['start'], 1)->startOfMonth();
+                    $tanggalSampai = Carbon::create($tahun, $quarter['end'], 1)->endOfMonth();
+                    $periodeLabel = "Ringkasan " . $quarter['label'] . " $tahun";
+                    break;
+                    
+                default:
+                    $tahun = date('Y');
+                    $tanggalDari = Carbon::create($tahun, 1, 1)->startOfYear();
+                    $tanggalSampai = Carbon::create($tahun, 12, 31)->endOfYear();
+                    $periodeLabel = "Ringkasan Tahun $tahun";
+                    break;
+            }
+            
+            // Query saldo harian untuk mendapatkan ringkasan per hari
+            $saldoHarian = SaldoHarianOperasional::select([
+                    'tanggal', 'saldo_awal', 'saldo_akhir', 'dana_masuk', 'total_realisasi'
+                ])
+                ->whereBetween('tanggal', [$tanggalDari, $tanggalSampai])
+                ->orderBy('tanggal', 'asc')
+                ->get();
+            
+            // Group by bulan dan hitung total per bulan
+            $ringkasanPerBulan = collect();
+            
+            // Loop setiap bulan dalam range
+            $currentDate = $tanggalDari->copy();
+            while ($currentDate <= $tanggalSampai) {
+                $bulanKey = $currentDate->format('Y-m');
+                $namaBulan = $currentDate->locale('id')->isoFormat('MMMM YYYY');
+                
+                // Filter saldo harian untuk bulan ini
+                $saldoBulanIni = $saldoHarian->filter(function($item) use ($bulanKey) {
+                    return $item->tanggal->format('Y-m') === $bulanKey;
+                });
+                
+                // Hitung total pemasukan dan pengeluaran dari saldo harian
+                $totalMasuk = $saldoBulanIni->sum('dana_masuk');
+                $totalKeluar = $saldoBulanIni->sum('total_realisasi');
+                $saldoAwal = $saldoBulanIni->first()->saldo_awal ?? 0;
+                $saldoAkhir = $saldoBulanIni->last()->saldo_akhir ?? 0;
+                
+                $ringkasanPerBulan->push((object)[
+                    'bulan' => $namaBulan,
+                    'bulan_key' => $bulanKey,
+                    'saldo_awal' => $saldoAwal,
+                    'total_pemasukan' => $totalMasuk,
+                    'total_pengeluaran' => $totalKeluar,
+                    'saldo_akhir' => $saldoAkhir,
+                    'jumlah_hari' => $saldoBulanIni->count()
+                ]);
+                
+                $currentDate->addMonth();
+            }
+            
+            // Hitung grand total
+            $grandTotalMasuk = $ringkasanPerBulan->sum('total_pemasukan');
+            $grandTotalKeluar = $ringkasanPerBulan->sum('total_pengeluaran');
+            $saldoAwal = $ringkasanPerBulan->first()->saldo_awal ?? 0;
+            $saldoAkhir = $ringkasanPerBulan->last()->saldo_akhir ?? 0;
+            
+            // Data untuk PDF
+            $data = [
+                'ringkasan_per_bulan' => $ringkasanPerBulan,
+                'periode_label' => $periodeLabel,
+                'tanggal_dari' => $tanggalDari->format('d F Y'),
+                'tanggal_sampai' => $tanggalSampai->format('d F Y'),
+                'grand_total_pemasukan' => $grandTotalMasuk,
+                'grand_total_pengeluaran' => $grandTotalKeluar,
+                'saldo_awal' => $saldoAwal,
+                'saldo_akhir' => $saldoAkhir,
+                'tanggal_cetak' => Carbon::now()->format('d F Y H:i:s'),
+            ];
+            
+            // Generate PDF dengan view ringkasan
+            $pdf = PDF::loadView('dana-operasional.pdf-summary', $data)
+                ->setPaper('a4', 'portrait') // Portrait karena data sedikit
+                ->setOption('enable_php', true)
+                ->setOption('isPhpEnabled', true);
+            
+            // Nama file
+            $filename = 'Ringkasan_Keuangan_' . $tanggalDari->format('Ymd') . '_' . $tanggalSampai->format('Ymd') . '.pdf';
+            
+            \Log::info('Export PDF Summary - Success', [
+                'periode' => $periodeLabel,
+                'total_bulan' => $ringkasanPerBulan->count()
+            ]);
+            
+            return $pdf->download($filename);
+            
+        } catch (\Exception $e) {
+            \Log::error('Export PDF Summary Error: ' . $e->getMessage());
+            return back()->with('error', 'Gagal menggenerate PDF Ringkasan: ' . $e->getMessage());
         }
     }
 
