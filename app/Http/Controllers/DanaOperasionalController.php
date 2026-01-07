@@ -1247,10 +1247,10 @@ class DanaOperasionalController extends Controller
     public function exportPdf(Request $request)
     {
         try {
-            // Increase memory limit dan execution time untuk laporan tahunan
-            ini_set('memory_limit', '1024M'); // Tingkatkan ke 1GB
-            ini_set('max_execution_time', '0'); // Unlimited time (tidak ada timeout)
-            set_time_limit(0); // Pastikan tidak ada timeout
+            // Increase memory limit dan execution time untuk laporan data besar
+            ini_set('memory_limit', '2048M'); // Tingkatkan ke 2GB untuk ribuan data
+            ini_set('max_execution_time', '300'); // 5 menit timeout (cegah hang forever)
+            set_time_limit(300); // 5 menit maksimal
             
             $filterType = $request->get('filter_type', 'bulan');
             
@@ -1294,28 +1294,53 @@ class DanaOperasionalController extends Controller
                     break;
             }
 
-            // Optimasi query untuk data besar - gunakan chunk untuk laporan tahunan
-            // Filter hanya transaksi active (tidak voided)
+            // Cek jumlah total data terlebih dahulu (untuk validasi)
+            $countQuery = RealisasiDanaOperasional::where('status', 'active')
+                ->whereBetween('tanggal_realisasi', [$tanggalDari->startOfDay(), $tanggalSampai->endOfDay()]);
+            
+            $countTotal = $countQuery->count();
+            
+            // BATASAN: Jika data lebih dari 10,000 records, tolak untuk cegah timeout
+            if ($countTotal > 10000) {
+                \Log::warning('Export PDF Dana Operasional - Data terlalu besar', [
+                    'total_records' => $countTotal,
+                    'filter_type' => $filterType,
+                    'periode' => $periodeLabel
+                ]);
+                
+                return back()->with('error', 
+                    'Maaf, data terlalu banyak (' . number_format($countTotal) . ' transaksi). ' .
+                    'Maksimal 10,000 transaksi per export. Silakan pilih periode yang lebih pendek (misalnya per bulan atau per kuartal).'
+                );
+            }
+            
+            // Warning jika data besar (3000-10000 records)
+            if ($countTotal > 3000) {
+                \Log::info('Export PDF Dana Operasional - Data besar, processing...', [
+                    'total_records' => $countTotal,
+                    'filter_type' => $filterType
+                ]);
+            }
+            
+            // Optimasi query untuk data besar - minimal columns untuk performa maksimal
             $transaksiQuery = RealisasiDanaOperasional::select([
-                    'id', 'pengajuan_id', 'tanggal_realisasi', 'nominal', 
-                    'tipe_transaksi', 'keterangan', 'nomor_transaksi', 'nomor_realisasi', 
-                    'uraian', 'kategori', 'created_by', 'created_at', 'status'
+                    'id', 'tanggal_realisasi', 'nominal', 'tipe_transaksi', 
+                    'kategori', 'uraian', 'keterangan', 'nomor_transaksi', 'nomor_realisasi'
                 ])
                 ->where('status', 'active') // Hanya transaksi aktif
                 ->whereBetween('tanggal_realisasi', [$tanggalDari->startOfDay(), $tanggalSampai->endOfDay()])
                 ->orderBy('tanggal_realisasi', 'asc')
-                ->orderBy('created_at', 'asc');
+                ->orderBy('id', 'asc'); // Gunakan ID untuk performa lebih baik
             
-            // Untuk laporan tahunan, batasi jumlah data jika terlalu banyak
-            $countTotal = $transaksiQuery->count();
-            if ($filterType === 'tahun' && $countTotal > 5000) {
-                // Jika lebih dari 5000 transaksi, gunakan eager loading tanpa detail relation
+            // Untuk data besar (> 1000), JANGAN gunakan eager loading (lebih lambat)
+            // Cukup ambil data mentah saja tanpa relasi
+            if ($countTotal > 1000) {
                 $transaksiDetail = $transaksiQuery->get();
             } else {
-                // Gunakan eager loading untuk data yang lebih kecil
+                // Untuk data kecil, boleh pakai eager loading
                 $transaksiDetail = $transaksiQuery
                     ->with([
-                        'pengajuan:id,nomor_pengajuan,kategori,keterangan',
+                        'pengajuan:id,nomor_pengajuan,kategori',
                         'creator:id,name'
                     ])
                     ->get();
@@ -1326,6 +1351,12 @@ class DanaOperasionalController extends Controller
                 ->whereBetween('tanggal', [$tanggalDari->startOfDay(), $tanggalSampai->endOfDay()])
                 ->orderBy('tanggal', 'asc')
                 ->get();
+            
+            // Pastikan variable saldoHarian ada untuk menghindari undefined variable error
+            if ($saldoHarian->isEmpty()) {
+                // Jika tidak ada saldo harian, buat collection kosong dengan struktur default
+                $saldoHarian = collect([]);
+            }
 
             // Hitung total pemasukan dan pengeluaran dari transaksi detail
             // Support berbagai format tipe transaksi: 'pemasukan'/'masuk' dan 'pengeluaran'/'keluar'
@@ -1361,16 +1392,20 @@ class DanaOperasionalController extends Controller
 
             // Log sebelum generate PDF
             \Log::info('Export PDF Dana Operasional - Generating PDF', [
-                'total_transaksi' => $transaksiDetail->count()
+                'total_transaksi' => $transaksiDetail->count(),
+                'memory_usage' => round(memory_get_usage(true) / 1024 / 1024, 2) . ' MB'
             ]);
 
             // Generate PDF dengan landscape untuk space lebih luas
-            // Gunakan option untuk optimasi rendering
+            // Gunakan option untuk optimasi rendering dan performa maksimal
             $pdf = PDF::loadView('dana-operasional.pdf-simple', $data)
                 ->setPaper('a4', 'landscape')
                 ->setOption('enable_php', true)
                 ->setOption('isPhpEnabled', true)
                 ->setOption('isRemoteEnabled', false)
+                ->setOption('isHtml5ParserEnabled', true)
+                ->setOption('isFontSubsettingEnabled', false) // Matikan subsetting untuk performa
+                ->setOption('defaultFont', 'sans-serif') // Font default lebih cepat
                 ->setOption('chroot', public_path());
             
             // Log setelah generate PDF
