@@ -14,9 +14,9 @@
 
         body {
             font-family: 'Arial', 'Helvetica', sans-serif;
-            font-size: 10pt;
-            color: #333;
-            line-height: 1.6;
+            font-size: 9.5pt;
+            color: #1a1a1a;
+            line-height: 1.5;
         }
 
         /* ===== COVER PAGE ===== */
@@ -24,7 +24,7 @@
             page-break-after: always;
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
-            padding: 50px;
+            padding: 60px;
             text-align: center;
             height: 100vh;
             display: flex;
@@ -34,142 +34,121 @@
         }
 
         .cover-logo {
-            font-size: 48pt;
+            font-size: 52pt;
             font-weight: bold;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
         .cover-title {
-            font-size: 32pt;
+            font-size: 36pt;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
         }
 
         .cover-subtitle {
-            font-size: 18pt;
-            margin-bottom: 40px;
-            font-weight: 300;
-        }
-
-        .cover-periode {
             font-size: 20pt;
-            margin-bottom: 10px;
+            margin-bottom: 50px;
+            font-weight: 300;
             border: 2px solid white;
-            padding: 15px 40px;
-            border-radius: 5px;
+            padding: 20px 50px;
+            border-radius: 8px;
         }
 
         .cover-footer {
             position: absolute;
-            bottom: 50px;
-            font-size: 11pt;
-            opacity: 0.9;
-        }
-
-        /* ===== TABLE OF CONTENTS ===== */
-        .toc-page {
-            page-break-after: always;
-            padding: 40px;
-        }
-
-        .toc-title {
-            font-size: 22pt;
-            font-weight: bold;
-            margin-bottom: 25px;
-            color: #1e3c72;
-            border-bottom: 3px solid #1e3c72;
-            padding-bottom: 10px;
-        }
-
-        .toc-item {
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            padding: 8px;
-            border-bottom: 1px dashed #ccc;
+            bottom: 60px;
+            font-size: 12pt;
+            opacity: 0.95;
         }
 
         /* ===== CONTENT PAGES ===== */
         .content-page {
-            padding: 40px;
+            padding: 40px 50px;
         }
 
         .section-title {
-            font-size: 20pt;
+            font-size: 22pt;
             font-weight: bold;
             color: #1e3c72;
-            margin-bottom: 20px;
-            border-left: 5px solid #1e3c72;
-            padding-left: 15px;
+            margin-bottom: 25px;
+            border-bottom: 4px solid #1e3c72;
+            padding-bottom: 12px;
         }
 
         .subsection-title {
             font-size: 14pt;
             font-weight: bold;
             color: #2a5298;
-            margin-top: 20px;
-            margin-bottom: 10px;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            border-left: 4px solid #2a5298;
+            padding-left: 12px;
         }
 
         /* ===== FINANCIAL HIGHLIGHTS ===== */
-        .highlights-grid {
+        .highlights-container {
             display: table;
             width: 100%;
-            margin-bottom: 30px;
-        }
-
-        .highlights-row {
-            display: table-row;
+            margin-bottom: 35px;
+            border-spacing: 15px;
         }
 
         .highlight-box {
             display: table-cell;
             width: 33.33%;
-            padding: 20px;
+            padding: 25px;
             text-align: center;
-            border: 2px solid #1e3c72;
-            margin: 5px;
+            border: 3px solid #1e3c72;
+            border-radius: 8px;
+            vertical-align: top;
         }
 
-        .highlight-box:first-child {
-            background-color: #e8f4f8;
+        .highlight-box.revenue {
+            background-color: #e3f2fd;
+            border-color: #2196F3;
         }
 
-        .highlight-box:nth-child(2) {
-            background-color: #fff4e6;
+        .highlight-box.expense {
+            background-color: #fce4ec;
+            border-color: #e91e63;
         }
 
-        .highlight-box:last-child {
+        .highlight-box.profit {
             background-color: #e8f5e9;
+            border-color: #4caf50;
         }
 
         .highlight-label {
             font-size: 11pt;
-            color: #666;
-            margin-bottom: 10px;
-            font-weight: bold;
+            color: #555;
+            margin-bottom: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .highlight-value {
-            font-size: 20pt;
+            font-size: 24pt;
             font-weight: bold;
             color: #1e3c72;
+            margin-bottom: 10px;
         }
 
         .highlight-change {
-            font-size: 9pt;
-            margin-top: 5px;
+            font-size: 10pt;
+            margin-top: 8px;
+            font-weight: 600;
         }
 
         .highlight-change.positive {
-            color: green;
+            color: #4caf50;
         }
 
         .highlight-change.negative {
-            color: red;
+            color: #e91e63;
         }
 
         /* ===== TABLES ===== */
@@ -177,6 +156,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 30px;
+            font-size: 9.5pt;
         }
 
         thead {
@@ -185,19 +165,21 @@
         }
 
         thead th {
-            padding: 12px;
+            padding: 14px 12px;
             text-align: left;
-            font-weight: bold;
+            font-weight: 600;
             border: 1px solid #1e3c72;
+            font-size: 10pt;
         }
 
         tbody td {
-            padding: 10px;
+            padding: 11px 12px;
             border: 1px solid #ddd;
+            vertical-align: top;
         }
 
         tbody tr:nth-child(even) {
-            background-color: #f9f9f9;
+            background-color: #fafafa;
         }
 
         tbody tr:hover {
@@ -205,8 +187,9 @@
         }
 
         .table-total {
-            background-color: #e8f4f8 !important;
+            background-color: #e3f2fd !important;
             font-weight: bold;
+            font-size: 10pt;
         }
 
         .text-right {
@@ -217,54 +200,82 @@
             text-align: center;
         }
 
+        /* ===== FINANCIAL RATIOS BOX ===== */
+        .ratio-grid {
+            display: table;
+            width: 100%;
+            border-spacing: 10px;
+            margin-bottom: 30px;
+        }
+
+        .ratio-box {
+            display: table-cell;
+            width: 50%;
+            padding: 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            background-color: #fafafa;
+        }
+
+        .ratio-name {
+            font-size: 9.5pt;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .ratio-value {
+            font-size: 20pt;
+            font-weight: bold;
+            color: #1e3c72;
+            margin-bottom: 5px;
+        }
+
+        .ratio-status {
+            font-size: 8.5pt;
+            padding: 4px 10px;
+            border-radius: 12px;
+            display: inline-block;
+            font-weight: 600;
+        }
+
+        .ratio-status.excellent {
+            background-color: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .ratio-status.good {
+            background-color: #fff9c4;
+            color: #f57f17;
+        }
+
+        .ratio-status.warning {
+            background-color: #ffccbc;
+            color: #d84315;
+        }
+
         /* ===== SUMMARY BOXES ===== */
         .summary-box {
-            background-color: #f5f5f5;
-            border-left: 4px solid #1e3c72;
-            padding: 15px;
-            margin-bottom: 20px;
+            background-color: #f8f9fa;
+            border-left: 5px solid #1e3c72;
+            padding: 18px;
+            margin-bottom: 25px;
+            border-radius: 4px;
         }
 
         .summary-row {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #ddd;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 10pt;
         }
 
         .summary-row:last-child {
             border-bottom: none;
             font-weight: bold;
-            font-size: 12pt;
-        }
-
-        /* ===== HEADER & FOOTER ===== */
-        .page-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 50px;
-            background-color: #1e3c72;
-            color: white;
-            text-align: center;
-            line-height: 50px;
-            font-weight: bold;
             font-size: 11pt;
-        }
-
-        .page-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 30px;
-            background-color: #f5f5f5;
-            border-top: 2px solid #1e3c72;
-            text-align: center;
-            line-height: 30px;
-            font-size: 9pt;
-            color: #666;
+            padding-top: 15px;
         }
 
         /* ===== PAGE BREAKS ===== */
@@ -273,16 +284,16 @@
         }
 
         /* ===== UTILITIES ===== */
-        .mb-30 {
-            margin-bottom: 30px;
+        .mb-20 {
+            margin-bottom: 20px;
         }
 
         .text-success {
-            color: green;
+            color: #4caf50;
         }
 
         .text-danger {
-            color: red;
+            color: #e91e63;
         }
 
         .text-primary {
@@ -293,33 +304,96 @@
             font-weight: bold;
         }
 
-        /* ===== CHART PLACEHOLDER ===== */
+        /* ===== BAR CHART ===== */
         .chart-container {
-            background-color: #f9f9f9;
-            border: 2px solid #ddd;
-            padding: 30px;
-            text-align: center;
+            background-color: #fafafa;
+            border: 2px solid #e0e0e0;
+            padding: 25px;
             margin-bottom: 30px;
-            min-height: 300px;
+            min-height: 320px;
+            border-radius: 6px;
+        }
+
+        .chart-bar-row {
+            margin-bottom: 18px;
             display: flex;
             align-items: center;
-            justify-content: center;
         }
 
-        .chart-bar {
-            display: inline-block;
-            width: 60px;
-            background-color: #1e3c72;
-            margin: 0 5px;
-            vertical-align: bottom;
+        .chart-label-left {
+            width: 120px;
+            font-size: 9pt;
+            font-weight: 600;
+            text-align: right;
+            padding-right: 12px;
+            color: #555;
         }
 
-        .chart-label {
-            display: inline-block;
-            width: 60px;
-            margin: 5px 5px 0 5px;
-            font-size: 8pt;
+        .chart-bar-container {
+            flex: 1;
+            background-color: #e0e0e0;
+            height: 28px;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chart-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1e3c72 0%, #4a90e2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: white;
+            font-size: 8.5pt;
+            font-weight: 600;
+        }
+
+        .chart-value-right {
+            width: 110px;
+            text-align: right;
+            padding-left: 12px;
+            font-size: 9.5pt;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        /* ===== INSIGHT BOX ===== */
+        .insight-box {
+            background-color: #e7f3ff;
+            border: 2px solid #2196F3;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 6px;
+        }
+
+        .insight-title {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #1565c0;
+            margin-bottom: 12px;
+        }
+
+        .insight-text {
+            font-size: 9.5pt;
+            line-height: 1.7;
+            color: #424242;
+        }
+
+        /* ===== FOOTER ===== */
+        .page-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 35px;
+            background-color: #f5f5f5;
+            border-top: 3px solid #1e3c72;
             text-align: center;
+            line-height: 35px;
+            font-size: 9pt;
+            color: #666;
         }
     </style>
 </head>
@@ -327,918 +401,516 @@
 
     {{-- ===== COVER PAGE ===== --}}
     <div class="cover-page">
-        <div class="cover-logo">🏢 BUMI SULTAN</div>
-        <div class="cover-title">Laporan Keuangan</div>
-        <div class="cover-subtitle">{{ ucfirst($periode['type']) }} Report</div>
-        <div class="cover-periode">{{ $periode['nama_periode'] }}</div>
+        <div class="cover-logo">📊 BUMI SULTAN</div>
+        <div class="cover-title">LAPORAN KEUANGAN</div>
+        <div class="cover-subtitle">{{ strtoupper($periode['type']) }} REPORT {{ $periode['tahun'] }}</div>
+        <div style="font-size: 16pt; margin-bottom: 30px;">{{ $periode['nama_periode'] }}</div>
         <div class="cover-footer">
-            Dicetak pada: {{ $tanggal_cetak }}
+            Generated: {{ $tanggal_cetak }}
         </div>
     </div>
 
-    {{-- ===== TABLE OF CONTENTS ===== --}}
-    <div class="toc-page">
-        <div class="toc-title">DAFTAR ISI</div>
-        
-        <div style="margin-bottom: 20px; padding: 10px; background-color: #f0f0f0;">
-            <strong>BAGIAN I: INFORMASI NARATIF</strong>
-        </div>
-        <div class="toc-item">
-            <span>1. Surat dari Pimpinan</span>
-            <span>Hal. 3</span>
-        </div>
-        <div class="toc-item">
-            <span>2. Profil Bumi Sultan</span>
-            <span>Hal. 4</span>
-        </div>
-        <div class="toc-item">
-            <span>3. Penjelasan Kategori Dana Operasional</span>
-            <span>Hal. 5</span>
-        </div>
-        <div class="toc-item">
-            <span>4. Analisis Kinerja & Tren</span>
-            <span>Hal. 6</span>
-        </div>
-        
-        <div style="margin: 20px 0 20px 0; padding: 10px; background-color: #f0f0f0;">
-            <strong>BAGIAN II: LAPORAN KEUANGAN</strong>
-        </div>
-        <div class="toc-item">
-            <span>5. Ringkasan Keuangan</span>
-            <span>Hal. 7</span>
-        </div>
-        <div class="toc-item">
-            <span>6. Laporan Pemasukan & Pengeluaran</span>
-            <span>Hal. 8</span>
-        </div>
-        <div class="toc-item">
-            <span>7. Rekap Tahunan Per Kategori</span>
-            <span>Hal. 9</span>
-        </div>
-        <div class="toc-item">
-            <span>8. Posisi Saldo</span>
-            <span>Hal. 10</span>
-        </div>
-        <div class="toc-item">
-            <span>9. Arus Kas Operasional</span>
-            <span>Hal. 11</span>
-        </div>
-        <div class="toc-item">
-            <span>10. Transaksi Terbesar</span>
-            <span>Hal. 12</span>
-        </div>
-        @if($periode['type'] == 'tahunan')
-        <div class="toc-item">
-            <span>11. Grafik Performa Bulanan</span>
-            <span>Hal. 13</span>
-        </div>
-        @endif
-        <div class="toc-item">
-            <span>{{ $periode['type'] == 'tahunan' ? '12' : '11' }}. Catatan & Lampiran</span>
-            <span>Hal. {{ $periode['type'] == 'tahunan' ? '14' : '13' }}</span>
-        </div>
-    </div>
-
-    {{-- ===== BAGIAN I: INFORMASI NARATIF ===== --}}
-    
-    {{-- ===== SECTION 1: SURAT DARI PIMPINAN ===== --}}
+    {{-- ===== SECTION 1: FINANCIAL HIGHLIGHTS (IKHTISAR KEUANGAN) ===== --}}
     <div class="content-page page-break">
-        <div class="section-title">1. SURAT DARI PIMPINAN</div>
-        
-        <p style="margin-bottom: 30px; font-style: italic; color: #666;">
-            Assalamu'alaikum Warahmatullahi Wabarakatuh
-        </p>
+        <div class="section-title">1. FINANCIAL HIGHLIGHTS</div>
 
-        <p style="margin-bottom: 15px; text-align: justify; line-height: 1.8;">
-            Alhamdulillah, puji syukur kita panjatkan kehadirat Allah SWT yang telah memberikan rahmat dan karunia-Nya 
-            sehingga kami dapat menyajikan Laporan Keuangan untuk periode <strong>{{ $periode['nama_periode'] }}</strong>.
-        </p>
-
-        <p style="margin-bottom: 15px; text-align: justify; line-height: 1.8;">
-            Laporan ini merupakan bentuk transparansi dan akuntabilitas pengelolaan dana operasional Bumi Sultan. 
-            Selama periode ini, total pemasukan kami mencapai <strong>Rp {{ number_format($data['pendapatan'], 0, ',', '.') }}</strong> 
-            dengan pengeluaran sebesar <strong>Rp {{ number_format($data['pengeluaran'], 0, ',', '.') }}</strong>, 
-            sehingga menghasilkan {{ $data['laba_rugi'] >= 0 ? 'surplus' : 'defisit' }} sebesar 
-            <strong>Rp {{ number_format(abs($data['laba_rugi']), 0, ',', '.') }}</strong>.
-        </p>
-
-        <p style="margin-bottom: 15px; text-align: justify; line-height: 1.8;">
-            Dana operasional kami digunakan untuk berbagai keperluan, terutama untuk <strong>Khidmat Santri</strong> yang merupakan 
-            prioritas utama dengan alokasi terbesar. Kami juga memastikan bahwa setiap rupiah digunakan secara efisien dan efektif 
-            untuk mendukung operasional sehari-hari.
-        </p>
-
-        <p style="margin-bottom: 15px; text-align: justify; line-height: 1.8;">
-            {{ $data['laba_rugi'] >= 0 
-                ? 'Alhamdulillah, surplus yang tercapai menunjukkan bahwa pengelolaan keuangan berjalan dengan baik dan terkendali. 
-                   Kami akan terus berupaya meningkatkan efisiensi dalam setiap pengeluaran.' 
-                : 'Defisit yang terjadi akan menjadi evaluasi bagi kami untuk lebih cermat dalam mengelola pengeluaran di periode mendatang.' 
-            }}
-        </p>
-
-        <p style="margin-bottom: 30px; text-align: justify; line-height: 1.8;">
-            Semoga laporan ini dapat memberikan gambaran yang jelas mengenai kondisi keuangan Bumi Sultan. 
-            Kami terbuka untuk saran dan masukan demi perbaikan ke depan.
-        </p>
-
-        <p style="margin-bottom: 5px; font-style: italic;">
-            Wassalamu'alaikum Warahmatullahi Wabarakatuh
-        </p>
-
-        <div style="margin-top: 50px;">
-            <p style="margin-bottom: 5px;"><strong>{{ \Carbon\Carbon::parse($periode['tanggal_akhir'])->locale('id')->isoFormat('D MMMM YYYY') }}</strong></p>
-            <p style="margin-bottom: 60px;">Pimpinan Bumi Sultan</p>
-            <p style="margin-bottom: 5px; border-bottom: 1px solid #333; display: inline-block; padding: 0 50px;">&nbsp;</p>
-        </div>
-    </div>
-
-    {{-- ===== SECTION 2: PROFIL BUMI SULTAN ===== --}}
-    <div class="content-page page-break">
-        <div class="section-title">2. PROFIL BUMI SULTAN</div>
-
-        <div class="subsection-title">Tentang Kami</div>
-        <p style="margin-bottom: 20px; text-align: justify; line-height: 1.8;">
-            Bumi Sultan adalah lembaga yang bergerak dalam bidang pendidikan dan pembinaan santri. 
-            Kami berkomitmen untuk memberikan pelayanan terbaik dalam pengelolaan operasional sehari-hari, 
-            khususnya dalam pemenuhan kebutuhan santri dan pemeliharaan fasilitas.
-        </p>
-
-        <div class="subsection-title">Visi</div>
-        <div class="summary-box" style="background-color: #e8f4f8;">
-            <p style="text-align: center; font-size: 11pt; font-style: italic; padding: 10px;">
-                "Menjadi lembaga yang amanah dan profesional dalam pengelolaan dana operasional 
-                untuk mendukung keberlangsungan program pendidikan dan pembinaan santri."
-            </p>
+        <div class="highlights-container">
+            <div class="highlight-box revenue">
+                <div class="highlight-label">PENDAPATAN</div>
+                <div class="highlight-value">Rp {{ number_format($data['pendapatan'], 0, ',', '.') }}</div>
+                <div class="highlight-change {{ $data['perubahan_pendapatan'] >= 0 ? 'positive' : 'negative' }}">
+                    {{ $data['perubahan_pendapatan'] >= 0 ? '▲' : '▼' }} 
+                    {{ number_format(abs($data['perubahan_pendapatan']), 2) }}% YoY
+                </div>
+            </div>
+            <div class="highlight-box expense">
+                <div class="highlight-label">PENGELUARAN</div>
+                <div class="highlight-value">Rp {{ number_format($data['pengeluaran'], 0, ',', '.') }}</div>
+                <div class="highlight-change {{ $data['perubahan_pengeluaran'] <= 0 ? 'positive' : 'negative' }}">
+                    {{ $data['perubahan_pengeluaran'] >= 0 ? '▲' : '▼' }} 
+                    {{ number_format(abs($data['perubahan_pengeluaran']), 2) }}% YoY
+                </div>
+            </div>
+            <div class="highlight-box profit">
+                <div class="highlight-label">{{ $data['laba_rugi'] >= 0 ? 'SURPLUS' : 'DEFISIT' }}</div>
+                <div class="highlight-value" style="color: {{ $data['laba_rugi'] >= 0 ? '#4caf50' : '#e91e63' }}">
+                    Rp {{ number_format(abs($data['laba_rugi']), 0, ',', '.') }}
+                </div>
+                <div class="highlight-change {{ $data['perubahan_laba_rugi'] >= 0 ? 'positive' : 'negative' }}">
+                    {{ $data['perubahan_laba_rugi'] >= 0 ? '▲' : '▼' }} 
+                    {{ number_format(abs($data['perubahan_laba_rugi']), 2) }}% YoY
+                </div>
+            </div>
         </div>
 
-        <div class="subsection-title">Misi</div>
-        <ul style="margin-bottom: 20px; line-height: 1.8;">
-            <li>Mengelola dana operasional secara transparan dan akuntabel</li>
-            <li>Mengutamakan pemenuhan kebutuhan santri (Khidmat) sebagai prioritas utama</li>
-            <li>Menjaga efisiensi dan efektivitas dalam setiap pengeluaran</li>
-            <li>Memelihara fasilitas dan sarana prasarana dengan baik</li>
-            <li>Memberikan laporan berkala kepada stakeholder</li>
-        </ul>
-
-        <div class="subsection-title">Struktur Dana Operasional</div>
-        <p style="margin-bottom: 15px;">
-            Dana operasional Bumi Sultan dikelola melalui sistem yang terintegrasi dengan kategorisasi yang jelas, 
-            sehingga memudahkan monitoring dan evaluasi penggunaan dana.
-        </p>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Aspek</th>
-                    <th>Keterangan</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>Periode Pelaporan</strong></td>
-                    <td>Bulanan, Triwulanan, Semester, dan Tahunan</td>
-                </tr>
-                <tr>
-                    <td><strong>Sistem Pencatatan</strong></td>
-                    <td>Real-time digital melalui sistem Bumi Sultan</td>
-                </tr>
-                <tr>
-                    <td><strong>Metode</strong></td>
-                    <td>Cash Basis (dicatat saat dana diterima/dikeluarkan)</td>
-                </tr>
-                <tr>
-                    <td><strong>Kategori Utama</strong></td>
-                    <td>10+ kategori yang disesuaikan dengan kebutuhan operasional</td>
-                </tr>
-                <tr>
-                    <td><strong>Transparansi</strong></td>
-                    <td>Laporan dapat diakses oleh pihak yang berwenang</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    {{-- ===== SECTION 3: PENJELASAN KATEGORI ===== --}}
-    <div class="content-page page-break">
-        <div class="section-title">3. PENJELASAN KATEGORI DANA OPERASIONAL</div>
-        
-        <p style="margin-bottom: 30px; color: #666;">
-            Berikut adalah penjelasan detail mengenai setiap kategori dana operasional yang digunakan di Bumi Sultan:
-        </p>
-
-        <div class="subsection-title">🍽️ Khidmat Santri</div>
-        <div class="summary-box" style="border-left-color: #28a745;">
-            <p style="margin-bottom: 10px;"><strong>Deskripsi:</strong></p>
-            <p style="margin-bottom: 10px;">
-                Kategori ini merupakan prioritas utama yang diperuntukkan untuk kebutuhan makan santri sehari-hari. 
-                Dana khidmat dikeluarkan rutin setiap hari untuk memastikan santri mendapatkan asupan gizi yang cukup.
-            </p>
-            <p style="margin-bottom: 10px;"><strong>Nominal Standar:</strong> ± Rp 450.000/hari (dapat berubah sesuai kebutuhan dan jumlah santri)</p>
-            <p style="margin-bottom: 0;"><strong>Frekuensi:</strong> Harian</p>
-        </div>
-
-        <div class="subsection-title">⚡ Utilitas</div>
-        <div class="summary-box" style="border-left-color: #ffc107;">
-            <p style="margin-bottom: 10px;"><strong>Deskripsi:</strong></p>
-            <p style="margin-bottom: 10px;">
-                Dana untuk pembayaran kebutuhan utilitas seperti listrik (PLN), air (PDAM), internet/wifi, dan pulsa. 
-                Kategori ini memastikan operasional sehari-hari berjalan lancar.
-            </p>
-            <p style="margin-bottom: 10px;"><strong>Contoh Pengeluaran:</strong> Token listrik, tagihan air bulanan, paket internet, pulsa komunikasi</p>
-            <p style="margin-bottom: 0;"><strong>Frekuensi:</strong> Bulanan atau sesuai kebutuhan</p>
-        </div>
-
-        <div class="subsection-title">🚗 Transport & Kendaraan</div>
-        <div class="summary-box" style="border-left-color: #007bff;">
-            <p style="margin-bottom: 10px;"><strong>Deskripsi:</strong></p>
-            <p style="margin-bottom: 10px;">
-                Dana untuk keperluan transportasi dan perawatan kendaraan operasional, termasuk BBM, servis rutin, 
-                dan perbaikan kendaraan yang digunakan untuk kepentingan Bumi Sultan.
-            </p>
-            <p style="margin-bottom: 10px;"><strong>Contoh Pengeluaran:</strong> Bensin/solar, oli, service berkala, ganti ban, parkir, tol</p>
-            <p style="margin-bottom: 0;"><strong>Frekuensi:</strong> Sesuai kebutuhan mobilitas</p>
-        </div>
-
-        <div class="subsection-title">🍴 Konsumsi</div>
-        <div class="summary-box" style="border-left-color: #17a2b8;">
-            <p style="margin-bottom: 10px;"><strong>Deskripsi:</strong></p>
-            <p style="margin-bottom: 10px;">
-                Dana untuk kebutuhan konsumsi di luar khidmat santri, seperti rapat, tamu, dan kegiatan khusus. 
-                Berbeda dengan Khidmat yang rutin harian, konsumsi ini bersifat insidental.
-            </p>
-            <p style="margin-bottom: 10px;"><strong>Contoh Pengeluaran:</strong> Snack rapat, makan tamu, catering acara</p>
-            <p style="margin-bottom: 0;"><strong>Frekuensi:</strong> Insidental</p>
-        </div>
-
-        <div class="subsection-title">📝 ATK & Perlengkapan</div>
-        <div class="summary-box" style="border-left-color: #6c757d;">
-            <p style="margin-bottom: 10px;"><strong>Deskripsi:</strong></p>
-            <p style="margin-bottom: 10px;">
-                Dana untuk pembelian alat tulis kantor dan perlengkapan administrasi yang dibutuhkan untuk 
-                mendukung kegiatan operasional sehari-hari.
-            </p>
-            <p style="margin-bottom: 10px;"><strong>Contoh Pengeluaran:</strong> Kertas, pulpen, spidol, map, amplop, tinta printer</p>
-            <p style="margin-bottom: 0;"><strong>Frekuensi:</strong> Bulanan atau sesuai kebutuhan</p>
-        </div>
-
-        <div class="subsection-title">🧹 Kebersihan</div>
-        <div class="summary-box" style="border-left-color: #20c997;">
-            <p style="margin-bottom: 10px;"><strong>Deskripsi:</strong></p>
-            <p style="margin-bottom: 10px;">
-                Dana untuk pembelian perlengkapan kebersihan guna menjaga kebersihan dan kenyamanan lingkungan 
-                Bumi Sultan.
-            </p>
-            <p style="margin-bottom: 10px;"><strong>Contoh Pengeluaran:</strong> Sabun, detergen, sapu, pel, pembersih lantai, tisu</p>
-            <p style="margin-bottom: 0;"><strong>Frekuensi:</strong> Bulanan</p>
-        </div>
-
-        <div class="subsection-title">🔧 Maintenance (Perawatan)</div>
-        <div class="summary-box" style="border-left-color: #fd7e14;">
-            <p style="margin-bottom: 10px;"><strong>Deskripsi:</strong></p>
-            <p style="margin-bottom: 10px;">
-                Dana untuk perawatan dan perbaikan bangunan, fasilitas, serta peralatan. Termasuk renovasi ringan 
-                dan perbaikan yang diperlukan untuk menjaga kondisi aset tetap baik.
-            </p>
-            <p style="margin-bottom: 10px;"><strong>Contoh Pengeluaran:</strong> Perbaikan atap, cat, las, tukang, ganti kunci, perbaikan AC</p>
-            <p style="margin-bottom: 0;"><strong>Frekuensi:</strong> Sesuai kebutuhan</p>
-        </div>
-
-        <div class="subsection-title">💊 Kesehatan</div>
-        <div class="summary-box" style="border-left-color: #dc3545;">
-            <p style="margin-bottom: 10px;"><strong>Deskripsi:</strong></p>
-            <p style="margin-bottom: 10px;">
-                Dana untuk keperluan kesehatan santri dan karyawan, termasuk obat-obatan, vitamin, dan biaya 
-                pengobatan darurat.
-            </p>
-            <p style="margin-bottom: 10px;"><strong>Contoh Pengeluaran:</strong> Obat, vitamin, P3K, biaya dokter/klinik</p>
-            <p style="margin-bottom: 0;"><strong>Frekuensi:</strong> Sesuai kebutuhan</p>
-        </div>
-
-        <div class="subsection-title">📱 Komunikasi</div>
-        <div class="summary-box" style="border-left-color: #6610f2;">
-            <p style="margin-bottom: 10px;"><strong>Deskripsi:</strong></p>
-            <p style="margin-bottom: 10px;">
-                Dana untuk kebutuhan komunikasi seperti pulsa telepon, paket data, dan biaya komunikasi lainnya 
-                yang mendukung koordinasi operasional.
-            </p>
-            <p style="margin-bottom: 10px;"><strong>Contoh Pengeluaran:</strong> Pulsa HP, paket data, biaya SMS</p>
-            <p style="margin-bottom: 0;"><strong>Frekuensi:</strong> Bulanan</p>
-        </div>
-
-        <div class="subsection-title">📋 Administrasi</div>
-        <div class="summary-box" style="border-left-color: #e83e8c;">
-            <p style="margin-bottom: 10px;"><strong>Deskripsi:</strong></p>
-            <p style="margin-bottom: 10px;">
-                Dana untuk keperluan administrasi seperti pengurusan surat, dokumen, legalisir, materai, 
-                dan biaya administrasi lainnya.
-            </p>
-            <p style="margin-bottom: 10px;"><strong>Contoh Pengeluaran:</strong> Materai, legalisir, pengurusan izin, fotocopy dokumen</p>
-            <p style="margin-bottom: 0;"><strong>Frekuensi:</strong> Sesuai kebutuhan</p>
-        </div>
-
-        <div class="subsection-title">💰 Dana Masuk</div>
-        <div class="summary-box" style="border-left-color: #28a745; background-color: #d4edda;">
-            <p style="margin-bottom: 10px;"><strong>Deskripsi:</strong></p>
-            <p style="margin-bottom: 10px;">
-                Kategori ini mencatat semua dana yang masuk ke kas Bumi Sultan, baik dari donatur, setoran, 
-                atau sumber pemasukan lainnya yang sah.
-            </p>
-            <p style="margin-bottom: 10px;"><strong>Sumber Dana:</strong> Donasi, setoran, transfer, dan pemasukan lainnya</p>
-            <p style="margin-bottom: 0;"><strong>Pencatatan:</strong> Setiap transaksi dana masuk dicatat dengan rinci</p>
-        </div>
-    </div>
-
-    {{-- ===== SECTION 4: ANALISIS KINERJA & TREN ===== --}}
-    <div class="content-page page-break">
-        <div class="section-title">4. ANALISIS KINERJA & TREN</div>
-
-        <div class="subsection-title">Ringkasan Eksekutif</div>
-        <p style="margin-bottom: 20px; text-align: justify; line-height: 1.8;">
-            Periode {{ $periode['nama_periode'] }} menunjukkan {{ $data['laba_rugi'] >= 0 ? 'kinerja positif' : 'tantangan' }} 
-            dalam pengelolaan dana operasional. Total pemasukan sebesar Rp {{ number_format($data['pendapatan'], 0, ',', '.') }} 
-            @if($data['perubahan_pendapatan'] != 0)
-                mengalami {{ $data['perubahan_pendapatan'] > 0 ? 'kenaikan' : 'penurunan' }} 
-                {{ number_format(abs($data['perubahan_pendapatan']), 2) }}% dibanding periode sebelumnya
-            @endif, 
-            sementara pengeluaran mencapai Rp {{ number_format($data['pengeluaran'], 0, ',', '.') }}
-            @if($data['perubahan_pengeluaran'] != 0)
-                yang {{ $data['perubahan_pengeluaran'] > 0 ? 'naik' : 'turun' }} 
-                {{ number_format(abs($data['perubahan_pengeluaran']), 2) }}%
-            @endif.
-        </p>
-
-        <div class="subsection-title">Analisis Pemasukan</div>
-        <div class="summary-box">
-            <p style="margin-bottom: 15px;"><strong>Total Pemasukan:</strong> Rp {{ number_format($data['pendapatan'], 0, ',', '.') }}</p>
-            @if(count($data['pendapatan_per_kategori']) > 0)
-                @php
-                    $pendapatanTertinggi = $data['pendapatan_per_kategori']->first();
-                @endphp
-                <p style="margin-bottom: 15px;">
-                    <strong>Sumber Tertinggi:</strong> {{ $pendapatanTertinggi->kategori }} 
-                    (Rp {{ number_format($pendapatanTertinggi->total, 0, ',', '.') }} - 
-                    {{ $data['pendapatan'] > 0 ? number_format(($pendapatanTertinggi->total / $data['pendapatan']) * 100, 1) : 0 }}%)
-                </p>
-            @endif
-            <p style="margin-bottom: 0;">
-                <strong>Tren:</strong> 
-                @if($data['perubahan_pendapatan'] > 5)
-                    <span style="color: green;">▲ Pemasukan meningkat signifikan, menunjukkan dukungan yang baik</span>
-                @elseif($data['perubahan_pendapatan'] > 0)
-                    <span style="color: green;">▲ Pemasukan meningkat stabil</span>
-                @elseif($data['perubahan_pendapatan'] < -5)
-                    <span style="color: red;">▼ Pemasukan menurun, perlu perhatian khusus</span>
-                @elseif($data['perubahan_pendapatan'] < 0)
-                    <span style="color: orange;">▼ Pemasukan sedikit menurun</span>
-                @else
-                    <span style="color: #666;">— Pemasukan stabil</span>
-                @endif
-            </p>
-        </div>
-
-        <div class="subsection-title">Analisis Pengeluaran</div>
-        <div class="summary-box">
-            <p style="margin-bottom: 15px;"><strong>Total Pengeluaran:</strong> Rp {{ number_format($data['pengeluaran'], 0, ',', '.') }}</p>
-            @if(count($data['pengeluaran_per_kategori']) > 0)
-                @php
-                    $pengeluaranTertinggi = $data['pengeluaran_per_kategori']->first();
-                @endphp
-                <p style="margin-bottom: 15px;">
-                    <strong>Kategori Terbesar:</strong> {{ $pengeluaranTertinggi->kategori }} 
-                    (Rp {{ number_format($pengeluaranTertinggi->total, 0, ',', '.') }} - 
-                    {{ $data['pengeluaran'] > 0 ? number_format(($pengeluaranTertinggi->total / $data['pengeluaran']) * 100, 1) : 0 }}%)
-                </p>
-            @endif
-            <p style="margin-bottom: 0;">
-                <strong>Evaluasi:</strong> 
-                @if($data['perubahan_pengeluaran'] > 10)
-                    <span style="color: red;">▲ Pengeluaran meningkat tinggi, perlu efisiensi</span>
-                @elseif($data['perubahan_pengeluaran'] > 5)
-                    <span style="color: orange;">▲ Pengeluaran meningkat, perlu monitoring</span>
-                @elseif($data['perubahan_pengeluaran'] > 0)
-                    <span style="color: #666;">▲ Pengeluaran meningkat wajar</span>
-                @elseif($data['perubahan_pengeluaran'] < 0)
-                    <span style="color: green;">▼ Pengeluaran berkurang, efisiensi baik</span>
-                @else
-                    <span style="color: #666;">— Pengeluaran stabil</span>
-                @endif
-            </p>
-        </div>
-
-        <div class="subsection-title">Rasio & Indikator Keuangan</div>
+        <div class="subsection-title">Key Performance Indicators</div>
         <table>
             <thead>
                 <tr>
                     <th>Indikator</th>
-                    <th class="text-right">Nilai</th>
-                    <th>Interpretasi</th>
+                    <th class="text-right">Periode Ini</th>
+                    <th class="text-right">Periode Sebelumnya</th>
+                    <th class="text-right">Perubahan</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>Rasio Pengeluaran terhadap Pemasukan</td>
-                    <td class="text-right">{{ $data['pendapatan'] > 0 ? number_format(($data['pengeluaran'] / $data['pendapatan']) * 100, 2) : 0 }}%</td>
+                    <td><strong>Pendapatan</strong></td>
+                    <td class="text-right">Rp {{ number_format($data['pendapatan'], 0, ',', '.') }}</td>
+                    <td class="text-right">Rp {{ number_format($data['pendapatan_sebelumnya'], 0, ',', '.') }}</td>
+                    <td class="text-right {{ $data['perubahan_pendapatan'] >= 0 ? 'text-success' : 'text-danger' }}">
+                        {{ $data['perubahan_pendapatan'] >= 0 ? '+' : '' }}{{ number_format($data['perubahan_pendapatan'], 2) }}%
+                    </td>
                     <td>
-                        @php $rasio = $data['pendapatan'] > 0 ? ($data['pengeluaran'] / $data['pendapatan']) * 100 : 0; @endphp
-                        @if($rasio < 80)
-                            <span style="color: green;">Sangat Efisien</span>
-                        @elseif($rasio < 95)
-                            <span style="color: #28a745;">Efisien</span>
-                        @elseif($rasio < 100)
-                            <span style="color: orange;">Perlu Perhatian</span>
+                        @if($data['perubahan_pendapatan'] >= 5)
+                            <span class="ratio-status excellent">EXCELLENT</span>
+                        @elseif($data['perubahan_pendapatan'] >= 0)
+                            <span class="ratio-status good">STABLE</span>
                         @else
-                            <span style="color: red;">Defisit</span>
+                            <span class="ratio-status warning">DECLINE</span>
                         @endif
                     </td>
                 </tr>
                 <tr>
-                    <td>Perubahan Kas</td>
+                    <td><strong>Pengeluaran</strong></td>
+                    <td class="text-right">Rp {{ number_format($data['pengeluaran'], 0, ',', '.') }}</td>
+                    <td class="text-right">Rp {{ number_format($data['pengeluaran_sebelumnya'], 0, ',', '.') }}</td>
+                    <td class="text-right {{ $data['perubahan_pengeluaran'] <= 0 ? 'text-success' : 'text-danger' }}">
+                        {{ $data['perubahan_pengeluaran'] >= 0 ? '+' : '' }}{{ number_format($data['perubahan_pengeluaran'], 2) }}%
+                    </td>
+                    <td>
+                        @if($data['perubahan_pengeluaran'] < 0)
+                            <span class="ratio-status excellent">EFFICIENT</span>
+                        @elseif($data['perubahan_pengeluaran'] < 10)
+                            <span class="ratio-status good">CONTROLLED</span>
+                        @else
+                            <span class="ratio-status warning">HIGH</span>
+                        @endif
+                    </td>
+                </tr>
+                <tr class="table-total">
+                    <td><strong>Net Result</strong></td>
                     <td class="text-right">Rp {{ number_format($data['laba_rugi'], 0, ',', '.') }}</td>
-                    <td style="color: {{ $data['laba_rugi'] >= 0 ? 'green' : 'red' }}">
-                        {{ $data['laba_rugi'] >= 0 ? 'Surplus' : 'Defisit' }}
+                    <td class="text-right">Rp {{ number_format($data['laba_rugi_sebelumnya'], 0, ',', '.') }}</td>
+                    <td class="text-right {{ $data['perubahan_laba_rugi'] >= 0 ? 'text-success' : 'text-danger' }}">
+                        {{ $data['perubahan_laba_rugi'] >= 0 ? '+' : '' }}{{ number_format($data['perubahan_laba_rugi'], 2) }}%
                     </td>
-                </tr>
-                <tr>
-                    <td>Rata-rata Pengeluaran Harian</td>
-                    <td class="text-right">
-                        Rp {{ number_format($data['pengeluaran'] / max(1, $periode['tanggal_awal']->diffInDays($periode['tanggal_akhir']) + 1), 0, ',', '.') }}
+                    <td>
+                        @if($data['laba_rugi'] >= 0)
+                            <span class="ratio-status excellent">SURPLUS</span>
+                        @else
+                            <span class="ratio-status warning">DEFICIT</span>
+                        @endif
                     </td>
-                    <td>Per hari</td>
-                </tr>
-                <tr>
-                    <td>Persentase Khidmat Santri</td>
-                    <td class="text-right">
-                        @php
-                            $khidmatTotal = $data['pengeluaran_per_kategori']->where('kategori', 'Khidmat')->first()->total ?? 0;
-                        @endphp
-                        {{ $data['pengeluaran'] > 0 ? number_format(($khidmatTotal / $data['pengeluaran']) * 100, 2) : 0 }}%
-                    </td>
-                    <td>Dari total pengeluaran</td>
                 </tr>
             </tbody>
         </table>
 
-        <div class="subsection-title">Rekomendasi</div>
-        <div class="summary-box" style="background-color: #fff3cd; border-left-color: #ffc107;">
-            <p style="margin-bottom: 10px; font-weight: bold;">Berdasarkan analisis di atas, berikut rekomendasi:</p>
-            <ol style="margin-left: 20px; line-height: 1.8;">
-                @if($data['laba_rugi'] >= 0)
-                    <li>Pertahankan surplus dengan terus menjaga efisiensi pengeluaran</li>
-                    <li>Alokasikan sebagian surplus untuk dana cadangan (emergency fund)</li>
-                @else
-                    <li>Evaluasi pengeluaran yang dapat dikurangi tanpa mengurangi kualitas layanan</li>
-                    <li>Cari sumber pemasukan tambahan untuk menutupi defisit</li>
-                @endif
-                <li>Monitor kategori dengan pengeluaran terbesar secara berkala</li>
-                <li>Tingkatkan dokumentasi untuk setiap transaksi</li>
-                <li>Lakukan review keuangan minimal sebulan sekali</li>
-            </ol>
-        </div>
-    </div>
-
-    {{-- ===== BAGIAN II: LAPORAN KEUANGAN ===== --}}
-
-    {{-- ===== SECTION 5: RINGKASAN KEUANGAN ===== --}}
-    <div class="content-page page-break">
-        <div class="section-title">5. RINGKASAN KEUANGAN</div>
-        <p style="margin-bottom: 30px; color: #666;">
-            Ringkasan keuangan untuk periode {{ $periode['nama_periode'] }}.
-        </p>
-
-        <div class="highlights-grid">
-            <div class="highlights-row">
-                <div class="highlight-box">
-                    <div class="highlight-label">PEMASUKAN</div>
-                    <div class="highlight-value">Rp {{ number_format($data['pendapatan'], 0, ',', '.') }}</div>
-                    <div class="highlight-change {{ $data['perubahan_pendapatan'] >= 0 ? 'positive' : 'negative' }}">
-                        {{ $data['perubahan_pendapatan'] >= 0 ? '▲' : '▼' }} 
-                        {{ number_format(abs($data['perubahan_pendapatan']), 2) }}%
-                    </div>
-                </div>
-                <div class="highlight-box">
-                    <div class="highlight-label">PENGELUARAN</div>
-                    <div class="highlight-value">Rp {{ number_format($data['pengeluaran'], 0, ',', '.') }}</div>
-                    <div class="highlight-change {{ $data['perubahan_pengeluaran'] >= 0 ? 'negative' : 'positive' }}">
-                        {{ $data['perubahan_pengeluaran'] >= 0 ? '▲' : '▼' }} 
-                        {{ number_format(abs($data['perubahan_pengeluaran']), 2) }}%
-                    </div>
-                </div>
-                <div class="highlight-box">
-                    <div class="highlight-label">SELISIH (Surplus/Defisit)</div>
-                    <div class="highlight-value" style="color: {{ $data['laba_rugi'] >= 0 ? 'green' : 'red' }}">
-                        Rp {{ number_format($data['laba_rugi'], 0, ',', '.') }}
-                    </div>
-                    <div class="highlight-change {{ $data['perubahan_laba_rugi'] >= 0 ? 'positive' : 'negative' }}">
-                        {{ $data['perubahan_laba_rugi'] >= 0 ? '▲' : '▼' }} 
-                        {{ number_format(abs($data['perubahan_laba_rugi']), 2) }}%
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="subsection-title">Informasi Tambahan</div>
-        <div class="summary-box">
-            <div class="summary-row">
-                <span>Total Transaksi</span>
-                <span>{{ number_format($data['total_transaksi'], 0, ',', '.') }} transaksi</span>
-            </div>
-            <div class="summary-row">
-                <span>Rata-rata Transaksi Harian</span>
-                <span>{{ number_format($data['rata_rata_transaksi_harian'], 2, ',', '.') }} transaksi/hari</span>
-            </div>
-            <div class="summary-row">
-                <span>Saldo Awal Periode</span>
-                <span>Rp {{ number_format($data['saldo_awal'], 0, ',', '.') }}</span>
-            </div>
-            <div class="summary-row">
-                <span>Saldo Akhir Periode</span>
-                <span>Rp {{ number_format($data['saldo_akhir'], 0, ',', '.') }}</span>
+        <div class="insight-box">
+            <div class="insight-title">💡 Executive Summary</div>
+            <div class="insight-text">
+                <strong>Kinerja {{ $periode['nama_periode'] }}:</strong> 
+                Total pendapatan Rp {{ number_format($data['pendapatan'], 0, ',', '.') }} dengan 
+                tingkat efisiensi {{ $data['pendapatan'] > 0 ? number_format((1 - $data['pengeluaran'] / $data['pendapatan']) * 100, 1) : 0 }}%. 
+                {{ $data['laba_rugi'] >= 0 ? 'Surplus tercapai menunjukkan pengelolaan keuangan yang sehat' : 'Defisit memerlukan evaluasi pengeluaran' }}.
+                Rata-rata transaksi harian {{ number_format($data['rata_rata_transaksi_harian'], 1) }} transaksi.
             </div>
         </div>
     </div>
 
-    {{-- ===== SECTION 6: LAPORAN PEMASUKAN & PENGELUARAN ===== --}}
+    {{-- ===== SECTION 2: INCOME STATEMENT (LAPORAN LABA RUGI) ===== --}}
     <div class="content-page page-break">
-        <div class="section-title">6. LAPORAN PEMASUKAN & PENGELUARAN</div>
-        <p style="margin-bottom: 30px; color: #666;">
-            Rincian pemasukan dan pengeluaran untuk periode {{ $periode['nama_periode'] }}.
+        <div class="section-title">2. INCOME STATEMENT</div>
+        <p style="margin-bottom: 25px; color: #666; font-size: 10pt;">
+            Laporan Laba Rugi untuk periode {{ $periode['nama_periode'] }}
         </p>
 
-        <div class="subsection-title">A. Pemasukan (Dana Masuk)</div>
+        <div class="subsection-title">A. Pendapatan Operasional</div>
         <table>
             <thead>
                 <tr>
-                    <th>Kategori</th>
-                    <th class="text-right">Jumlah (Rp)</th>
-                    <th class="text-right">Persentase</th>
+                    <th style="width: 10%;">Kategori</th>
+                    <th style="width: 25%;">Total (Rp)</th>
+                    <th style="width: 15%;">% Total</th>
+                    <th style="width: 15%;">Transaksi</th>
+                    <th>Rata-rata/Transaksi</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($data['pendapatan_per_kategori'] as $item)
                 <tr>
-                    <td>{{ $item->kategori }}</td>
-                    <td class="text-right">{{ number_format($item->total, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ $data['pendapatan'] > 0 ? number_format(($item->total / $data['pendapatan']) * 100, 2) : 0 }}%</td>
+                    <td><strong>{{ $item->kategori }}</strong></td>
+                    <td class="text-right"><strong>{{ number_format($item->total, 0, ',', '.') }}</strong></td>
+                    <td class="text-right">{{ $data['pendapatan'] > 0 ? number_format(($item->total / $data['pendapatan']) * 100, 1) : 0 }}%</td>
+                    <td class="text-center">{{ $item->jumlah_transaksi ?? 0 }}</td>
+                    <td class="text-right">{{ number_format(($item->jumlah_transaksi ?? 0) > 0 ? $item->total / $item->jumlah_transaksi : 0, 0, ',', '.') }}</td>
                 </tr>
                 @endforeach
                 <tr class="table-total">
-                    <td>TOTAL PENDAPATAN</td>
-                    <td class="text-right">{{ number_format($data['pendapatan'], 0, ',', '.') }}</td>
-                    <td class="text-right">100%</td>
+                    <td><strong>TOTAL PENDAPATAN</strong></td>
+                    <td class="text-right"><strong>{{ number_format($data['pendapatan'], 0, ',', '.') }}</strong></td>
+                    <td class="text-right"><strong>100%</strong></td>
+                    <td colspan="2"></td>
                 </tr>
             </tbody>
         </table>
 
-        <div class="subsection-title">B. Pengeluaran (Dana Keluar)</div>
+        <div class="subsection-title">B. Beban Operasional</div>
         <table>
             <thead>
                 <tr>
-                    <th>Kategori</th>
-                    <th class="text-right">Jumlah (Rp)</th>
-                    <th class="text-right">Persentase</th>
+                    <th style="width: 10%;">Kategori</th>
+                    <th style="width: 25%;">Total (Rp)</th>
+                    <th style="width: 15%;">% Total</th>
+                    <th style="width: 15%;">Transaksi</th>
+                    <th>Rata-rata/Transaksi</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($data['pengeluaran_per_kategori'] as $item)
                 <tr>
-                    <td>{{ $item->kategori }}</td>
-                    <td class="text-right">{{ number_format($item->total, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ $data['pengeluaran'] > 0 ? number_format(($item->total / $data['pengeluaran']) * 100, 2) : 0 }}%</td>
+                    <td><strong>{{ $item->kategori }}</strong></td>
+                    <td class="text-right"><strong>{{ number_format($item->total, 0, ',', '.') }}</strong></td>
+                    <td class="text-right">{{ $data['pengeluaran'] > 0 ? number_format(($item->total / $data['pengeluaran']) * 100, 1) : 0 }}%</td>
+                    <td class="text-center">{{ $item->jumlah_transaksi ?? 0 }}</td>
+                    <td class="text-right">{{ number_format(($item->jumlah_transaksi ?? 0) > 0 ? $item->total / $item->jumlah_transaksi : 0, 0, ',', '.') }}</td>
                 </tr>
                 @endforeach
                 <tr class="table-total">
-                    <td>TOTAL PENGELUARAN</td>
-                    <td class="text-right">{{ number_format($data['pengeluaran'], 0, ',', '.') }}</td>
-                    <td class="text-right">100%</td>
+                    <td><strong>TOTAL BEBAN</strong></td>
+                    <td class="text-right"><strong>{{ number_format($data['pengeluaran'], 0, ',', '.') }}</strong></td>
+                    <td class="text-right"><strong>100%</strong></td>
+                    <td colspan="2"></td>
                 </tr>
             </tbody>
         </table>
 
-        <div class="summary-box">
+        <div class="summary-box" style="border-left-color: {{ $data['laba_rugi'] >= 0 ? '#4caf50' : '#e91e63' }}">
             <div class="summary-row">
-                <span>TOTAL PEMASUKAN</span>
+                <span>PENDAPATAN OPERASIONAL</span>
                 <span>Rp {{ number_format($data['pendapatan'], 0, ',', '.') }}</span>
             </div>
             <div class="summary-row">
-                <span>TOTAL PENGELUARAN</span>
+                <span>BEBAN OPERASIONAL</span>
                 <span>(Rp {{ number_format($data['pengeluaran'], 0, ',', '.') }})</span>
             </div>
-            <div class="summary-row" style="color: {{ $data['laba_rugi'] >= 0 ? 'green' : 'red' }}">
-                <span>{{ $data['laba_rugi'] >= 0 ? 'SURPLUS (Sisa Lebih)' : 'DEFISIT (Sisa Kurang)' }}</span>
-                <span>Rp {{ number_format($data['laba_rugi'], 0, ',', '.') }}</span>
+            <div class="summary-row" style="color: {{ $data['laba_rugi'] >= 0 ? '#4caf50' : '#e91e63' }}; font-size: 12pt;">
+                <span><strong>{{ $data['laba_rugi'] >= 0 ? 'LABA BERSIH' : 'RUGI BERSIH' }}</strong></span>
+                <span><strong>Rp {{ number_format($data['laba_rugi'], 0, ',', '.') }}</strong></span>
             </div>
+        </div>
+
+        <div class="chart-container">
+            <div style="font-weight: bold; margin-bottom: 20px; color: #1e3c72; font-size: 11pt;">Top 5 Expense Categories</div>
+            @php $topExpenses = $data['pengeluaran_per_kategori']->take(5); $maxExpense = $topExpenses->first()->total ?? 1; @endphp
+            @foreach($topExpenses as $item)
+            <div class="chart-bar-row">
+                <div class="chart-label-left">{{ $item->kategori }}</div>
+                <div class="chart-bar-container">
+                    <div class="chart-bar-fill" style="width: {{ ($item->total / $maxExpense) * 100 }}%;">
+                        {{ $data['pengeluaran'] > 0 ? number_format(($item->total / $data['pengeluaran']) * 100, 1) : 0 }}%
+                    </div>
+                </div>
+                <div class="chart-value-right">{{ number_format($item->total, 0, ',', '.') }}</div>
+            </div>
+            @endforeach
         </div>
     </div>
 
-    {{-- ===== SECTION 7: REKAP TAHUNAN PER KATEGORI ===== --}}
+    {{-- ===== SECTION 3: BALANCE SHEET (NERACA) ===== --}}
     <div class="content-page page-break">
-        <div class="section-title">7. REKAP {{ strtoupper($periode['type']) }} PER KATEGORI</div>
-        <p style="margin-bottom: 30px; color: #666;">
-            Rincian lengkap pengeluaran dan pemasukan per kategori selama periode {{ $periode['nama_periode'] }}, 
-            termasuk detail nominal yang dikeluarkan untuk setiap kategori operasional.
-        </p>
-
-        <div class="subsection-title">A. Rekap Pengeluaran Per Kategori</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Kategori</th>
-                    <th class="text-right">Total (Rp)</th>
-                    <th class="text-center">Jumlah Transaksi</th>
-                    <th class="text-right">Rata-rata/Transaksi</th>
-                    <th class="text-right">% dari Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                @php $no = 1; @endphp
-                @foreach($data['pengeluaran_per_kategori'] as $item)
-                <tr>
-                    <td class="text-center">{{ $no++ }}</td>
-                    <td><strong>{{ $item->kategori }}</strong></td>
-                    <td class="text-right"><strong>{{ number_format($item->total, 0, ',', '.') }}</strong></td>
-                    <td class="text-center">{{ number_format($item->jumlah_transaksi ?? 0, 0, ',', '.') }}</td>
-                    <td class="text-right">
-                        {{ number_format(($item->jumlah_transaksi ?? 0) > 0 ? $item->total / $item->jumlah_transaksi : 0, 0, ',', '.') }}
-                    </td>
-                    <td class="text-right">
-                        <strong>{{ $data['pengeluaran'] > 0 ? number_format(($item->total / $data['pengeluaran']) * 100, 2) : 0 }}%</strong>
-                    </td>
-                </tr>
-                @endforeach
-                <tr class="table-total">
-                    <td colspan="2" class="text-center"><strong>TOTAL PENGELUARAN</strong></td>
-                    <td class="text-right"><strong>{{ number_format($data['pengeluaran'], 0, ',', '.') }}</strong></td>
-                    <td colspan="2"></td>
-                    <td class="text-right"><strong>100%</strong></td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div class="subsection-title" style="margin-top: 30px;">B. Detail Kategori Pengeluaran Terbesar</div>
-        
-        @php
-            $topKategori = $data['pengeluaran_per_kategori']->take(5);
-        @endphp
-        
-        @foreach($topKategori as $index => $kategori)
-            <div class="summary-box" style="margin-bottom: 20px; border-left-width: 5px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                    <strong style="font-size: 11pt; color: #1e3c72;">
-                        {{ $index + 1 }}. {{ $kategori->kategori }}
-                    </strong>
-                    <strong style="font-size: 11pt; color: #dc3545;">
-                        Rp {{ number_format($kategori->total, 0, ',', '.') }}
-                    </strong>
-                </div>
-                
-                <div style="margin-bottom: 8px;">
-                    <div style="background-color: #e0e0e0; height: 20px; border-radius: 10px; overflow: hidden;">
-                        <div style="background-color: #1e3c72; height: 100%; width: {{ $data['pengeluaran'] > 0 ? ($kategori->total / $data['pengeluaran']) * 100 : 0 }}%; 
-                                    display: flex; align-items: center; justify-content: center; color: white; font-size: 9pt;">
-                            {{ $data['pengeluaran'] > 0 ? number_format(($kategori->total / $data['pengeluaran']) * 100, 1) : 0 }}%
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="display: flex; justify-content: space-between; font-size: 9pt; color: #666;">
-                    <span>Jumlah Transaksi: {{ number_format($kategori->jumlah_transaksi ?? 0, 0, ',', '.') }}x</span>
-                    <span>Rata-rata: Rp {{ number_format(($kategori->jumlah_transaksi ?? 0) > 0 ? $kategori->total / $kategori->jumlah_transaksi : 0, 0, ',', '.') }}</span>
-                </div>
-                
-                @if($kategori->kategori == 'Khidmat')
-                    <div style="margin-top: 10px; padding: 8px; background-color: #fff3cd; border-radius: 5px; font-size: 9pt;">
-                        <strong>📌 Catatan:</strong> Dana Khidmat digunakan untuk kebutuhan makan santri sehari-hari. 
-                        Nominal standar ± Rp 450.000/hari (dapat berubah sesuai jumlah santri dan kebutuhan).
-                    </div>
-                @elseif($kategori->kategori == 'Utilitas')
-                    <div style="margin-top: 10px; padding: 8px; background-color: #d1ecf1; border-radius: 5px; font-size: 9pt;">
-                        <strong>📌 Catatan:</strong> Kategori Utilitas mencakup pembayaran listrik (PLN), air (PDAM), 
-                        internet/wifi, dan pulsa untuk kebutuhan operasional sehari-hari.
-                    </div>
-                @elseif($kategori->kategori == 'Transport & Kendaraan')
-                    <div style="margin-top: 10px; padding: 8px; background-color: #cce5ff; border-radius: 5px; font-size: 9pt;">
-                        <strong>📌 Catatan:</strong> Dana transport untuk BBM, servis kendaraan, dan keperluan mobilitas 
-                        operasional Bumi Sultan.
-                    </div>
-                @elseif($kategori->kategori == 'Maintenance')
-                    <div style="margin-top: 10px; padding: 8px; background-color: #ffe5cc; border-radius: 5px; font-size: 9pt;">
-                        <strong>📌 Catatan:</strong> Dana maintenance untuk perawatan dan perbaikan bangunan, fasilitas, 
-                        serta peralatan agar tetap dalam kondisi baik.
-                    </div>
-                @elseif($kategori->kategori == 'Kebersihan')
-                    <div style="margin-top: 10px; padding: 8px; background-color: #d4edda; border-radius: 5px; font-size: 9pt;">
-                        <strong>📌 Catatan:</strong> Kategori Kebersihan untuk pembelian perlengkapan kebersihan guna 
-                        menjaga kenyamanan lingkungan Bumi Sultan.
-                    </div>
-                @endif
-            </div>
-        @endforeach
-
-        <div class="subsection-title" style="margin-top: 30px;">C. Rekap Pemasukan Per Kategori</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Kategori</th>
-                    <th class="text-right">Total (Rp)</th>
-                    <th class="text-center">Jumlah Transaksi</th>
-                    <th class="text-right">Rata-rata/Transaksi</th>
-                    <th class="text-right">% dari Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                @php $no = 1; @endphp
-                @foreach($data['pendapatan_per_kategori'] as $item)
-                <tr>
-                    <td class="text-center">{{ $no++ }}</td>
-                    <td><strong>{{ $item->kategori }}</strong></td>
-                    <td class="text-right"><strong>{{ number_format($item->total, 0, ',', '.') }}</strong></td>
-                    <td class="text-center">{{ number_format($item->jumlah_transaksi ?? 0, 0, ',', '.') }}</td>
-                    <td class="text-right">
-                        {{ number_format(($item->jumlah_transaksi ?? 0) > 0 ? $item->total / $item->jumlah_transaksi : 0, 0, ',', '.') }}
-                    </td>
-                    <td class="text-right">
-                        <strong>{{ $data['pendapatan'] > 0 ? number_format(($item->total / $data['pendapatan']) * 100, 2) : 0 }}%</strong>
-                    </td>
-                </tr>
-                @endforeach
-                <tr class="table-total">
-                    <td colspan="2" class="text-center"><strong>TOTAL PEMASUKAN</strong></td>
-                    <td class="text-right"><strong>{{ number_format($data['pendapatan'], 0, ',', '.') }}</strong></td>
-                    <td colspan="2"></td>
-                    <td class="text-right"><strong>100%</strong></td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div class="subsection-title" style="margin-top: 30px;">D. Ringkasan Komparatif</div>
-        <div class="summary-box" style="background-color: #f8f9fa;">
-            <div class="summary-row">
-                <span><strong>Total Pemasukan</strong></span>
-                <span style="color: green;"><strong>Rp {{ number_format($data['pendapatan'], 0, ',', '.') }}</strong></span>
-            </div>
-            <div class="summary-row">
-                <span><strong>Total Pengeluaran</strong></span>
-                <span style="color: red;"><strong>Rp {{ number_format($data['pengeluaran'], 0, ',', '.') }}</strong></span>
-            </div>
-            <div class="summary-row" style="background-color: {{ $data['laba_rugi'] >= 0 ? '#d4edda' : '#f8d7da' }}; padding: 10px; margin-top: 10px;">
-                <span><strong>{{ $data['laba_rugi'] >= 0 ? 'SURPLUS (Sisa Lebih)' : 'DEFISIT (Sisa Kurang)' }}</strong></span>
-                <span style="color: {{ $data['laba_rugi'] >= 0 ? 'green' : 'red' }}; font-size: 12pt;">
-                    <strong>Rp {{ number_format($data['laba_rugi'], 0, ',', '.') }}</strong>
-                </span>
-            </div>
-        </div>
-
-        @if($periode['type'] == 'tahunan')
-        <div style="margin-top: 30px; padding: 15px; background-color: #e7f3ff; border-left: 4px solid #0066cc;">
-            <p style="margin-bottom: 10px; font-weight: bold; color: #0066cc;">💡 Insight Tahunan:</p>
-            <p style="margin-bottom: 8px; font-size: 10pt; line-height: 1.6;">
-                • Kategori <strong>{{ $data['pengeluaran_per_kategori']->first()->kategori ?? '-' }}</strong> 
-                menjadi pengeluaran terbesar dengan total 
-                <strong>Rp {{ number_format($data['pengeluaran_per_kategori']->first()->total ?? 0, 0, ',', '.') }}</strong>
-            </p>
-            <p style="margin-bottom: 8px; font-size: 10pt; line-height: 1.6;">
-                • Efisiensi pengeluaran: 
-                {{ $data['pendapatan'] > 0 ? number_format(($data['pengeluaran'] / $data['pendapatan']) * 100, 1) : 0 }}% 
-                dari pemasukan
-            </p>
-            <p style="margin-bottom: 0; font-size: 10pt; line-height: 1.6;">
-                • Status keuangan tahun ini: 
-                <strong style="color: {{ $data['laba_rugi'] >= 0 ? 'green' : 'red' }}">
-                    {{ $data['laba_rugi'] >= 0 ? 'SEHAT (Surplus)' : 'PERLU PERHATIAN (Defisit)' }}
-                </strong>
-            </p>
-        </div>
-        @endif
-    </div>
-
-    {{-- ===== SECTION 8: POSISI SALDO ===== --}}
-    <div class="content-page page-break">
-        <div class="section-title">8. POSISI SALDO</div>
-        <p style="margin-bottom: 30px; color: #666;">
-            Posisi saldo kas pada awal dan akhir periode {{ $periode['nama_periode'] }}.
+        <div class="section-title">3. BALANCE SHEET</div>
+        <p style="margin-bottom: 25px; color: #666; font-size: 10pt;">
+            Posisi keuangan per {{ $periode['tanggal_akhir']->format('d F Y') }}
         </p>
 
         <table>
             <thead>
                 <tr>
                     <th>Keterangan</th>
-                    <th class="text-right">Jumlah (Rp)</th>
+                    <th class="text-right">Awal Periode</th>
+                    <th class="text-right">Akhir Periode</th>
+                    <th class="text-right">Perubahan</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="2" style="background-color: #e8f4f8; font-weight: bold;">SALDO KAS</td>
+                    <td colspan="4" style="background-color: #e3f2fd; font-weight: bold; font-size: 10pt;">ASET</td>
                 </tr>
                 <tr>
-                    <td style="padding-left: 30px;">Saldo Awal Periode ({{ $periode['tanggal_awal']->format('d M Y') }})</td>
+                    <td style="padding-left: 25px;"><strong>Kas dan Setara Kas</strong></td>
                     <td class="text-right">{{ number_format($data['saldo_awal'], 0, ',', '.') }}</td>
-                </tr>
-                <tr>
-                    <td style="padding-left: 30px;">Kas Masuk (Pendapatan)</td>
-                    <td class="text-right text-success">{{ number_format($data['pendapatan'], 0, ',', '.') }}</td>
-                </tr>
-                <tr>
-                    <td style="padding-left: 30px;">Kas Keluar (Pengeluaran)</td>
-                    <td class="text-right text-danger">({{ number_format($data['pengeluaran'], 0, ',', '.') }})</td>
+                    <td class="text-right">{{ number_format($data['saldo_akhir'], 0, ',', '.') }}</td>
+                    <td class="text-right {{ ($data['saldo_akhir'] - $data['saldo_awal']) >= 0 ? 'text-success' : 'text-danger' }}">
+                        {{ number_format($data['saldo_akhir'] - $data['saldo_awal'], 0, ',', '.') }}
+                    </td>
                 </tr>
                 <tr class="table-total">
-                    <td>Saldo Akhir Periode ({{ $periode['tanggal_akhir']->format('d M Y') }})</td>
-                    <td class="text-right">{{ number_format($data['saldo_akhir'], 0, ',', '.') }}</td>
+                    <td><strong>TOTAL ASET</strong></td>
+                    <td class="text-right"><strong>{{ number_format($data['saldo_awal'], 0, ',', '.') }}</strong></td>
+                    <td class="text-right"><strong>{{ number_format($data['saldo_akhir'], 0, ',', '.') }}</strong></td>
+                    <td class="text-right"><strong>{{ number_format($data['saldo_akhir'] - $data['saldo_awal'], 0, ',', '.') }}</strong></td>
                 </tr>
             </tbody>
         </table>
 
-        <div class="subsection-title">Perubahan Posisi Keuangan</div>
+        <div class="subsection-title">Movement in Cash</div>
         <div class="summary-box">
             <div class="summary-row">
-                <span>Perubahan Kas</span>
-                <span style="color: {{ $data['laba_rugi'] >= 0 ? 'green' : 'red' }}">
-                    Rp {{ number_format($data['laba_rugi'], 0, ',', '.') }}
-                </span>
+                <span>Saldo Kas Awal ({{ $periode['tanggal_awal']->format('d M Y') }})</span>
+                <span>Rp {{ number_format($data['saldo_awal'], 0, ',', '.') }}</span>
             </div>
             <div class="summary-row">
-                <span>Persentase Perubahan</span>
-                <span style="color: {{ $data['laba_rugi'] >= 0 ? 'green' : 'red' }}">
-                    {{ $data['saldo_awal'] > 0 ? number_format(($data['laba_rugi'] / $data['saldo_awal']) * 100, 2) : 0 }}%
+                <span>Kas Masuk dari Operasional</span>
+                <span style="color: #4caf50;">+ Rp {{ number_format($data['pendapatan'], 0, ',', '.') }}</span>
+            </div>
+            <div class="summary-row">
+                <span>Kas Keluar untuk Operasional</span>
+                <span style="color: #e91e63;">- Rp {{ number_format($data['pengeluaran'], 0, ',', '.') }}</span>
+            </div>
+            <div class="summary-row" style="font-size: 12pt; padding-top: 18px;">
+                <span><strong>Saldo Kas Akhir ({{ $periode['tanggal_akhir']->format('d M Y') }})</strong></span>
+                <span><strong>Rp {{ number_format($data['saldo_akhir'], 0, ',', '.') }}</strong></span>
+            </div>
+        </div>
+
+        <div class="ratio-grid">
+            <div class="ratio-box">
+                <div class="ratio-name">Growth Rate</div>
+                <div class="ratio-value">
+                    {{ $data['saldo_awal'] > 0 ? number_format((($data['saldo_akhir'] - $data['saldo_awal']) / $data['saldo_awal']) * 100, 2) : 0 }}%
+                </div>
+                <span class="ratio-status {{ (($data['saldo_akhir'] - $data['saldo_awal']) / max($data['saldo_awal'], 1)) * 100 >= 0 ? 'excellent' : 'warning' }}">
+                    {{ (($data['saldo_akhir'] - $data['saldo_awal']) / max($data['saldo_awal'], 1)) * 100 >= 0 ? 'POSITIVE GROWTH' : 'NEGATIVE GROWTH' }}
+                </span>
+            </div>
+            <div class="ratio-box">
+                <div class="ratio-name">Cash Turnover</div>
+                <div class="ratio-value">
+                    {{ $data['saldo_awal'] > 0 ? number_format($data['pengeluaran'] / $data['saldo_awal'], 2) : 0 }}x
+                </div>
+                <span class="ratio-status {{ ($data['pengeluaran'] / max($data['saldo_awal'], 1)) < 1 ? 'excellent' : 'good' }}">
+                    {{ ($data['pengeluaran'] / max($data['saldo_awal'], 1)) < 1 ? 'LOW RISK' : 'MODERATE' }}
                 </span>
             </div>
         </div>
     </div>
 
-    {{-- ===== SECTION 9: ARUS KAS OPERASIONAL ===== --}}
+    {{-- ===== SECTION 4: CASH FLOW STATEMENT ===== --}}
     <div class="content-page page-break">
-        <div class="section-title">9. ARUS KAS OPERASIONAL</div>
-        <p style="margin-bottom: 30px; color: #666;">
-            Ringkasan keluar masuk kas untuk periode {{ $periode['nama_periode'] }}.
+        <div class="section-title">4. CASH FLOW STATEMENT</div>
+        <p style="margin-bottom: 25px; color: #666; font-size: 10pt;">
+            Laporan Arus Kas untuk periode {{ $periode['nama_periode'] }}
         </p>
 
         <table>
             <thead>
                 <tr>
                     <th>Aktivitas</th>
-                    <th class="text-center">Jumlah Transaksi</th>
-                    <th class="text-right">Total (Rp)</th>
+                    <th class="text-center">Volume</th>
+                    <th class="text-right">Jumlah (Rp)</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="3" style="background-color: #e8f4f8; font-weight: bold;">ARUS KAS DARI AKTIVITAS OPERASIONAL</td>
+                    <td colspan="3" style="background-color: #e3f2fd; font-weight: bold; font-size: 10pt;">ARUS KAS DARI AKTIVITAS OPERASIONAL</td>
                 </tr>
                 <tr>
-                    <td style="padding-left: 30px;">Kas Masuk dari Operasional</td>
-                    <td class="text-center">{{ number_format($data['arus_kas_masuk_count'], 0, ',', '.') }}</td>
+                    <td style="padding-left: 25px;">Penerimaan dari operasional</td>
+                    <td class="text-center">{{ number_format($data['arus_kas_masuk_count'], 0, ',', '.') }} transaksi</td>
                     <td class="text-right text-success">{{ number_format($data['arus_kas_masuk'], 0, ',', '.') }}</td>
                 </tr>
                 <tr>
-                    <td style="padding-left: 30px;">Kas Keluar untuk Operasional</td>
-                    <td class="text-center">{{ number_format($data['arus_kas_keluar_count'], 0, ',', '.') }}</td>
+                    <td style="padding-left: 25px;">Pembayaran untuk operasional</td>
+                    <td class="text-center">{{ number_format($data['arus_kas_keluar_count'], 0, ',', '.') }} transaksi</td>
                     <td class="text-right text-danger">({{ number_format($data['arus_kas_keluar'], 0, ',', '.') }})</td>
                 </tr>
                 <tr class="table-total">
-                    <td>ARUS KAS BERSIH DARI AKTIVITAS OPERASIONAL</td>
-                    <td class="text-center">{{ number_format($data['total_transaksi'], 0, ',', '.') }}</td>
-                    <td class="text-right" style="color: {{ $data['arus_kas_bersih'] >= 0 ? 'green' : 'red' }}">
-                        {{ number_format($data['arus_kas_bersih'], 0, ',', '.') }}
+                    <td><strong>Arus Kas Bersih dari Aktivitas Operasional</strong></td>
+                    <td class="text-center">{{ number_format($data['total_transaksi'], 0, ',', '.') }} total</td>
+                    <td class="text-right" style="color: {{ $data['arus_kas_bersih'] >= 0 ? '#4caf50' : '#e91e63' }}">
+                        <strong>{{ number_format($data['arus_kas_bersih'], 0, ',', '.') }}</strong>
                     </td>
                 </tr>
             </tbody>
         </table>
 
-        <div class="subsection-title">Rekonsiliasi Laba Bersih dengan Arus Kas</div>
-        <div class="summary-box">
-            <div class="summary-row">
-                <span>Laba/Rugi Bersih</span>
-                <span>Rp {{ number_format($data['laba_rugi'], 0, ',', '.') }}</span>
+        <div class="subsection-title">Cash Flow Reconciliation</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th class="text-right">Jumlah (Rp)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Kas awal periode</td>
+                    <td class="text-right">{{ number_format($data['saldo_awal'], 0, ',', '.') }}</td>
+                </tr>
+                <tr>
+                    <td>Arus kas bersih operasional</td>
+                    <td class="text-right {{ $data['arus_kas_bersih'] >= 0 ? 'text-success' : 'text-danger' }}">
+                        {{ number_format($data['arus_kas_bersih'], 0, ',', '.') }}
+                    </td>
+                </tr>
+                <tr class="table-total">
+                    <td><strong>Kas akhir periode</strong></td>
+                    <td class="text-right"><strong>{{ number_format($data['saldo_akhir'], 0, ',', '.') }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="ratio-grid">
+            <div class="ratio-box">
+                <div class="ratio-name">Operating Cash Flow Ratio</div>
+                <div class="ratio-value">
+                    {{ $data['pendapatan'] > 0 ? number_format(($data['arus_kas_bersih'] / $data['pendapatan']) * 100, 1) : 0 }}%
+                </div>
+                <span class="ratio-status {{ ($data['arus_kas_bersih'] / max($data['pendapatan'], 1)) * 100 > 20 ? 'excellent' : 'good' }}">
+                    {{ ($data['arus_kas_bersih'] / max($data['pendapatan'], 1)) * 100 > 20 ? 'STRONG' : 'MODERATE' }}
+                </span>
             </div>
-            <div class="summary-row">
-                <span>Arus Kas Bersih</span>
-                <span>Rp {{ number_format($data['arus_kas_bersih'], 0, ',', '.') }}</span>
-            </div>
-            <div class="summary-row">
-                <span>Selisih</span>
-                <span>Rp {{ number_format($data['laba_rugi'] - $data['arus_kas_bersih'], 0, ',', '.') }}</span>
+            <div class="ratio-box">
+                <div class="ratio-name">Daily Cash Burn</div>
+                <div class="ratio-value">
+                    Rp {{ number_format($data['pengeluaran'] / max(1, $periode['tanggal_awal']->diffInDays($periode['tanggal_akhir']) + 1), 0, ',', '.') }}
+                </div>
+                <span class="ratio-status good">Per Day</span>
             </div>
         </div>
     </div>
 
-    {{-- ===== SECTION 10: TRANSAKSI TERBESAR ===== --}}
+    {{-- ===== SECTION 5: FINANCIAL RATIOS & ANALYSIS ===== --}}
     <div class="content-page page-break">
-        <div class="section-title">10. TRANSAKSI TERBESAR (10 Teratas)</div>
-        <p style="margin-bottom: 30px; color: #666;">
-            Daftar 10 transaksi dengan nilai terbesar selama periode {{ $periode['nama_periode'] }}.
+        <div class="section-title">5. FINANCIAL RATIOS & ANALYSIS</div>
+        <p style="margin-bottom: 25px; color: #666; font-size: 10pt;">
+            Analisa rasio keuangan periode {{ $periode['nama_periode'] }}
         </p>
 
+        <div class="subsection-title">Profitability Ratios</div>
         <table>
             <thead>
                 <tr>
-                    <th>No</th>
-                    <th>Tanggal</th>
-                    <th>Tipe</th>
-                    <th>Kategori</th>
+                    <th>Rasio</th>
+                    <th class="text-right">Nilai</th>
+                    <th>Formula</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Net Profit Margin</strong></td>
+                    <td class="text-right"><strong>{{ $data['pendapatan'] > 0 ? number_format(($data['laba_rugi'] / $data['pendapatan']) * 100, 2) : 0 }}%</strong></td>
+                    <td style="font-size: 9pt;">Laba Bersih / Pendapatan</td>
+                    <td>
+                        @php $npm = $data['pendapatan'] > 0 ? ($data['laba_rugi'] / $data['pendapatan']) * 100 : 0; @endphp
+                        @if($npm > 10)
+                            <span class="ratio-status excellent">EXCELLENT</span>
+                        @elseif($npm > 0)
+                            <span class="ratio-status good">GOOD</span>
+                        @else
+                            <span class="ratio-status warning">POOR</span>
+                        @endif
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Operating Expense Ratio</strong></td>
+                    <td class="text-right"><strong>{{ $data['pendapatan'] > 0 ? number_format(($data['pengeluaran'] / $data['pendapatan']) * 100, 2) : 0 }}%</strong></td>
+                    <td style="font-size: 9pt;">Pengeluaran / Pendapatan</td>
+                    <td>
+                        @php $oer = $data['pendapatan'] > 0 ? ($data['pengeluaran'] / $data['pendapatan']) * 100 : 0; @endphp
+                        @if($oer < 80)
+                            <span class="ratio-status excellent">EFFICIENT</span>
+                        @elseif($oer < 95)
+                            <span class="ratio-status good">GOOD</span>
+                        @else
+                            <span class="ratio-status warning">HIGH</span>
+                        @endif
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Return on Assets (ROA)</strong></td>
+                    <td class="text-right"><strong>{{ $data['saldo_awal'] > 0 ? number_format(($data['laba_rugi'] / $data['saldo_awal']) * 100, 2) : 0 }}%</strong></td>
+                    <td style="font-size: 9pt;">Laba Bersih / Total Aset Awal</td>
+                    <td>
+                        @php $roa = $data['saldo_awal'] > 0 ? ($data['laba_rugi'] / $data['saldo_awal']) * 100 : 0; @endphp
+                        @if($roa > 5)
+                            <span class="ratio-status excellent">STRONG</span>
+                        @elseif($roa > 0)
+                            <span class="ratio-status good">POSITIVE</span>
+                        @else
+                            <span class="ratio-status warning">NEGATIVE</span>
+                        @endif
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="subsection-title">Efficiency Ratios</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Rasio</th>
+                    <th class="text-right">Nilai</th>
+                    <th>Interpretasi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Transaction Efficiency</strong></td>
+                    <td class="text-right">{{ number_format($data['rata_rata_transaksi_harian'], 2) }} transaksi/hari</td>
+                    <td>Rata-rata aktivitas harian</td>
+                </tr>
+                <tr>
+                    <td><strong>Average Transaction Size (Income)</strong></td>
+                    <td class="text-right">Rp {{ number_format($data['arus_kas_masuk_count'] > 0 ? $data['pendapatan'] / $data['arus_kas_masuk_count'] : 0, 0, ',', '.') }}</td>
+                    <td>Rata-rata nilai penerimaan</td>
+                </tr>
+                <tr>
+                    <td><strong>Average Transaction Size (Expense)</strong></td>
+                    <td class="text-right">Rp {{ number_format($data['arus_kas_keluar_count'] > 0 ? $data['pengeluaran'] / $data['arus_kas_keluar_count'] : 0, 0, ',', '.') }}</td>
+                    <td>Rata-rata nilai pengeluaran</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="insight-box">
+            <div class="insight-title">📊 Financial Health Assessment</div>
+            <div class="insight-text">
+                @php
+                    $npm = $data['pendapatan'] > 0 ? ($data['laba_rugi'] / $data['pendapatan']) * 100 : 0;
+                    $oer = $data['pendapatan'] > 0 ? ($data['pengeluaran'] / $data['pendapatan']) * 100 : 0;
+                    $growth = $data['saldo_awal'] > 0 ? (($data['saldo_akhir'] - $data['saldo_awal']) / $data['saldo_awal']) * 100 : 0;
+                @endphp
+                <strong>Overall Score:</strong> 
+                @if($npm > 10 && $oer < 80 && $growth > 0)
+                    <span style="color: #4caf50; font-weight: bold;">A (EXCELLENT)</span> - 
+                    Keuangan sangat sehat dengan profit margin tinggi dan pengeluaran efisien.
+                @elseif($npm > 5 && $oer < 90 && $data['laba_rugi'] >= 0)
+                    <span style="color: #8bc34a; font-weight: bold;">B (GOOD)</span> - 
+                    Keuangan dalam kondisi baik, ada ruang untuk peningkatan efisiensi.
+                @elseif($npm > 0 && $data['laba_rugi'] >= 0)
+                    <span style="color: #ffc107; font-weight: bold;">C (FAIR)</span> - 
+                    Keuangan stabil namun margin tipis, perlu peningkatan pendapatan atau efisiensi.
+                @else
+                    <span style="color: #ff9800; font-weight: bold;">D (NEEDS IMPROVEMENT)</span> - 
+                    Defisit atau margin negatif, diperlukan evaluasi menyeluruh dan strategi perbaikan.
+                @endif
+            </div>
+        </div>
+
+        <div class="subsection-title">Top 10 Largest Transactions</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 8%;">No</th>
+                    <th style="width: 15%;">Tanggal</th>
+                    <th style="width: 12%;">Type</th>
+                    <th style="width: 15%;">Kategori</th>
                     <th>Keterangan</th>
-                    <th class="text-right">Jumlah (Rp)</th>
+                    <th style="width: 18%;" class="text-right">Nominal</th>
                 </tr>
             </thead>
             <tbody>
@@ -1247,247 +919,180 @@
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ \Carbon\Carbon::parse($transaksi->tanggal_realisasi)->format('d M Y') }}</td>
                     <td>
-                        <span style="color: {{ $transaksi->tipe_transaksi == 'Dana Masuk' ? 'green' : 'red' }}">
-                            {{ $transaksi->tipe_transaksi == 'Dana Masuk' ? '▲ Masuk' : '▼ Keluar' }}
+                        <span style="color: {{ $transaksi->tipe_transaksi == 'masuk' ? '#4caf50' : '#e91e63' }}; font-weight: 600;">
+                            {{ $transaksi->tipe_transaksi == 'masuk' ? '▲ IN' : '▼ OUT' }}
                         </span>
                     </td>
-                    <td>{{ $transaksi->kategori }}</td>
-                    <td>{{ Str::limit($transaksi->keterangan, 40) }}</td>
-                    <td class="text-right font-weight-bold">{{ number_format($transaksi->nominal, 0, ',', '.') }}</td>
+                    <td><strong>{{ $transaksi->kategori }}</strong></td>
+                    <td style="font-size: 9pt;">{{ Str::limit($transaksi->keterangan, 45) }}</td>
+                    <td class="text-right" style="font-weight: bold;">{{ number_format($transaksi->nominal, 0, ',', '.') }}</td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
     </div>
 
-    {{-- ===== SECTION 11: MONTHLY CHART (hanya untuk tahunan) ===== --}}
+    {{-- ===== SECTION 6: MONTHLY PERFORMANCE (untuk tahunan) ===== --}}
     @if($periode['type'] == 'tahunan' && count($data['data_bulanan']) > 0)
     <div class="content-page page-break">
-        <div class="section-title">11. GRAFIK PERFORMA BULANAN</div>
-        <p style="margin-bottom: 30px; color: #666;">
-            Grafik perbandingan pemasukan dan pengeluaran per bulan tahun {{ $periode['tahun'] }}.
+        <div class="section-title">6. MONTHLY PERFORMANCE TREND</div>
+        <p style="margin-bottom: 25px; color: #666; font-size: 10pt;">
+            Tren kinerja bulanan tahun {{ $periode['tahun'] }}
         </p>
 
-        <div class="subsection-title">Tren Pemasukan vs Pengeluaran</div>
-        <div class="chart-container">
-            <div style="width: 100%;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Bulan</th>
+                    <th class="text-right">Pendapatan</th>
+                    <th class="text-right">Pengeluaran</th>
+                    <th class="text-right">Net Result</th>
+                    <th class="text-center">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($data['data_bulanan'] as $bulan)
+                <tr>
+                    <td><strong>{{ $bulan['bulan'] }}</strong></td>
+                    <td class="text-right">{{ number_format($bulan['pendapatan'], 0, ',', '.') }}</td>
+                    <td class="text-right">{{ number_format($bulan['pengeluaran'], 0, ',', '.') }}</td>
+                    <td class="text-right {{ $bulan['laba_rugi'] >= 0 ? 'text-success' : 'text-danger' }}">
+                        <strong>{{ number_format($bulan['laba_rugi'], 0, ',', '.') }}</strong>
+                    </td>
+                    <td class="text-center">
+                        <span class="ratio-status {{ $bulan['laba_rugi'] >= 0 ? 'excellent' : 'warning' }}">
+                            {{ $bulan['laba_rugi'] >= 0 ? 'SURPLUS' : 'DEFICIT' }}
+                        </span>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        <div class="chart-container" style="min-height: 280px;">
+            <div style="font-weight: bold; margin-bottom: 18px; color: #1e3c72; font-size: 11pt; text-align: center;">
+                Revenue vs Expense - Monthly Comparison
+            </div>
+            <div style="display: flex; justify-content: center; margin-bottom: 15px; font-size: 9pt;">
+                <div style="margin-right: 20px;">
+                    <span style="display: inline-block; width: 15px; height: 15px; background-color: #4caf50; margin-right: 5px;"></span>
+                    <span>Pendapatan</span>
+                </div>
+                <div>
+                    <span style="display: inline-block; width: 15px; height: 15px; background-color: #e91e63; margin-right: 5px;"></span>
+                    <span>Pengeluaran</span>
+                </div>
+            </div>
+            <div style="text-align: center;">
                 @foreach($data['data_bulanan'] as $bulan)
                     @php
                         $maxValue = max($data['data_bulanan']->pluck('pendapatan')->max(), $data['data_bulanan']->pluck('pengeluaran')->max());
-                        $heightPendapatan = $maxValue > 0 ? ($bulan['pendapatan'] / $maxValue) * 200 : 0;
-                        $heightPengeluaran = $maxValue > 0 ? ($bulan['pengeluaran'] / $maxValue) * 200 : 0;
+                        $heightPendapatan = $maxValue > 0 ? ($bulan['pendapatan'] / $maxValue) * 180 : 0;
+                        $heightPengeluaran = $maxValue > 0 ? ($bulan['pengeluaran'] / $maxValue) * 180 : 0;
                     @endphp
-                    <div style="display: inline-block; margin: 0 8px; text-align: center; vertical-align: bottom;">
-                        <div class="chart-bar" style="height: {{ $heightPendapatan }}px; background-color: #28a745;"></div>
-                        <div class="chart-bar" style="height: {{ $heightPengeluaran }}px; background-color: #dc3545; margin-left: 5px;"></div>
-                        <div class="chart-label">{{ $bulan['bulan'] }}</div>
+                    <div style="display: inline-block; margin: 0 6px; text-align: center; vertical-align: bottom;">
+                        <div style="display: inline-block; width: 18px; height: {{ $heightPendapatan }}px; background-color: #4caf50; vertical-align: bottom;"></div>
+                        <div style="display: inline-block; width: 18px; height: {{ $heightPengeluaran }}px; background-color: #e91e63; margin-left: 3px; vertical-align: bottom;"></div>
+                        <div style="font-size: 8.5pt; margin-top: 5px; color: #666;">{{ $bulan['bulan'] }}</div>
                     </div>
                 @endforeach
             </div>
         </div>
 
-        <table style="margin-top: 20px;">
-            <thead>
-                <tr>
-                    <th>Bulan</th>
-                    <th class="text-right">Pemasukan</th>
-                    <th class="text-right">Pengeluaran</th>
-                    <th class="text-right">Selisih</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($data['data_bulanan'] as $bulan)
-                <tr>
-                    <td>{{ $bulan['bulan'] }}</td>
-                    <td class="text-right">{{ number_format($bulan['pendapatan'], 0, ',', '.') }}</td>
-                    <td class="text-right">{{ number_format($bulan['pengeluaran'], 0, ',', '.') }}</td>
-                    <td class="text-right" style="color: {{ $bulan['laba_rugi'] >= 0 ? 'green' : 'red' }}">
-                        {{ number_format($bulan['laba_rugi'], 0, ',', '.') }}
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
+        <div class="insight-box">
+            <div class="insight-title">📈 Trend Analysis</div>
+            <div class="insight-text">
+                @php
+                    $positiveMonths = collect($data['data_bulanan'])->where('laba_rugi', '>=', 0)->count();
+                    $bestMonth = collect($data['data_bulanan'])->sortByDesc('laba_rugi')->first();
+                    $worstMonth = collect($data['data_bulanan'])->sortBy('laba_rugi')->first();
+                @endphp
+                <strong>Tahun {{ $periode['tahun'] }}:</strong> Dari 12 bulan, 
+                <strong>{{ $positiveMonths }} bulan surplus</strong> dan {{ 12 - $positiveMonths }} bulan defisit.
+                Bulan terbaik: <strong>{{ $bestMonth['bulan'] }}</strong> (surplus Rp {{ number_format($bestMonth['laba_rugi'], 0, ',', '.') }}).
+                @if($worstMonth['laba_rugi'] < 0)
+                    Bulan terburuk: <strong>{{ $worstMonth['bulan'] }}</strong> (defisit Rp {{ number_format(abs($worstMonth['laba_rugi']), 0, ',', '.') }}).
+                @endif
+            </div>
+        </div>
     </div>
     @endif
 
-    {{-- ===== SECTION 12: CATATAN & LAMPIRAN ===== --}}
+    {{-- ===== SECTION AKHIR: DISCLAIMER ===== --}}
     <div class="content-page">
-        <div class="section-title">{{ $periode['type'] == 'tahunan' ? '12' : '11' }}. CATATAN & LAMPIRAN</div>
-        <p style="margin-bottom: 30px; color: #666;">
-            Catatan tambahan dan informasi penting mengenai laporan keuangan periode {{ $periode['nama_periode'] }}.
-        </p>
-
-        <div class="subsection-title">1. Kebijakan Akuntansi</div>
-        <p style="margin-bottom: 15px; text-align: justify; line-height: 1.8;">
-            <strong>a. Basis Pencatatan:</strong><br>
-            Laporan keuangan ini disusun dengan menggunakan basis kas (cash basis), dimana pendapatan dan pengeluaran 
-            dicatat pada saat kas diterima atau dikeluarkan.
-        </p>
-        <p style="margin-bottom: 15px; text-align: justify; line-height: 1.8;">
-            <strong>b. Mata Uang Pelaporan:</strong><br>
-            Semua nilai dalam laporan ini disajikan dalam Rupiah (Rp) dan dibulatkan ke angka terdekat.
-        </p>
-        <p style="margin-bottom: 20px; text-align: justify; line-height: 1.8;">
-            <strong>c. Pengakuan Transaksi:</strong><br>
-            Setiap transaksi dicatat secara real-time melalui sistem digital Bumi Sultan dengan mencantumkan 
-            tanggal, nominal, kategori, dan keterangan yang jelas.
-        </p>
-
-        <div class="subsection-title">2. Penjelasan Kategori Transaksi</div>
+        <div class="section-title">{{ $periode['type'] == 'tahunan' ? '7' : '6' }}. NOTES & DISCLAIMER</div>
+        
+        <div class="subsection-title">Accounting Policies</div>
         <table style="font-size: 9pt;">
             <thead>
                 <tr>
-                    <th style="width: 25%;">Kategori</th>
-                    <th>Penjelasan</th>
-                    <th style="width: 20%;">Sifat</th>
+                    <th style="width: 30%;">Policy</th>
+                    <th>Description</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td><strong>Khidmat Santri</strong></td>
-                    <td>Dana untuk kebutuhan makan santri (± Rp 450.000/hari, dapat berubah)</td>
-                    <td>Rutin Harian</td>
+                    <td><strong>Basis Pencatatan</strong></td>
+                    <td>Cash Basis - transaksi dicatat saat kas diterima atau dibayarkan</td>
                 </tr>
                 <tr>
-                    <td><strong>Utilitas</strong></td>
-                    <td>Listrik (PLN), air (PDAM), internet/wifi, pulsa</td>
-                    <td>Rutin Bulanan</td>
+                    <td><strong>Mata Uang</strong></td>
+                    <td>Rupiah (Rp), dibulatkan ke angka terdekat</td>
                 </tr>
                 <tr>
-                    <td><strong>Transport & Kendaraan</strong></td>
-                    <td>BBM, servis kendaraan, oli, ban, parkir, tol</td>
-                    <td>Sesuai Kebutuhan</td>
+                    <td><strong>Periode Pelaporan</strong></td>
+                    <td>{{ $periode['tanggal_awal']->format('d M Y') }} - {{ $periode['tanggal_akhir']->format('d M Y') }} ({{ $periode['tanggal_awal']->diffInDays($periode['tanggal_akhir']) + 1 }} hari)</td>
                 </tr>
                 <tr>
-                    <td><strong>Konsumsi</strong></td>
-                    <td>Makan/minum untuk rapat, tamu, acara khusus</td>
-                    <td>Insidental</td>
-                </tr>
-                <tr>
-                    <td><strong>ATK & Perlengkapan</strong></td>
-                    <td>Alat tulis kantor, kertas, pulpen, spidol, tinta printer</td>
-                    <td>Rutin Bulanan</td>
-                </tr>
-                <tr>
-                    <td><strong>Kebersihan</strong></td>
-                    <td>Sabun, detergen, sapu, pel, pembersih, tisu</td>
-                    <td>Rutin Bulanan</td>
-                </tr>
-                <tr>
-                    <td><strong>Maintenance</strong></td>
-                    <td>Perbaikan bangunan, renovasi, cat, las, tukang</td>
-                    <td>Sesuai Kebutuhan</td>
-                </tr>
-                <tr>
-                    <td><strong>Kesehatan</strong></td>
-                    <td>Obat-obatan, vitamin, P3K, biaya dokter/klinik</td>
-                    <td>Sesuai Kebutuhan</td>
-                </tr>
-                <tr>
-                    <td><strong>Komunikasi</strong></td>
-                    <td>Pulsa telepon, paket data, SMS</td>
-                    <td>Rutin Bulanan</td>
-                </tr>
-                <tr>
-                    <td><strong>Administrasi</strong></td>
-                    <td>Materai, legalisir, pengurusan surat, dokumen</td>
-                    <td>Sesuai Kebutuhan</td>
-                </tr>
-                <tr>
-                    <td><strong>Dana Masuk</strong></td>
-                    <td>Semua sumber pemasukan (donasi, setoran, transfer)</td>
-                    <td>Sesuai Penerimaan</td>
+                    <td><strong>Sumber Data</strong></td>
+                    <td>Sistem Bumi Sultan - Real-time transaction recording</td>
                 </tr>
             </tbody>
         </table>
 
-        <div class="subsection-title" style="margin-top: 30px;">3. Manajemen Risiko</div>
-        <p style="margin-bottom: 15px; text-align: justify; line-height: 1.8;">
-            <strong>a. Risiko Likuiditas:</strong><br>
-            Untuk mengelola risiko likuiditas, Bumi Sultan menjaga saldo kas minimum untuk memastikan operasional 
-            berjalan lancar. Monitoring dilakukan secara harian.
-        </p>
-        <p style="margin-bottom: 15px; text-align: justify; line-height: 1.8;">
-            <strong>b. Risiko Operasional:</strong><br>
-            Setiap pengeluaran melewati proses verifikasi dan dokumentasi yang jelas untuk meminimalkan 
-            kesalahan pencatatan dan penyalahgunaan.
-        </p>
-        <p style="margin-bottom: 20px; text-align: justify; line-height: 1.8;">
-            <strong>c. Pengendalian Internal:</strong><br>
-            Sistem digital memastikan setiap transaksi tercatat otomatis dengan timestamp, user, dan bukti 
-            transaksi yang dapat diaudit kapan saja.
-        </p>
-
-        <div class="subsection-title">4. Komitmen & Kontinjensi</div>
-        <div class="summary-box">
-            <p style="margin-bottom: 10px;"><strong>Komitmen Rutin:</strong></p>
-            <ul style="margin-left: 20px; margin-bottom: 15px;">
-                <li>Khidmat Santri: Komitmen harian untuk memenuhi kebutuhan makan santri</li>
-                <li>Utilitas: Komitmen bulanan untuk pembayaran listrik, air, dan internet</li>
-                <li>Gaji Karyawan: Tidak termasuk dalam dana operasional (dikelola terpisah)</li>
-            </ul>
-            
-            <p style="margin-bottom: 10px;"><strong>Dana Kontinjensi:</strong></p>
-            <p style="margin-bottom: 0;">
-                Bumi Sultan berupaya menyisihkan surplus untuk dana darurat (emergency fund) guna mengantisipasi 
-                kebutuhan mendesak atau perbaikan tidak terduga.
-            </p>
-        </div>
-
-        <div class="subsection-title">5. Tanggung Jawab Sosial</div>
-        <p style="margin-bottom: 20px; text-align: justify; line-height: 1.8;">
-            Sebagai lembaga pendidikan, Bumi Sultan berkomitmen untuk mengelola dana dengan penuh amanah, 
-            mengutamakan kesejahteraan santri, dan berkontribusi positif bagi masyarakat sekitar.
-        </p>
-
-        <div class="subsection-title">6. Informasi Laporan</div>
+        <div class="subsection-title" style="margin-top: 30px;">Report Information</div>
         <div class="summary-box">
             <div class="summary-row">
-                <span>Periode Laporan</span>
-                <span>{{ $periode['tanggal_awal']->format('d M Y') }} - {{ $periode['tanggal_akhir']->format('d M Y') }}</span>
+                <span>Report Type</span>
+                <span><strong>{{ strtoupper($periode['type']) }} FINANCIAL REPORT</strong></span>
             </div>
             <div class="summary-row">
-                <span>Total Hari</span>
-                <span>{{ $periode['tanggal_awal']->diffInDays($periode['tanggal_akhir']) + 1 }} hari</span>
+                <span>Report Period</span>
+                <span>{{ $periode['nama_periode'] }}</span>
             </div>
             <div class="summary-row">
-                <span>Tanggal Cetak</span>
+                <span>Generated Date</span>
                 <span>{{ $tanggal_cetak }}</span>
             </div>
             <div class="summary-row">
-                <span>Dibuat oleh</span>
-                <span>Sistem Bumi Sultan (Otomatis)</span>
+                <span>Total Transactions</span>
+                <span>{{ number_format($data['total_transaksi'], 0, ',', '.') }} transaksi</span>
             </div>
             <div class="summary-row">
-                <span>Sifat Laporan</span>
-                <span>{{ ucfirst($periode['type']) }} Report</span>
+                <span>Data Source</span>
+                <span>Bumi Sultan Financial System (Automated)</span>
             </div>
         </div>
 
-        <div class="subsection-title" style="margin-top: 30px;">7. Pernyataan Penutup</div>
-        <p style="margin-bottom: 20px; text-align: justify; line-height: 1.8;">
-            Laporan keuangan ini disusun berdasarkan catatan dan bukti transaksi yang valid dan dapat dipertanggungjawabkan. 
-            Manajemen Bumi Sultan menyatakan bahwa informasi yang disajikan dalam laporan ini adalah benar dan akurat 
-            sesuai dengan kondisi keuangan periode {{ $periode['nama_periode'] }}.
-        </p>
-
-        <div style="margin-top: 40px; padding: 20px; background-color: #f8f9fa; border: 2px solid #1e3c72; border-radius: 5px;">
-            <p style="text-align: center; font-weight: bold; font-size: 11pt; margin-bottom: 10px; color: #1e3c72;">
-                PERNYATAAN TRANSPARANSI & AKUNTABILITAS
+        <div style="margin-top: 40px; padding: 25px; background-color: #f5f5f5; border: 2px solid #1e3c72; border-radius: 6px;">
+            <p style="text-align: center; font-weight: bold; font-size: 11pt; margin-bottom: 12px; color: #1e3c72;">
+                DISCLAIMER & AUTHENTICITY
             </p>
-            <p style="text-align: center; font-style: italic; font-size: 10pt; line-height: 1.6; color: #666;">
-                "Kami berkomitmen untuk mengelola setiap rupiah dengan penuh amanah dan bertanggung jawab. 
-                Laporan ini adalah wujud transparansi kami kepada seluruh stakeholder Bumi Sultan."
+            <p style="text-align: center; font-size: 9.5pt; line-height: 1.7; color: #555;">
+                Laporan ini dibuat secara otomatis oleh sistem Bumi Sultan berdasarkan data transaksi yang tercatat 
+                secara real-time. Semua informasi yang disajikan adalah akurat per tanggal cetak. 
+                Dokumen ini sah tanpa tanda tangan basah dan dapat diverifikasi melalui sistem.
             </p>
         </div>
 
-        <div style="margin-top: 60px; text-align: center; color: #666; font-size: 9pt;">
-            <p style="margin-bottom: 5px; font-weight: bold; font-size: 11pt; color: #1e3c72;">*** AKHIR LAPORAN ***</p>
-            <p style="margin-bottom: 5px;">Dokumen ini dibuat secara otomatis oleh Sistem Bumi Sultan</p>
-            <p style="margin-bottom: 5px;">dan sah tanpa tanda tangan basah</p>
-            <p style="margin-top: 20px; font-size: 8pt;">
-                © {{ date('Y') }} Bumi Sultan - Semua transaksi tercatat dan teraudit secara digital
+        <div style="margin-top: 60px; text-align: center; color: #999; font-size: 9pt;">
+            <p style="margin-bottom: 10px; font-weight: bold; font-size: 12pt; color: #1e3c72;">
+                *** END OF FINANCIAL REPORT ***
+            </p>
+            <p style="margin-bottom: 5px;">© {{ date('Y') }} Bumi Sultan - All rights reserved</p>
+            <p style="margin-bottom: 5px;">This is a computer-generated document</p>
+            <p style="font-size: 8pt; margin-top: 15px;">
+                All transactions are digitally recorded and auditable
             </p>
         </div>
     </div>
