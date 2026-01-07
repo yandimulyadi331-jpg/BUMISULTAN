@@ -198,11 +198,11 @@ class LaporanKeuanganController extends Controller
 
         // 1. INCOME STATEMENT (Laporan Laba Rugi)
         $pendapatan = RealisasiDanaOperasional::whereBetween('tanggal_realisasi', [$tanggalAwal, $tanggalAkhir])
-            ->where('tipe_transaksi', 'Dana Masuk')
+            ->where('tipe_transaksi', 'masuk')
             ->sum('nominal');
 
         $pengeluaran = RealisasiDanaOperasional::whereBetween('tanggal_realisasi', [$tanggalAwal, $tanggalAkhir])
-            ->where('tipe_transaksi', 'Dana Keluar')
+            ->where('tipe_transaksi', 'keluar')
             ->sum('nominal');
 
         $labaRugi = $pendapatan - $pengeluaran;
@@ -214,7 +214,7 @@ class LaporanKeuanganController extends Controller
                 DB::raw('COUNT(*) as jumlah_transaksi')
             )
             ->whereBetween('tanggal_realisasi', [$tanggalAwal, $tanggalAkhir])
-            ->where('tipe_transaksi', 'Dana Masuk')
+            ->where('tipe_transaksi', 'masuk')
             ->groupBy('kategori')
             ->orderBy('total', 'desc')
             ->get();
@@ -226,7 +226,7 @@ class LaporanKeuanganController extends Controller
                 DB::raw('COUNT(*) as jumlah_transaksi')
             )
             ->whereBetween('tanggal_realisasi', [$tanggalAwal, $tanggalAkhir])
-            ->where('tipe_transaksi', 'Dana Keluar')
+            ->where('tipe_transaksi', 'keluar')
             ->groupBy('kategori')
             ->orderBy('total', 'desc')
             ->get();
@@ -242,11 +242,11 @@ class LaporanKeuanganController extends Controller
 
         // 3. CASH FLOW (Arus Kas)
         $arusKasMasuk = RealisasiDanaOperasional::whereBetween('tanggal_realisasi', [$tanggalAwal, $tanggalAkhir])
-            ->where('tipe_transaksi', 'Dana Masuk')
+            ->where('tipe_transaksi', 'masuk')
             ->count();
 
         $arusKasKeluar = RealisasiDanaOperasional::whereBetween('tanggal_realisasi', [$tanggalAwal, $tanggalAkhir])
-            ->where('tipe_transaksi', 'Dana Keluar')
+            ->where('tipe_transaksi', 'keluar')
             ->count();
 
         // 4. FINANCIAL HIGHLIGHTS (Ikhtisar Keuangan)
@@ -261,11 +261,11 @@ class LaporanKeuanganController extends Controller
         $tanggalAkhirSebelumnya = $tanggalAkhir->copy()->subDays($periodeDiff);
 
         $pendapatanSebelumnya = RealisasiDanaOperasional::whereBetween('tanggal_realisasi', [$tanggalAwalSebelumnya, $tanggalAkhirSebelumnya])
-            ->where('tipe_transaksi', 'Dana Masuk')
+            ->where('tipe_transaksi', 'masuk')
             ->sum('nominal');
 
         $pengeluaranSebelumnya = RealisasiDanaOperasional::whereBetween('tanggal_realisasi', [$tanggalAwalSebelumnya, $tanggalAkhirSebelumnya])
-            ->where('tipe_transaksi', 'Dana Keluar')
+            ->where('tipe_transaksi', 'keluar')
             ->sum('nominal');
 
         $labaRugiSebelumnya = $pendapatanSebelumnya - $pengeluaranSebelumnya;
@@ -294,11 +294,11 @@ class LaporanKeuanganController extends Controller
                 $bulanEnd = Carbon::create($periode['tahun'], $i, 1)->endOfMonth();
 
                 $pendapatanBulan = RealisasiDanaOperasional::whereBetween('tanggal_realisasi', [$bulanStart, $bulanEnd])
-                    ->where('tipe_transaksi', 'Dana Masuk')
+                    ->where('tipe_transaksi', 'masuk')
                     ->sum('nominal');
 
                 $pengeluaranBulan = RealisasiDanaOperasional::whereBetween('tanggal_realisasi', [$bulanStart, $bulanEnd])
-                    ->where('tipe_transaksi', 'Dana Keluar')
+                    ->where('tipe_transaksi', 'keluar')
                     ->sum('nominal');
 
                 $dataBulanan[] = [

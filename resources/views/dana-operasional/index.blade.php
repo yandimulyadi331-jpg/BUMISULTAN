@@ -283,6 +283,7 @@
                             <select class="form-select" name="filter_type" id="filterType" onchange="toggleFilterInputs()">
                                 <option value="bulan" {{ request('filter_type', 'bulan') == 'bulan' ? 'selected' : '' }}>Per Bulan</option>
                                 <option value="tahun" {{ request('filter_type') == 'tahun' ? 'selected' : '' }}>Per Tahun</option>
+                                <option value="kuartal" {{ request('filter_type') == 'kuartal' ? 'selected' : '' }}>Per Kuartal</option>
                                 <option value="minggu" {{ request('filter_type') == 'minggu' ? 'selected' : '' }}>Per Minggu</option>
                                 <option value="range" {{ request('filter_type') == 'range' ? 'selected' : '' }}>Range Tanggal</option>
                             </select>
@@ -296,6 +297,21 @@
                         <div class="col-md-2" id="inputTahun" style="display: none;">
                             <label class="form-label">Tahun</label>
                             <input type="number" class="form-control" name="tahun" value="{{ request('tahun', date('Y')) }}" min="2020" max="2099">
+                        </div>
+                        
+                        <div class="col-md-2" id="inputKuartalTahun" style="display: none;">
+                            <label class="form-label">Tahun</label>
+                            <input type="number" class="form-control" name="tahun" value="{{ request('tahun', date('Y')) }}" min="2020" max="2099">
+                        </div>
+                        
+                        <div class="col-md-2" id="inputKuartal" style="display: none;">
+                            <label class="form-label">Kuartal</label>
+                            <select class="form-select" name="kuartal">
+                                <option value="1" {{ request('kuartal') == '1' ? 'selected' : '' }}>Q1 (Jan-Mar)</option>
+                                <option value="2" {{ request('kuartal') == '2' ? 'selected' : '' }}>Q2 (Apr-Jun)</option>
+                                <option value="3" {{ request('kuartal') == '3' ? 'selected' : '' }}>Q3 (Jul-Sep)</option>
+                                <option value="4" {{ request('kuartal') == '4' ? 'selected' : '' }}>Q4 (Okt-Des)</option>
+                            </select>
                         </div>
                         
                         <div class="col-md-2" id="inputMinggu" style="display: none;">
@@ -321,7 +337,10 @@
                                 <i class="bx bx-reset me-1"></i> Reset
                             </a>
                             <button type="button" class="btn" onclick="downloadPDF()" style="border: 1px solid #d1d5db; border-radius: 0.375rem; height: 38px; padding: 0.375rem 0.75rem; font-size: 1rem; background: #fff; color: #374151;">
-                                <i class="bx bxs-file-pdf me-1"></i> Download PDF
+                                <i class="bx bxs-file-pdf me-1"></i> Download PDF Detail
+                            </button>
+                            <button type="button" class="btn" onclick="downloadPDFRingkasan()" style="border: 1px solid #d1d5db; border-radius: 0.375rem; height: 38px; padding: 0.375rem 0.75rem; font-size: 1rem; background: #6c757d; color: #fff;">
+                                <i class="bx bxs-file-pdf me-1"></i> Download Ringkasan
                             </button>
                             <button type="button" class="btn" onclick="generatePdfLink()" style="border: 1px solid #d1d5db; border-radius: 0.375rem; height: 38px; padding: 0.375rem 0.75rem; font-size: 1rem; background: #28a745; color: #fff;">
                                 <i class="bx bx-link me-1"></i> Generate Link PDF
@@ -761,6 +780,7 @@
                             <select class="form-select" name="filter_type" id="pdfFilterType" onchange="togglePdfInputs()">
                                 <option value="bulan" {{ request('filter_type') == 'bulan' ? 'selected' : '' }}>Per Bulan</option>
                                 <option value="tahun" {{ request('filter_type') == 'tahun' ? 'selected' : '' }}>Per Tahun</option>
+                                <option value="kuartal" {{ request('filter_type') == 'kuartal' ? 'selected' : '' }}>Per Kuartal</option>
                                 <option value="minggu" {{ request('filter_type') == 'minggu' ? 'selected' : '' }}>Per Minggu</option>
                                 <option value="range" {{ request('filter_type') == 'range' ? 'selected' : '' }}>Range Tanggal</option>
                             </select>
@@ -776,6 +796,23 @@
                         <div class="mb-3" id="pdfInputTahun" style="display: none;">
                             <label class="form-label">Tahun</label>
                             <input type="number" class="form-control" name="tahun" id="pdfTahun" value="{{ date('Y') }}" min="2020" max="2099">
+                        </div>
+
+                        <!-- Input Kuartal Tahun -->
+                        <div class="mb-3" id="pdfInputKuartalTahun" style="display: none;">
+                            <label class="form-label">Tahun</label>
+                            <input type="number" class="form-control" name="tahun" id="pdfKuartalTahun" value="{{ date('Y') }}" min="2020" max="2099">
+                        </div>
+
+                        <!-- Input Kuartal -->
+                        <div class="mb-3" id="pdfInputKuartal" style="display: none;">
+                            <label class="form-label">Kuartal</label>
+                            <select class="form-select" name="kuartal" id="pdfKuartal">
+                                <option value="1">Q1 (Januari - Maret)</option>
+                                <option value="2">Q2 (April - Juni)</option>
+                                <option value="3">Q3 (Juli - September)</option>
+                                <option value="4">Q4 (Oktober - Desember)</option>
+                            </select>
                         </div>
 
                         <!-- Input Minggu -->
@@ -1504,6 +1541,8 @@ function toggleFilterInputs() {
     // Sembunyikan semua input dulu
     document.getElementById('inputBulan').style.display = 'none';
     document.getElementById('inputTahun').style.display = 'none';
+    document.getElementById('inputKuartalTahun').style.display = 'none';
+    document.getElementById('inputKuartal').style.display = 'none';
     document.getElementById('inputMinggu').style.display = 'none';
     document.getElementById('inputRangeStart').style.display = 'none';
     document.getElementById('inputRangeEnd').style.display = 'none';
@@ -1513,6 +1552,9 @@ function toggleFilterInputs() {
         document.getElementById('inputBulan').style.display = 'block';
     } else if (filterType === 'tahun') {
         document.getElementById('inputTahun').style.display = 'block';
+    } else if (filterType === 'kuartal') {
+        document.getElementById('inputKuartalTahun').style.display = 'block';
+        document.getElementById('inputKuartal').style.display = 'block';
     } else if (filterType === 'minggu') {
         document.getElementById('inputMinggu').style.display = 'block';
     } else if (filterType === 'range') {
@@ -1557,6 +1599,8 @@ function togglePdfInputs() {
     // Sembunyikan semua input
     document.getElementById('pdfInputBulan').style.display = 'none';
     document.getElementById('pdfInputTahun').style.display = 'none';
+    document.getElementById('pdfInputKuartalTahun').style.display = 'none';
+    document.getElementById('pdfInputKuartal').style.display = 'none';
     document.getElementById('pdfInputMinggu').style.display = 'none';
     document.getElementById('pdfInputRangeStart').style.display = 'none';
     document.getElementById('pdfInputRangeEnd').style.display = 'none';
@@ -1566,6 +1610,9 @@ function togglePdfInputs() {
         document.getElementById('pdfInputBulan').style.display = 'block';
     } else if (filterType === 'tahun') {
         document.getElementById('pdfInputTahun').style.display = 'block';
+    } else if (filterType === 'kuartal') {
+        document.getElementById('pdfInputKuartalTahun').style.display = 'block';
+        document.getElementById('pdfInputKuartal').style.display = 'block';
     } else if (filterType === 'minggu') {
         document.getElementById('pdfInputMinggu').style.display = 'block';
     } else if (filterType === 'range') {
@@ -2288,8 +2335,38 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Download PDF dengan filter yang sama seperti tampilan
+// Download PDF Detail dengan filter yang sama seperti tampilan
 function downloadPDF() {
+    // Get filter values from the form
+    const filterType = document.querySelector('select[name="filter_type"]').value;
+    const bulan = document.querySelector('input[name="bulan"]')?.value || '';
+    const tahun = document.querySelector('input[name="tahun"]')?.value || '';
+    const kuartal = document.querySelector('select[name="kuartal"]')?.value || '';
+    const minggu = document.querySelector('input[name="minggu"]')?.value || '';
+    const startDate = document.querySelector('input[name="start_date"]')?.value || '';
+    const endDate = document.querySelector('input[name="end_date"]')?.value || '';
+    
+    // Build URL with query parameters
+    let url = '{{ route("dana-operasional.export-pdf") }}?filter_type=' + filterType;
+    
+    if (filterType === 'bulan' && bulan) {
+        url += '&bulan=' + bulan;
+    } else if (filterType === 'tahun' && tahun) {
+        url += '&tahun=' + tahun;
+    } else if (filterType === 'kuartal' && tahun && kuartal) {
+        url += '&tahun=' + tahun + '&kuartal=' + kuartal;
+    } else if (filterType === 'minggu' && minggu) {
+        url += '&minggu=' + minggu;
+    } else if (filterType === 'range' && startDate && endDate) {
+        url += '&start_date=' + startDate + '&end_date=' + endDate;
+    }
+    
+    // Open PDF in new tab/download
+    window.open(url, '_blank');
+}
+
+// Download PDF Ringkasan (Summary - hanya total per bulan)
+function downloadPDFRingkasan() {
     // Get filter values from the form
     const filterType = document.querySelector('select[name="filter_type"]').value;
     const bulan = document.querySelector('input[name="bulan"]')?.value || '';
@@ -2298,8 +2375,8 @@ function downloadPDF() {
     const startDate = document.querySelector('input[name="start_date"]')?.value || '';
     const endDate = document.querySelector('input[name="end_date"]')?.value || '';
     
-    // Build URL with query parameters
-    let url = '{{ route("dana-operasional.export-pdf") }}?filter_type=' + filterType;
+    // Build URL with query parameters untuk summary
+    let url = '{{ route("dana-operasional.export-pdf-summary") }}?filter_type=' + filterType;
     
     if (filterType === 'bulan' && bulan) {
         url += '&bulan=' + bulan;
