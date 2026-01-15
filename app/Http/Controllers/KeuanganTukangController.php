@@ -1186,8 +1186,11 @@ class KeuanganTukangController extends Controller
         $periodeMulai = Carbon::parse($request->periode_mulai);
         $periodeAkhir = Carbon::parse($request->periode_akhir);
         
+        // ✅ PERBAIKAN: Query pembayaran dalam range tanggal
         $pembayarans = PembayaranGajiTukang::with('tukang')
-                                          ->periode($periodeMulai->format('Y-m-d'), $periodeAkhir->format('Y-m-d'))
+                                          ->whereBetween('tanggal_bayar', [$periodeMulai->startOfDay(), $periodeAkhir->endOfDay()])
+                                          ->orWhereBetween('periode_akhir', [$periodeMulai->format('Y-m-d'), $periodeAkhir->format('Y-m-d')])
+                                          ->orderBy('periode_akhir', 'desc')
                                           ->orderBy('tukang_id')
                                           ->get();
         

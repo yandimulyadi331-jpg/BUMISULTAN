@@ -56,11 +56,17 @@ class PembayaranGajiTukang extends Model
     
     /**
      * Scope untuk filter berdasarkan periode
+     * ✅ PERBAIKAN: Gunakan whereBetween untuk range tanggal
+     * Menampilkan pembayaran yang periode-nya overlap dengan range yang dicari
      */
     public function scopePeriode(Builder $query, $mulai, $akhir)
     {
-        return $query->where('periode_mulai', $mulai)
-                    ->where('periode_akhir', $akhir);
+        return $query->whereBetween('periode_mulai', [$mulai, $akhir])
+                    ->orWhereBetween('periode_akhir', [$mulai, $akhir])
+                    ->orWhere(function($q) use ($mulai, $akhir) {
+                        $q->where('periode_mulai', '<=', $mulai)
+                          ->where('periode_akhir', '>=', $akhir);
+                    });
     }
     
     /**
