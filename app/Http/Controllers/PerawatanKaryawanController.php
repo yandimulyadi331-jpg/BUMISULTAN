@@ -201,7 +201,7 @@ class PerawatanKaryawanController extends Controller
             'master_perawatan_id' => 'required|exists:master_perawatan,id',
             'periode_key' => 'required|string',
             'catatan' => 'nullable|string|max:500',
-            'foto_bukti' => 'required|image|max:2048'
+            'foto_bukti' => 'required|image'
         ]);
 
         $user = Auth::user();
