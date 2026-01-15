@@ -171,15 +171,16 @@
             <tr>
                 <th style="width: 25px;">No</th>
                 <th style="width: 70px;">Kode</th>
-                <th style="width: 150px;">Nama Tukang</th>
-                <th style="width: 85px;">Upah Harian</th>
-                <th style="width: 85px;">Upah Lembur</th>
-                <th style="width: 70px;">Cash</th>
-                <th style="width: 85px;">Total Kotor</th>
-                <th style="width: 80px;">Potongan</th>
-                <th style="width: 90px;">Gaji Bersih</th>
-                <th style="width: 90px;">Approved</th>
-                <th style="width: 80px;">Status</th>
+                <th style="width: 120px;">Nama Tukang</th>
+                <th style="width: 55px;">Hadir</th>
+                <th style="width: 60px;">Tarif/Hari</th>
+                <th style="width: 75px;">Upah Harian</th>
+                <th style="width: 75px;">Upah Lembur</th>
+                <th style="width: 65px;">Cash</th>
+                <th style="width: 70px;">Total Kotor</th>
+                <th style="width: 70px;">Potongan</th>
+                <th style="width: 75px;">Gaji Bersih</th>
+                <th style="width: 70px;">Status</th>
             </tr>
         </thead>
         <tbody>
@@ -203,11 +204,16 @@
                     $totalGajiBersih += $pembayaran->total_nett;
                     if($pembayaran->status == 'lunas') $totalLunas++;
                     if($pembayaran->status == 'pending') $totalPending++;
+                    
+                    // Hitung total kehadiran
+                    $totalKehadiran = $pembayaran->jumlah_kehadiran + $pembayaran->jumlah_setengah;
                 @endphp
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td class="text-center">{{ $pembayaran->tukang->kode_tukang }}</td>
                     <td class="text-left">{{ $pembayaran->tukang->nama_tukang }}</td>
+                    <td class="text-center" style="font-weight: bold;">{{ $pembayaran->jumlah_kehadiran }}+{{ $pembayaran->jumlah_setengah }}</td>
+                    <td class="text-right">{{ number_format($pembayaran->tukang->tarif_harian, 0, ',', '.') }}</td>
                     <td class="text-right">{{ number_format($pembayaran->total_upah_harian, 0, ',', '.') }}</td>
                     <td class="text-right">{{ number_format($pembayaran->total_upah_lembur, 0, ',', '.') }}</td>
                     <td class="text-right">({{ number_format($pembayaran->lembur_cash_terbayar, 0, ',', '.') }})</td>
@@ -215,33 +221,56 @@
                     <td class="text-right">{{ number_format($pembayaran->total_potongan, 0, ',', '.') }}</td>
                     <td class="text-right"><strong>{{ number_format($pembayaran->total_nett, 0, ',', '.') }}</strong></td>
                     <td class="text-center" style="padding: 4px; vertical-align: middle;">
-                        @if($pembayaran->tanda_tangan_base64)
-                            <img src="data:image/png;base64,{{ $pembayaran->tanda_tangan_base64 }}" style="width: 80px; height: 40px; border: 1px solid #666; display: block; margin: 0 auto; background: #fff; object-fit: contain;" alt="TTD">
-                        @else
-                            <span style="font-size: 9px; color: #999;">Belum TTD</span>
-                        @endif
-                    </td>
-                    <td class="text-center" style="padding: 4px; vertical-align: middle;">
                         <span class="status-badge status-{{ $pembayaran->status }}">
-                            {{ strtoupper($pembayaran->status) }}
+                            {{ strtoupper(substr($pembayaran->status, 0, 3)) }}
                         </span>
                     </td>
                 </tr>
+                
+                <!-- DETAIL POTONGAN ROW (jika ada) -->
+                @if(count($pembayaran->rincian_potongan_detail) > 0)
+                <tr style="background-color: #f9f9f9; font-size: 8px;">
+                    <td colspan="4" class="text-right" style="padding: 3px; font-weight: bold; color: #666;">Potongan Detail:</td>
+                    <td colspan="8" style="padding: 3px;">
+                        @foreach($pembayaran->rincian_potongan_detail as $potongan)
+                            <div style="margin: 2px 0;">
+                                • {{ $potongan['jenis'] }}: Rp {{ number_format($potongan['jumlah'], 0, ',', '.') }}
+                                @if($potongan['status'] == 'aktif')
+                                    <span style="color: #666; font-size: 7px;">[Auto Potong: AKTIF]</span>
+                                @endif
+                            </div>
+                        @endforeach
+                    </td>
+                </tr>
+                @endif
             @endforeach
             
             <!-- TOTAL ROW -->
             <tr class="total-row">
-                <td colspan="3" class="text-center">TOTAL</td>
+                <td colspan="4" class="text-center">TOTAL</td>
+                <td class="text-right">-</td>
                 <td class="text-right">{{ number_format($totalUpahHarian, 0, ',', '.') }}</td>
                 <td class="text-right">{{ number_format($totalUpahLembur, 0, ',', '.') }}</td>
                 <td class="text-right">({{ number_format($totalCash, 0, ',', '.') }})</td>
                 <td class="text-right">{{ number_format($totalKotor, 0, ',', '.') }}</td>
                 <td class="text-right">{{ number_format($totalPotongan, 0, ',', '.') }}</td>
                 <td class="text-right"><strong>{{ number_format($totalGajiBersih, 0, ',', '.') }}</strong></td>
-                <td colspan="2" class="text-center">{{ $totalLunas }} Lunas / {{ $totalPending }} Pending</td>
+                <td class="text-center">{{ $totalLunas }} L / {{ $totalPending }} P</td>
             </tr>
         </tbody>
     </table>
+
+    <!-- LEGEND & NOTES -->
+    <div style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px; font-size: 8px; color: #666; line-height: 1.5;">
+        <strong>Keterangan:</strong>
+        <ul style="margin: 5px 0; padding-left: 15px;">
+            <li><strong>Hadir</strong> = Jumlah hari hadir + hari setengah (format: H+setengah)</li>
+            <li><strong>Tarif/Hari</strong> = Tarif harian tukang (ditentukan per tukang)</li>
+            <li><strong>Potongan</strong> = Cicilan pinjaman (jika auto_potong_pinjaman AKTIF) + denda/kerusakan (selalu ditampilkan)</li>
+            <li><strong>Potongan Detail</strong> = Rincian lengkap per jenis potongan dengan status aktif/tidak</li>
+            <li><strong>Total L/P</strong> = Total pembayaran Lunas / Pending</li>
+        </ul>
+    </div>
 
     <div class="summary-section">
         <div class="summary-box">
