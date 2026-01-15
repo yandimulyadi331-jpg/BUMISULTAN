@@ -967,7 +967,7 @@ class KeuanganTukangController extends Controller
     }
     
     /**
-     * Get detail gaji tukang untuk modal TTD
+     * Get detail gaji tukang untuk modal TTD - DENGAN INTEGRASI POTONGAN
      */
     public function detailGajiTukang($tukang_id, Request $request)
     {
@@ -985,7 +985,7 @@ class KeuanganTukangController extends Controller
         $totalUpahLembur = $kehadiran->where('lembur', '!=', 'tidak')->sum('upah_lembur');
         $lemburCashTerbayar = $kehadiran->where('lembur_dibayar_cash', true)->sum('upah_lembur');
         
-        // Hitung potongan
+        // ✅ PERBAIKAN: Hitung potongan dengan KONSISTEN
         $pinjamanAktif = PinjamanTukang::where('tukang_id', $tukang_id)
                                       ->where('status', 'aktif')
                                       ->get();
@@ -998,15 +998,19 @@ class KeuanganTukangController extends Controller
         $rincianPotongan = [];
         $totalPotongan = 0;
         
-        foreach ($pinjamanAktif as $p) {
-            $rincianPotongan[] = [
-                'jenis' => 'Cicilan Pinjaman',
-                'keterangan' => 'Sisa: Rp ' . number_format($p->sisa_pinjaman, 0, ',', '.'),
-                'jumlah' => $p->cicilan_per_minggu
-            ];
-            $totalPotongan += $p->cicilan_per_minggu;
+        // ✅ POTONGAN PINJAMAN: HANYA JIKA AUTO POTONG AKTIF
+        if ($tukang->auto_potong_pinjaman) {
+            foreach ($pinjamanAktif as $p) {
+                $rincianPotongan[] = [
+                    'jenis' => 'Cicilan Pinjaman',
+                    'keterangan' => 'Sisa: Rp ' . number_format($p->sisa_pinjaman, 0, ',', '.'),
+                    'jumlah' => $p->cicilan_per_minggu
+                ];
+                $totalPotongan += $p->cicilan_per_minggu;
+            }
         }
         
+        // ✅ POTONGAN LAIN: SELALU DIPOTONG (kerusakan, denda, dll)
         foreach ($potonganLain as $p) {
             $rincianPotongan[] = [
                 'jenis' => ucwords(str_replace('_', ' ', $p->jenis_potongan)),
@@ -1030,7 +1034,8 @@ class KeuanganTukangController extends Controller
             'total_kotor' => $totalKotor,
             'rincian_potongan' => $rincianPotongan,
             'total_potongan' => $totalPotongan,
-            'total_nett' => $totalNett
+            'total_nett' => $totalNett,
+            'auto_potong_pinjaman' => $tukang->auto_potong_pinjaman
         ]);
     }
     

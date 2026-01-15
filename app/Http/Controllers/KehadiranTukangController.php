@@ -15,49 +15,84 @@ class KehadiranTukangController extends Controller
 {
     /**
      * Halaman absensi harian - List semua tukang aktif hari ini
+     * Support 2 mode: single tanggal atau range tanggal
      */
     public function index(Request $request)
     {
-        $tanggal = $request->input('tanggal', date('Y-m-d'));
-        $carbonDate = Carbon::parse($tanggal);
-        
-        // Cek apakah hari Jumat (libur)
-        $isJumat = $carbonDate->isFriday();
-        
-        // Hitung periode minggu ini (Sabtu - Kamis)
-        $hariSekarang = $carbonDate->dayOfWeek; // 0=Minggu, 6=Sabtu
-        if ($hariSekarang == 5) { // Jumat
-            $periodeMulai = $carbonDate->copy()->subDays(6); // Sabtu minggu lalu
-            $periodeAkhir = $carbonDate->copy()->subDay(); // Kamis kemarin
-        } elseif ($hariSekarang == 6) { // Sabtu
-            $periodeMulai = $carbonDate->copy(); // Sabtu hari ini
-            $periodeAkhir = $carbonDate->copy()->addDays(5); // Kamis minggu ini
-        } else { // Minggu - Kamis
-            $hariKeSabtu = ($hariSekarang == 0) ? 1 : 7 - $hariSekarang + 1; // hari ke Sabtu terdekat ke belakang
-            $periodeMulai = $carbonDate->copy()->subDays($hariKeSabtu);
-            $periodeAkhir = $periodeMulai->copy()->addDays(5); // +5 hari = Kamis
+        // ✅ FITUR BARU: Support range tanggal
+        if ($request->has('tanggal_mulai') && $request->has('tanggal_akhir')) {
+            // Mode range tanggal
+            $tanggalMulai = Carbon::parse($request->input('tanggal_mulai'));
+            $tanggalAkhir = Carbon::parse($request->input('tanggal_akhir'));
+            
+            // Ambil semua tukang aktif
+            $tukangs = Tukang::where('status', 'aktif')
+                        ->orderBy('kode_tukang')
+                        ->get();
+            
+            // Ambil data kehadiran dalam range tanggal untuk setiap tukang
+            foreach ($tukangs as $tukang) {
+                $tukang->kehadiran_list = KehadiranTukang::where('tukang_id', $tukang->id)
+                                                    ->whereBetween('tanggal', [$tanggalMulai, $tanggalAkhir])
+                                                    ->orderBy('tanggal')
+                                                    ->get();
+            }
+            
+            $data = [
+                'tukangs' => $tukangs,
+                'tanggal_mulai' => $tanggalMulai->format('Y-m-d'),
+                'tanggal_akhir' => $tanggalAkhir->format('Y-m-d'),
+                'mode' => 'range',
+                'periodeText' => $tanggalMulai->locale('id')->isoFormat('D MMMM') . ' - ' . $tanggalAkhir->locale('id')->isoFormat('D MMMM YYYY'),
+                'periode_mulai' => $tanggalMulai->format('Y-m-d'),
+                'periode_akhir' => $tanggalAkhir->format('Y-m-d')
+            ];
+        } else {
+            // Mode single tanggal (original behavior)
+            $tanggal = $request->input('tanggal', date('Y-m-d'));
+            $carbonDate = Carbon::parse($tanggal);
+            
+            // Cek apakah hari Jumat (libur)
+            $isJumat = $carbonDate->isFriday();
+            
+            // Hitung periode minggu ini (Sabtu - Kamis)
+            $hariSekarang = $carbonDate->dayOfWeek; // 0=Minggu, 6=Sabtu
+            if ($hariSekarang == 5) { // Jumat
+                $periodeMulai = $carbonDate->copy()->subDays(6); // Sabtu minggu lalu
+                $periodeAkhir = $carbonDate->copy()->subDay(); // Kamis kemarin
+            } elseif ($hariSekarang == 6) { // Sabtu
+                $periodeMulai = $carbonDate->copy(); // Sabtu hari ini
+                $periodeAkhir = $carbonDate->copy()->addDays(5); // Kamis minggu ini
+            } else { // Minggu - Kamis
+                $hariKeSabtu = ($hariSekarang == 0) ? 1 : 7 - $hariSekarang + 1; // hari ke Sabtu terdekat ke belakang
+                $periodeMulai = $carbonDate->copy()->subDays($hariKeSabtu);
+                $periodeAkhir = $periodeMulai->copy()->addDays(5); // +5 hari = Kamis
+            }
+            
+            // Ambil semua tukang aktif
+            $tukangs = Tukang::where('status', 'aktif')
+                        ->orderBy('kode_tukang')
+                        ->get();
+            
+            // Ambil data kehadiran hari ini untuk setiap tukang
+            foreach ($tukangs as $tukang) {
+                $tukang->kehadiran_hari_ini = KehadiranTukang::where('tukang_id', $tukang->id)
+                                                    ->where('tanggal', $tanggal)
+                                                    ->first();
+            }
+            
+            $data = [
+                'tukangs' => $tukangs,
+                'tanggal' => $tanggal,
+                'tanggal_mulai' => $tanggal,
+                'tanggal_akhir' => $tanggal,
+                'isJumat' => $isJumat,
+                'hariNama' => $carbonDate->locale('id')->isoFormat('dddd, D MMMM YYYY'),
+                'mode' => 'single',
+                'periode_mulai' => $periodeMulai->format('Y-m-d'),
+                'periode_akhir' => $periodeAkhir->format('Y-m-d')
+            ];
         }
-        
-        // Ambil semua tukang aktif
-        $tukangs = Tukang::where('status', 'aktif')
-                    ->orderBy('kode_tukang')
-                    ->get();
-        
-        // Ambil data kehadiran hari ini untuk setiap tukang
-        foreach ($tukangs as $tukang) {
-            $tukang->kehadiran_hari_ini = KehadiranTukang::where('tukang_id', $tukang->id)
-                                                ->where('tanggal', $tanggal)
-                                                ->first();
-        }
-        
-        $data = [
-            'tukangs' => $tukangs,
-            'tanggal' => $tanggal,
-            'isJumat' => $isJumat,
-            'hariNama' => $carbonDate->locale('id')->isoFormat('dddd, D MMMM YYYY'),
-            'periode_mulai' => $periodeMulai->format('Y-m-d'),
-            'periode_akhir' => $periodeAkhir->format('Y-m-d')
-        ];
         
         return view('manajemen-tukang.kehadiran.index', $data);
     }
