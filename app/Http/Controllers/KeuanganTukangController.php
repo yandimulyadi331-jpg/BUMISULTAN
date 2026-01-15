@@ -1195,7 +1195,8 @@ class KeuanganTukangController extends Controller
                                           ->get();
         
         // ✅ ENHANCE: Tambahkan data detail kehadiran dan potongan per pembayaran
-        $pembayarans->each(function($pembayaran) use ($periodeMulai, $periodeAkhir) {
+        // Menggunakan map() untuk menghindari masalah overloaded property modification
+        $pembayarans = $pembayarans->map(function($pembayaran) use ($periodeMulai, $periodeAkhir) {
             // Hitung jumlah kehadiran dalam periode
             $kehadirans = KehadiranTukang::where('tukang_id', $pembayaran->tukang_id)
                                         ->whereBetween('tanggal', [$periodeMulai, $periodeAkhir])
@@ -1205,10 +1206,10 @@ class KeuanganTukangController extends Controller
             $pembayaran->jumlah_setengah = $kehadirans->where('status', 'setengah_hari')->count();
             $pembayaran->jumlah_lembur = $kehadirans->whereIn('lembur', ['full', 'setengah_hari'])->count();
             
-            // Hitung detail potongan dengan logic auto_potong
-            $pembayaran->rincian_potongan_detail = [];
-            $pembayaran->total_potongan_pinjaman = 0;
-            $pembayaran->total_potongan_lain = 0;
+            // Initialize array dengan menciptakan property sebelum assignment
+            $rincian = [];
+            $totalPinjaman = 0;
+            $totalLain = 0;
             
             // Jika auto potong AKTIF, tambahkan cicilan pinjaman
             if ($pembayaran->tukang->auto_potong_pinjaman) {
@@ -1216,12 +1217,12 @@ class KeuanganTukangController extends Controller
                                               ->where('status', 'aktif')
                                               ->get();
                 foreach ($pinjamanAktif as $p) {
-                    $pembayaran->rincian_potongan_detail[] = [
+                    $rincian[] = [
                         'jenis' => 'Cicilan Pinjaman',
                         'jumlah' => $p->cicilan_per_minggu,
                         'status' => 'aktif'
                     ];
-                    $pembayaran->total_potongan_pinjaman += $p->cicilan_per_minggu;
+                    $totalPinjaman += $p->cicilan_per_minggu;
                 }
             }
             
@@ -1231,13 +1232,20 @@ class KeuanganTukangController extends Controller
                                          ->whereDate('tanggal', '<=', $periodeAkhir)
                                          ->get();
             foreach ($potonganLain as $p) {
-                $pembayaran->rincian_potongan_detail[] = [
+                $rincian[] = [
                     'jenis' => ucwords(str_replace('_', ' ', $p->jenis_potongan)),
                     'jumlah' => $p->jumlah,
                     'status' => 'selalu'
                 ];
-                $pembayaran->total_potongan_lain += $p->jumlah;
+                $totalLain += $p->jumlah;
             }
+            
+            // Assign sekaligus ke model
+            $pembayaran->setAttribute('rincian_potongan_detail', $rincian);
+            $pembayaran->setAttribute('total_potongan_pinjaman', $totalPinjaman);
+            $pembayaran->setAttribute('total_potongan_lain', $totalLain);
+            
+            return $pembayaran;
         });
         
         $data = [
