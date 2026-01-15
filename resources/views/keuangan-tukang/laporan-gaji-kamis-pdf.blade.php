@@ -218,7 +218,13 @@
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td class="text-center">{{ $pembayaran->tukang->kode_tukang }}</td>
                     <td class="text-left">{{ $pembayaran->tukang->nama_tukang }}</td>
-                    <td class="text-center" style="font-weight: bold;">{{ $pembayaran->jumlah_kehadiran }}+{{ $pembayaran->jumlah_setengah }}</td>
+                    <td class="text-center" style="font-weight: bold;">
+                        @if($pembayaran->jumlah_setengah > 0)
+                            {{ $pembayaran->jumlah_kehadiran }}+{{ $pembayaran->jumlah_setengah }}
+                        @else
+                            {{ $pembayaran->jumlah_kehadiran }}
+                        @endif
+                    </td>
                     <td class="text-right">{{ number_format($pembayaran->tukang->tarif_harian, 0, ',', '.') }}</td>
                     <td class="text-right">{{ number_format($pembayaran->total_upah_harian, 0, ',', '.') }}</td>
                     <td class="text-right">{{ number_format($pembayaran->total_upah_lembur, 0, ',', '.') }}</td>
@@ -230,7 +236,7 @@
                         @if($pembayaran->tanda_tangan_base64)
                             <img src="data:image/png;base64,{{ $pembayaran->tanda_tangan_base64 }}" style="width: 70px; height: 35px; border: 1px solid #666; display: block; margin: 0 auto; background: #fff; object-fit: contain;" alt="TTD">
                         @else
-                            <span style="font-size: 9px; color: #999;">-</span>
+                            <span style="font-size: 9px; background-color: #ffeb3b; color: #000; padding: 2px 4px; border-radius: 3px; font-weight: bold;">Belum</span>
                         @endif
                     </td>
                     <td class="text-center" style="padding: 4px; vertical-align: middle;">
@@ -239,23 +245,6 @@
                         </span>
                     </td>
                 </tr>
-                
-                <!-- DETAIL POTONGAN ROW (jika ada) -->
-                @if(count($pembayaran->rincian_potongan_detail) > 0)
-                <tr style="background-color: #f9f9f9; font-size: 8px;">
-                    <td colspan="4" class="text-right" style="padding: 3px; font-weight: bold; color: #666;">Potongan Detail:</td>
-                    <td colspan="8" style="padding: 3px;">
-                        @foreach($pembayaran->rincian_potongan_detail as $potongan)
-                            <div style="margin: 2px 0;">
-                                • {{ $potongan['jenis'] }}: Rp {{ number_format($potongan['jumlah'], 0, ',', '.') }}
-                                @if($potongan['status'] == 'aktif')
-                                    <span style="color: #666; font-size: 7px;">[Auto Potong: AKTIF]</span>
-                                @endif
-                            </div>
-                        @endforeach
-                    </td>
-                </tr>
-                @endif
             @endforeach
             
             <!-- TOTAL ROW -->
@@ -277,12 +266,11 @@
     <div style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px; font-size: 8px; color: #666; line-height: 1.5;">
         <strong>Keterangan:</strong>
         <ul style="margin: 5px 0; padding-left: 15px;">
-            <li><strong>Hadir</strong> = Jumlah hari hadir + hari setengah (format: H+setengah)</li>
+            <li><strong>Hadir</strong> = Jumlah hari kehadiran (jika ada setengah hari ditampilkan format: H+setengah, jika tidak ada cukup H saja)</li>
             <li><strong>Tarif/Hari</strong> = Tarif harian tukang (ditentukan per tukang)</li>
-            <li><strong>Potongan</strong> = Cicilan pinjaman (jika auto_potong_pinjaman AKTIF) + denda/kerusakan (selalu ditampilkan)</li>
-            <li><strong>Potongan Detail</strong> = Rincian lengkap per jenis potongan dengan status aktif/tidak</li>
-            <li><strong>Approved</strong> = Tanda Tangan Digital (TTD) Tukang yang sudah diinput di pembayaran Kamis</li>
-            <li><strong>Status</strong> = <span style="background-color: #4caf50; color: white; padding: 1px 4px; border-radius: 2px;">Lunas</span> (sudah ada TTD/dibayarkan) | <span style="background-color: #ff9800; color: white; padding: 1px 4px; border-radius: 2px;">Belum</span> (belum ada TTD/belum dibayarkan)</li>
+            <li><strong>Potongan</strong> = Cicilan pinjaman (HANYA jika auto_potong_pinjaman AKTIF) + denda/kerusakan (selalu ditampilkan)</li>
+            <li><strong>Approved</strong> = Tanda Tangan Digital (TTD) Tukang atau "Belum" jika tidak ada TTD</li>
+            <li><strong>Status</strong> = <span style="background-color: #4caf50; color: white; padding: 1px 4px; border-radius: 2px;">Lunas</span> (sudah ada TTD) | <span style="background-color: #ff9800; color: white; padding: 1px 4px; border-radius: 2px;">Belum</span> (belum ada TTD)</li>
         </ul>
     </div>
 
