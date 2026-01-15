@@ -57,6 +57,146 @@
             pointer-events: none;
         }
 
+        /* ===== MODAL STYLES ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-container {
+            width: 90%;
+            max-width: 400px;
+            animation: slideUp 0.3s ease-in-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-content {
+            background: var(--bg-primary);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .alert-icon {
+            display: inline-block;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .modal-body {
+            margin-bottom: 30px;
+        }
+
+        .modal-body h3 {
+            margin: 20px 0;
+            font-size: 1.5rem;
+        }
+
+        .modal-body p {
+            margin: 15px 0;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 140px;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 4px 4px 12px var(--shadow-dark),
+                       -4px -4px 12px var(--shadow-light);
+        }
+
+        .btn:active {
+            box-shadow: inset 2px 2px 6px var(--shadow-dark),
+                       inset -2px -2px 6px var(--shadow-light);
+            transform: scale(0.95);
+        }
+
+        .btn-pulang {
+            background: linear-gradient(135deg, #00D25B 0%, #00B84A 100%);
+            color: white;
+        }
+
+        .btn-pulang:hover {
+            box-shadow: 6px 6px 15px var(--shadow-dark),
+                       -6px -6px 15px var(--shadow-light);
+        }
+
+        .btn-selesaikan {
+            background: linear-gradient(135deg, #0090E7 0%, #0080D0 100%);
+            color: white;
+        }
+
+        .btn-selesaikan:hover {
+            box-shadow: 6px 6px 15px var(--shadow-dark),
+                       -6px -6px 15px var(--shadow-light);
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .modal-content {
+                background: #2c3e50;
+            }
+        }
+
         /* Header Section - Neumorphism */
         #header-section {
             background: transparent;
@@ -868,6 +1008,38 @@
             </div>
             <span class="date-text">Hari ini : {{ getNamaHari(date('D')) }}, {{ DateToIndo(date('Y-m-d')) }}</span>
         </div>
+
+        <!-- MODAL NOTIFIKASI CHECKLIST PERAWATAN -->
+        <div id="checklistModal" class="modal-overlay" style="display: none;">
+            <div class="modal-container">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="alert-icon">
+                            <i class="ti ti-alert-circle" style="font-size: 3rem; color: #e74c3c;"></i>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <h3 style="color: var(--text-primary); font-weight: 700; text-align: center; margin: 20px 0;">Oops...</h3>
+                        <p style="color: var(--text-primary); text-align: center; line-height: 1.6; margin: 15px 0;">
+                            Tidak dapat absen pulang! Selesaikan checklist shift Anda 
+                            <span id="checklistProgressText" style="font-weight: 600;">
+                                (34/50 selesai, 68% tersisa 16 tugas)
+                            </span> 
+                            terlebih dahulu sebelum pulang.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-pulang" id="btnPulang">
+                            <i class="ti ti-door-exit"></i> Pulang
+                        </button>
+                        <button type="button" class="btn btn-selesaikan" id="btnSelesaikan">
+                            <i class="ti ti-checklist"></i> Selesaikan Checklist
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="section-presensi">
             <div class="presensi-wrapper">
                 <div class="card">
@@ -1471,6 +1643,88 @@
             } else {
                 localStorage.setItem('theme', 'light');
                 applyTheme('light');
+            }
+        });
+
+        // ===== CHECKLIST MODAL LOGIC =====
+        const checklistModal = document.getElementById('checklistModal');
+        const btnPulang = document.getElementById('btnPulang');
+        const btnSelesaikan = document.getElementById('btnSelesaikan');
+
+        // Load checklist status on page load
+        window.addEventListener('load', function() {
+            checkChecklistStatus();
+        });
+
+        // Check if checklist is completed
+        function checkChecklistStatus() {
+            // Get today's date
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const todayDate = `${year}-${month}-${day}`;
+
+            // Fetch checklist status via API
+            fetch('{{ route('api.checklist.status') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    date: todayDate
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.hasIncompleteChecklist && data.shouldShowModal) {
+                    // Update modal text with actual checklist count
+                    if (data.checklistInfo) {
+                        const progressText = `(${data.checklistInfo.completed}/${data.checklistInfo.total} selesai, ${data.checklistInfo.percentageRemaining}% tersisa ${data.checklistInfo.remaining} tugas)`;
+                        document.getElementById('checklistProgressText').textContent = progressText;
+                    }
+                    // Show modal
+                    showChecklistModal();
+                }
+            })
+            .catch(error => {
+                console.error('Error checking checklist status:', error);
+                // If API fails, don't show modal to prevent blocking user
+            });
+        }
+
+        // Show checklist modal
+        function showChecklistModal() {
+            checklistModal.style.display = 'flex';
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Hide checklist modal
+        function hideChecklistModal() {
+            checklistModal.style.display = 'none';
+            // Restore body scroll
+            document.body.style.overflow = 'auto';
+        }
+
+        // Tombol Pulang - tutup modal dan lanjutkan
+        btnPulang.addEventListener('click', function() {
+            hideChecklistModal();
+            // Mark that user chose to go home despite incomplete checklist
+            sessionStorage.setItem('checklistNotificationShown', 'true');
+        });
+
+        // Tombol Selesaikan - redirect ke halaman checklist
+        btnSelesaikan.addEventListener('click', function() {
+            window.location.href = '{{ route('perawatan.karyawan.checklist', 'harian') }}';
+        });
+
+        // Close modal when clicking overlay (optional)
+        checklistModal.addEventListener('click', function(event) {
+            if (event.target === checklistModal) {
+                // Don't close on overlay click to force user action
+                // hideChecklistModal();
             }
         });
     </script>

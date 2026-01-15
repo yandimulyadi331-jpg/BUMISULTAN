@@ -32,3 +32,8 @@ Route::prefix('notifications')->group(function () {
     Route::post('/test', [App\Http\Controllers\Api\NotificationController::class, 'createTestNotification']);
     Route::delete('/cleanup', [App\Http\Controllers\Api\NotificationController::class, 'cleanupOldNotifications']);
 });
+
+// Checklist API Routes
+Route::middleware('auth:sanctum')->prefix('checklist')->name('api.checklist.')->group(function () {
+    Route::post('/status', [App\Http\Controllers\Api\ChecklistController::class, 'checkStatus'])->name('status');
+});

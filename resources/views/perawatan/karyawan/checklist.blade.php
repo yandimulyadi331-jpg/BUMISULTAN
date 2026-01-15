@@ -1116,7 +1116,7 @@
                         <label class="form-label"><i class="ti ti-camera"></i> Foto Bukti <span style="color: #f44336;">*</span></label>
                         <input type="file" class="form-control" name="foto_bukti" accept="image/*" capture="environment" required>
                         <small style="color: #666; font-size: 11px; margin-top: 5px; display: block;">
-                            Format: JPG, PNG. <strong style="color: #f44336;">Wajib diisi!</strong>
+                            Format: JPG, PNG. Max: 2MB. <strong style="color: #f44336;">Wajib diisi!</strong>
                         </small>
                     </div>
                 </form>
@@ -1125,39 +1125,6 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                 <button type="button" class="btn btn-primary" id="btnSubmitChecklist">
                     <i class="ti ti-check"></i> Selesai
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Konfirmasi Checkout Perawatan -->
-<div class="modal fade" id="modalCheckoutConfirm" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header" style="border-bottom: 1px solid rgba(0, 0, 0, 0.05);">
-                <h5 class="modal-title" style="color: var(--text-primary); font-weight: 600;">
-                    <i class="ti ti-clock-off" style="color: #ff6f00;"></i> Konfirmasi Absen Pulang
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" style="padding: 25px;">
-                <p style="color: var(--text-primary); font-size: 15px; margin: 0 0 15px 0;">
-                    Checklist perawatan belum selesai. Apa yang ingin Anda lakukan?
-                </p>
-                <div id="checkoutMessage" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; border-radius: 4px; margin-top: 15px; display: none;">
-                    <small id="checkoutMessageText" style="color: #856404;"></small>
-                </div>
-            </div>
-            <div class="modal-footer" style="border-top: 1px solid rgba(0, 0, 0, 0.05); gap: 10px;">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="ti ti-x"></i> Batal
-                </button>
-                <button type="button" class="btn btn-warning" id="btnKerjakan" style="background: linear-gradient(135deg, #ff9800 0%, #fb8c00 100%); border: none; color: white;">
-                    <i class="ti ti-pencil"></i> Kerjakan
-                </button>
-                <button type="button" class="btn btn-success" id="btnPulang" style="background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%); border: none; color: white;">
-                    <i class="ti ti-logout"></i> Pulang
                 </button>
             </div>
         </div>
@@ -1196,19 +1163,6 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    // ============================================
-    // AUTO SHOW CHECKOUT MODAL JIKA DIPERLUKAN
-    // ============================================
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('show_modal') === 'checkout') {
-        const msg = urlParams.get('msg');
-        if (msg) {
-            $('#checkoutMessageText').text(decodeURIComponent(msg));
-        }
-        $('#checkoutMessage').show();
-        $('#modalCheckoutConfirm').modal('show');
-    }
-    
     // Filter Kategori
     $('.filter-btn').on('click', function() {
         $('.filter-btn').removeClass('active');
@@ -1412,78 +1366,6 @@ $(document).ready(function() {
             }
         });
     });
-
-    // Handler Tombol Pulang - Absen Pulang Langsung
-    $('#btnPulang').on('click', function() {
-        const $btn = $(this);
-        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Memproses...');
-        
-        $.ajax({
-            url: '{{ route("presensi.updateAbsenPulang") }}',
-            type: 'POST',
-            data: {
-                '_method': 'PUT',
-                'periode_tipe': '{{ $tipe }}',
-                'periode_key': '{{ $periodeKey }}',
-                'skip_checklist': true
-            },
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function(response) {
-                if (response.success || response.status) {
-                    $('#modalCheckoutConfirm').modal('hide');
-                    
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil!',
-                            text: 'Anda telah absen pulang',
-                            confirmButtonColor: '#26a69a'
-                        }).then(() => {
-                            window.location.href = '{{ route("perawatan.karyawan.index") }}';
-                        });
-                    } else {
-                        alert('Anda telah absen pulang');
-                        window.location.href = '{{ route("perawatan.karyawan.index") }}';
-                    }
-                }
-            },
-            error: function(xhr) {
-                const errorMsg = xhr.responseJSON?.message || 'Terjadi kesalahan saat absen pulang!';
-                
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: errorMsg,
-                        confirmButtonColor: '#26a69a'
-                    });
-                } else {
-                    alert(errorMsg);
-                }
-                
-                $btn.prop('disabled', false).html('<i class="ti ti-logout"></i> Pulang');
-            }
-        });
-    });
-
-    // Handler Tombol Kerjakan - Navigasi ke Checklist
-    $('#btnKerjakan').on('click', function() {
-        $('#modalCheckoutConfirm').modal('hide');
-        
-        // Navigasi ke halaman checklist
-        window.location.href = '{{ route("perawatan.karyawan.checklist", $tipe) }}';
-    });
-
-    // Function untuk menampilkan modal checkout ketika diperlukan
-    window.showCheckoutConfirmation = function(message) {
-        if (message) {
-            $('#checkoutMessageText').text(message);
-            $('#checkoutMessage').show();
-        }
-        $('#modalCheckoutConfirm').modal('show');
-    };
 });
 </script>
 @endpush

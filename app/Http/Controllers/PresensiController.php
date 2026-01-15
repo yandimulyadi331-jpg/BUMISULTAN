@@ -480,12 +480,9 @@ class PresensiController extends Controller
                                 $sisaChecklist = $totalChecklistHarian - $completedChecklistHarian;
                                 $persenSelesai = $totalChecklistHarian > 0 ? round(($completedChecklistHarian / $totalChecklistHarian) * 100) : 0;
                                 
-                                // Return response dengan flag untuk trigger modal checkout
                                 return response()->json([
                                     'status' => false, 
-                                    'show_checkout_modal' => true,
-                                    'message' => 'Checklist shift Anda (' . $jamKerja->nama_jam_kerja . ') belum 100% selesai',
-                                    'detailed_message' => 'Selesaikan ' . $sisaChecklist . ' dari ' . $totalChecklistHarian . ' tugas (' . $persenSelesai . '% selesai)',
+                                    'message' => 'Tidak dapat absen pulang! Selesaikan checklist shift Anda (' . $jamKerja->nama_jam_kerja . ') terlebih dahulu (' . $completedChecklistHarian . '/' . $totalChecklistHarian . ' selesai, ' . $persenSelesai . '% tersisa ' . $sisaChecklist . ' tugas)',
                                     'notifikasi' => 'notifikasi_checklist_belum_lengkap'
                                 ], 400);
                             }
@@ -897,106 +894,6 @@ class PresensiController extends Controller
             } catch (\Exception $e) {
                 return Redirect::back()->with(messageError($e->getMessage()));
             }
-        }
-    }
-
-    /**
-     * Update Absen Pulang dengan opsi skip checklist (dari perawatan)
-     */
-    public function updateAbsenPulang(Request $request)
-    {
-        try {
-            $user = \Illuminate\Support\Facades\Auth::user();
-            
-            // Cari karyawan dari user
-            $userKaryawan = Userkaryawan::where('user_id', $user->id)->first();
-            if (!$userKaryawan) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User tidak terdaftar sebagai karyawan'
-                ], 403);
-            }
-
-            $karyawan = Karyawan::where('nik', $userKaryawan->nik)->first();
-            if (!$karyawan) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data karyawan tidak ditemukan'
-                ], 404);
-            }
-
-            $tanggal_presensi = now()->format('Y-m-d');
-            $jam_presensi = now()->format('H:i:s');
-            
-            $presensi_hariini = Presensi::where('nik', $karyawan->nik)
-                ->where('tanggal', $tanggal_presensi)
-                ->first();
-
-            // Cek apakah sudah absen pulang
-            if ($presensi_hariini && $presensi_hariini->jam_out != null) {
-                return response()->json([
-                    'success' => false,
-                    'status' => false,
-                    'message' => 'Anda Sudah Absen Pulang Hari Ini'
-                ], 400);
-            }
-
-            // Update atau buat presensi
-            if ($presensi_hariini != null) {
-                Presensi::where('id', $presensi_hariini->id)->update([
-                    'jam_out' => $jam_presensi
-                ]);
-                
-                // Notifikasi
-                $presensi_updated = Presensi::find($presensi_hariini->id);
-                NotificationService::presensiNotification($presensi_updated, 'pulang');
-            } else {
-                $presensi_baru = Presensi::create([
-                    'nik' => $karyawan->nik,
-                    'tanggal' => $tanggal_presensi,
-                    'jam_in' => null,
-                    'jam_out' => $jam_presensi,
-                    'lokasi_in' => null,
-                    'lokasi_out' => null,
-                    'foto_in' => null,
-                    'foto_out' => null,
-                    'kode_jam_kerja' => $presensi_hariini->kode_jam_kerja ?? '',
-                    'status' => 'h'
-                ]);
-                
-                // Notifikasi
-                NotificationService::presensiNotification($presensi_baru, 'pulang');
-            }
-
-            // Kirim notifikasi WA
-            $generalsetting = Pengaturanumum::first();
-            if ($generalsetting && $generalsetting->notifikasi_wa == 1) {
-                if ($generalsetting->tujuan_notifikasi_wa == 1) {
-                    if ($karyawan->no_hp != "") {
-                        $message = "Terimakasih, Hari ini " . $karyawan->nama_karyawan . " absen Pulang pada " . $jam_presensi . " Hati Hati di Jalan";
-                        $this->sendwa($karyawan->no_hp, $message);
-                    }
-                } else {
-                    if (!empty($generalsetting->id_group_wa)) {
-                        $message = "Terimakasih, Hari ini " . $karyawan->nama_karyawan . " absen Pulang pada " . $jam_presensi . " Hati Hati di Jalan";
-                        $this->sendwa($generalsetting->id_group_wa, $message);
-                    }
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'status' => true,
-                'message' => 'Berhasil Absen Pulang'
-            ], 200);
-
-        } catch (\Exception $e) {
-            \Log::error('Error in updateAbsenPulang: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'status' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-            ], 500);
         }
     }
 }

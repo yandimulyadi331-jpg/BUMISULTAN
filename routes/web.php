@@ -544,7 +544,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/presensi', 'store')->name('presensi.store')->can('presensi.create');
         Route::post('/presensi/edit', 'edit')->name('presensi.edit')->can('presensi.edit');
         Route::post('/presensi/update', 'update')->name('presensi.update')->can('presensi.edit');
-        Route::put('/presensi/update-absen-pulang', 'updateAbsenPulang')->name('presensi.updateAbsenPulang');
         Route::delete('/presensi/{id}/delete', 'destroy')->name('presensi.delete')->can('presensi.delete');
         Route::get('/presensi/{id}/{status}/show', 'show')->name('presensi.show');
 

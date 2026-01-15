@@ -588,14 +588,8 @@
                     showStatus(result.message, 'success');
                     playNotificationSound('success');
                 } else {
-                    // Cek jika perlu tampilkan modal checkout
-                    if (result.show_checkout_modal) {
-                        // Redirect ke halaman perawatan dengan modal checkout
-                        window.location.href = '{{ route("perawatan.karyawan.checklist", "harian") }}?show_modal=checkout&msg=' + encodeURIComponent(result.message);
-                    } else {
-                        showStatus(result.message, 'error');
-                        playNotificationSound('error');
-                    }
+                    showStatus(result.message, 'error');
+                    playNotificationSound('error');
                 }
 
             } catch (error) {
