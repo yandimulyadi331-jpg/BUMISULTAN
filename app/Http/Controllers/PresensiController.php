@@ -480,9 +480,12 @@ class PresensiController extends Controller
                                 $sisaChecklist = $totalChecklistHarian - $completedChecklistHarian;
                                 $persenSelesai = $totalChecklistHarian > 0 ? round(($completedChecklistHarian / $totalChecklistHarian) * 100) : 0;
                                 
+                                // Return response dengan flag untuk trigger modal checkout
                                 return response()->json([
                                     'status' => false, 
-                                    'message' => 'Tidak dapat absen pulang! Selesaikan checklist shift Anda (' . $jamKerja->nama_jam_kerja . ') terlebih dahulu (' . $completedChecklistHarian . '/' . $totalChecklistHarian . ' selesai, ' . $persenSelesai . '% tersisa ' . $sisaChecklist . ' tugas)',
+                                    'show_checkout_modal' => true,
+                                    'message' => 'Checklist shift Anda (' . $jamKerja->nama_jam_kerja . ') belum 100% selesai',
+                                    'detailed_message' => 'Selesaikan ' . $sisaChecklist . ' dari ' . $totalChecklistHarian . ' tugas (' . $persenSelesai . '% selesai)',
                                     'notifikasi' => 'notifikasi_checklist_belum_lengkap'
                                 ], 400);
                             }

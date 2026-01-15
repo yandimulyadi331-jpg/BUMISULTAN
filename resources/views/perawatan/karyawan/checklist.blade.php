@@ -1196,6 +1196,19 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
+    // ============================================
+    // AUTO SHOW CHECKOUT MODAL JIKA DIPERLUKAN
+    // ============================================
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('show_modal') === 'checkout') {
+        const msg = urlParams.get('msg');
+        if (msg) {
+            $('#checkoutMessageText').text(decodeURIComponent(msg));
+        }
+        $('#checkoutMessage').show();
+        $('#modalCheckoutConfirm').modal('show');
+    }
+    
     // Filter Kategori
     $('.filter-btn').on('click', function() {
         $('.filter-btn').removeClass('active');
