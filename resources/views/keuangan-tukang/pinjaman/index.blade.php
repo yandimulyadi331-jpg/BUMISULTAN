@@ -39,6 +39,19 @@
                </ul>
                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
+
+            <!-- New: Info Potongan Terintegrasi -->
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+               <i class="ti ti-check-circle me-2"></i>
+               <strong>⚡ Integrasi Potongan Pinjaman Otomatis:</strong><br>
+               <small>
+                  Saat Anda mengaktifkan/menonaktifkan toggle <strong>"Auto Potong"</strong> di kolom kanan, sistem akan:<br>
+                  ✅ Mengubah status potongan untuk tukang tersebut<br>
+                  ✅ Laporan Gaji (Kamis) otomatis terupdate dengan/tanpa potongan pinjaman di nominal kolom "Potongan"<br>
+                  ✅ Tukang yang belum TTD akan tetap ditampilkan dengan status <strong>"Belum Dibayarkan"</strong>
+               </small>
+               <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
             
             <!-- Filter -->
             <div class="row mb-3">
@@ -358,57 +371,70 @@ async function toggleAutoPotongPinjaman(tukangId, namaTukang) {
    const toggle = document.getElementById('toggle-' + tukangId);
    const isChecked = toggle.checked;
    
-   try {
-      const response = await fetch(`{{ url('keuangan-tukang/toggle-potongan-pinjaman') }}/${tukangId}`, {
-         method: 'POST',
-         headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-         }
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-         // Update badge
-         const badge = document.getElementById('badge-toggle-' + tukangId);
-         if (isChecked) {
-            badge.innerHTML = '<span class="badge bg-success">AKTIF</span>';
-         } else {
-            badge.innerHTML = '<span class="badge bg-secondary">NONAKTIF</span>';
-         }
+   // Tampilkan loading indicator
+   Swal.fire({
+      title: 'Memproses...',
+      html: 'Mengubah status auto potong pinjaman...',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: async () => {
+         Swal.showLoading();
          
-         // Tampilkan notifikasi
-         Swal.fire({
-            icon: 'success',
-            title: 'Berhasil!',
-            html: `
-               <div class="text-start">
-                  <strong>${namaTukang}</strong><br>
-                  Status Auto Potong: <strong>${isChecked ? 'AKTIF' : 'NONAKTIF'}</strong><br><br>
-                  ${isChecked ? 
-                     '<i class="ti ti-info-circle text-info"></i> Cicilan akan otomatis dipotong dari gaji setiap minggu.' : 
-                     '<i class="ti ti-alert-triangle text-warning"></i> Cicilan tidak akan dipotong otomatis dari gaji.'
-                  }
-               </div>
-            `,
-            showConfirmButton: true,
-            timer: 3000
-         });
-      } else {
-         throw new Error(data.message || 'Gagal mengubah status');
+         try {
+            const response = await fetch(`{{ url('keuangan-tukang/toggle-potongan-pinjaman') }}/${tukangId}`, {
+               method: 'POST',
+               headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': '{{ csrf_token() }}'
+               }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+               // Update badge
+               const badge = document.getElementById('badge-toggle-' + tukangId);
+               if (isChecked) {
+                  badge.innerHTML = '<span class="badge bg-success">AKTIF</span>';
+               } else {
+                  badge.innerHTML = '<span class="badge bg-secondary">NONAKTIF</span>';
+               }
+               
+               // Tampilkan notifikasi sukses
+               Swal.fire({
+                  icon: 'success',
+                  title: 'Berhasil!',
+                  html: `
+                     <div class="text-start">
+                        <strong>${namaTukang}</strong><br>
+                        Status Auto Potong: <strong>${isChecked ? 'AKTIF ✅' : 'NONAKTIF ❌'}</strong><br><br>
+                        ${isChecked ? 
+                           '<i class="ti ti-info-circle text-info"></i> <strong>Cicilan akan otomatis dipotong dari gaji setiap minggu.</strong>' : 
+                           '<i class="ti ti-alert-triangle text-warning"></i> <strong>Cicilan tidak akan dipotong otomatis dari gaji.</strong>'
+                        }<br><br>
+                        💡 <small>Perubahan akan terupdate pada laporan gaji berikutnya.</small>
+                     </div>
+                  `,
+                  showConfirmButton: true,
+                  confirmButtonText: 'OK',
+                  timer: 4000
+               });
+            } else {
+               throw new Error(data.message || 'Gagal mengubah status');
+            }
+         } catch (error) {
+            console.error('Error:', error);
+            toggle.checked = !isChecked; // Kembalikan ke posisi semula
+            
+            Swal.fire({
+               icon: 'error',
+               title: 'Gagal!',
+               text: error.message || 'Terjadi kesalahan saat mengubah status auto potong',
+               showConfirmButton: true
+            });
+         }
       }
-   } catch (error) {
-      console.error('Error:', error);
-      toggle.checked = !isChecked; // Kembalikan ke posisi semula
-      
-      Swal.fire({
-         icon: 'error',
-         title: 'Gagal!',
-         text: error.message || 'Terjadi kesalahan saat mengubah status auto potong',
-         showConfirmButton: true
-      });
-   }
+   });
 }
 </script>
 @endpush

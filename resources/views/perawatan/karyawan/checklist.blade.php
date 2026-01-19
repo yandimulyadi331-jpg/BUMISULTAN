@@ -1001,8 +1001,123 @@
         <button class="filter-btn" data-kategori="lainnya"><i class="ti ti-list"></i> Lainnya</button>
     </div>
 
-    <!-- Checklist Items -->
-    @forelse($checklists as $checklist)
+    <!-- Checklist Items by Ruangan -->
+    @if(isset($checklistsByRuangan) && !empty($checklistsByRuangan))
+        @forelse($checklistsByRuangan as $ruanganGroup)
+        <div style="margin-bottom: 25px;">
+            <!-- Ruangan Header -->
+            <div style="background: var(--bg-primary); padding: 15px 20px; border-radius: 15px; margin-bottom: 15px; box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <h4 style="margin: 0 0 5px 0; color: var(--text-primary); font-weight: bold;">
+                            <i class="ti ti-building"></i> {{ $ruanganGroup['ruangan_nama'] }}
+                        </h4>
+                        <small style="color: var(--text-secondary);">
+                            {{ $ruanganGroup['completed'] }}/{{ $ruanganGroup['total'] }} selesai
+                        </small>
+                    </div>
+                    <div style="text-align: right;">
+                        <strong style="font-size: 20px; color: var(--badge-green);">
+                            {{ $ruanganGroup['total'] > 0 ? round(($ruanganGroup['completed'] / $ruanganGroup['total']) * 100) : 0 }}%
+                        </strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items untuk ruangan ini -->
+            @forelse($ruanganGroup['items'] as $checklist)
+            @php
+                $isChecked = $checklist->logs->where('status', 'completed')->count() > 0;
+                $log = $checklist->logs->first();
+                $isDisabled = !$config || !$config->is_enabled;
+            @endphp
+            
+            <div class="checklist-item {{ $isChecked ? 'completed' : '' }} {{ $isDisabled ? 'disabled' : '' }}" 
+                 data-kategori="{{ $checklist->kategori }}">
+                <div style="display: flex; align-items: start;">
+                    <div class="checkbox-custom {{ $isChecked ? 'checked' : '' }} {{ $isDisabled ? 'disabled' : '' }}" 
+                         data-id="{{ $checklist->id }}"
+                         data-checked="{{ $isChecked ? 'true' : 'false' }}"
+                         data-disabled="{{ $isDisabled ? 'true' : 'false' }}">
+                        @if($isChecked)
+                            <i class="ti ti-check"></i>
+                        @endif
+                    </div>
+                    
+                    <div class="checklist-content">
+                        <div class="checklist-title">
+                            @if($tipe === 'harian' && $checklist->jam_mulai && $checklist->jam_selesai)
+                                <span class="jam-badge">
+                                    <i class="ti ti-clock"></i> 
+                                    {{ date('H:i', strtotime($checklist->jam_mulai)) }} - {{ date('H:i', strtotime($checklist->jam_selesai)) }}
+                                </span>
+                            @endif
+                            {{ $checklist->nama_kegiatan }}
+                        </div>
+                        
+                        @if($checklist->deskripsi)
+                        <div class="checklist-desc">{{ $checklist->deskripsi }}</div>
+                        @endif
+                        
+                        <div style="margin-top: 8px;">
+                            @php
+                                $kategoriBadge = [
+                                    'kebersihan' => ['icon' => 'wash', 'text' => 'Kebersihan'],
+                                    'perawatan_rutin' => ['icon' => 'tool', 'text' => 'Perawatan Rutin'],
+                                    'pengecekan' => ['icon' => 'search', 'text' => 'Pengecekan'],
+                                    'lainnya' => ['icon' => 'list', 'text' => 'Lainnya']
+                                ];
+                                $badge = $kategoriBadge[$checklist->kategori] ?? ['icon' => 'list', 'text' => 'Lainnya'];
+                            @endphp
+                            <span class="kategori-badge">
+                                <i class="ti ti-{{ $badge['icon'] }}"></i> {{ $badge['text'] }}
+                        </span>
+                        
+                        @if($isChecked && $log)
+                            <span class="time-badge">
+                                <i class="ti ti-check-circle"></i> 
+                                {{ $log->waktu_eksekusi ? date('H:i', strtotime($log->waktu_eksekusi)) : '' }}
+                            </span>
+                            <span class="user-badge">
+                                <i class="ti ti-user"></i> {{ $log->user ? $log->user->name : 'Unknown' }}
+                            </span>
+                        @endif
+                    </div>
+                    
+                    @if($isChecked && $log)
+                        @if($log->catatan)
+                        <div class="note-section">
+                            <div class="note-text">
+                                <i class="ti ti-note"></i> {{ $log->catatan }}
+                            </div>
+                        </div>
+                        @endif
+                        
+                        @if($log->foto_bukti)
+                        <img src="{{ asset('storage/perawatan/' . $log->foto_bukti) }}" 
+                             class="foto-preview" 
+                             alt="Foto Bukti">
+                        @endif
+                        
+                        <button class="btn btn-uncheck" 
+                                data-id="{{ $checklist->id }}">
+                            <i class="ti ti-x"></i> Batalkan Checklist
+                        </button>
+                    @endif
+                </div>
+            </div>
+            </div>
+            @empty
+                <div class="empty-state">
+                    <div class="empty-icon"><i class="ti ti-clipboard-off"></i></div>
+                    <div class="empty-text">Tidak ada checklist {{ $tipe }} untuk ruangan ini</div>
+                </div>
+            @endforelse
+        </div>
+        @endforelse
+    @else
+        {{-- Fallback: Jika tidak ada grouped data, tampilkan dengan kategori saja --}}
+        @forelse($checklists as $checklist)
         @php
             $isChecked = $checklist->logs->where('status', 'completed')->count() > 0;
             $log = $checklist->logs->first();
@@ -1049,12 +1164,7 @@
                         <span class="kategori-badge">
                             <i class="ti ti-{{ $badge['icon'] }}"></i> {{ $badge['text'] }}
                         </span>
-                        
                         @if($isChecked && $log)
-                            <span class="time-badge">
-                                <i class="ti ti-check-circle"></i> 
-                                {{ $log->waktu_eksekusi ? date('H:i', strtotime($log->waktu_eksekusi)) : '' }}
-                            </span>
                             <span class="user-badge">
                                 <i class="ti ti-user"></i> {{ $log->user ? $log->user->name : 'Unknown' }}
                             </span>
@@ -1084,12 +1194,13 @@
                 </div>
             </div>
         </div>
-    @empty
-        <div class="empty-state">
-            <div class="empty-icon"><i class="ti ti-clipboard-off"></i></div>
-            <div class="empty-text">Tidak ada checklist {{ $tipe }} tersedia</div>
-        </div>
-    @endforelse
+        @empty
+            <div class="empty-state">
+                <div class="empty-icon"><i class="ti ti-clipboard-off"></i></div>
+                <div class="empty-text">Tidak ada checklist {{ $tipe }} tersedia</div>
+            </div>
+        @endforelse
+    @endif
 </div>
 
 <!-- Modal untuk Input Catatan dan Foto -->
@@ -1116,7 +1227,7 @@
                         <label class="form-label"><i class="ti ti-camera"></i> Foto Bukti <span style="color: #f44336;">*</span></label>
                         <input type="file" class="form-control" name="foto_bukti" accept="image/*" capture="environment" required>
                         <small style="color: #666; font-size: 11px; margin-top: 5px; display: block;">
-                            Format: JPG, PNG. Max: 2MB. <strong style="color: #f44336;">Wajib diisi!</strong>
+                            Format: JPG, PNG. Max: 10MB. <strong style="color: #f44336;">Wajib diisi!</strong>
                         </small>
                     </div>
                 </form>

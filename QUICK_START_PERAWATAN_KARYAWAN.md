@@ -77,9 +77,9 @@ Checklist Selesai ✅
    - Sekali checklist dicentang untuk hari ini, tidak bisa dicentang lagi
    - Bisa dibatalkan dengan tombol "Batalkan"
 
-2. **Foto maksimal 2MB**
+2. **Foto maksimal 10MB**
    - Format: JPG, PNG, JPEG
-   - Ukuran max: 2MB
+   - Ukuran max: 10MB (cocok untuk HP dengan resolusi tinggi)
 
 3. **Reset Periode**
    - Harian: Reset setiap hari jam 00:00

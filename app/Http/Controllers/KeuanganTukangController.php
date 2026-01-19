@@ -1163,11 +1163,15 @@ class KeuanganTukangController extends Controller
     {
         $pembayaran = PembayaranGajiTukang::with('tukang')->findOrFail($id);
         
+        // ✅ PERBAIKAN: Pass variabel yang sesuai dengan view
         $data = [
-            'pembayaran' => $pembayaran,
             'tukang' => $pembayaran->tukang,
-            'periodeText' => $pembayaran->periode_mulai->format('d M Y') . ' - ' . $pembayaran->periode_akhir->format('d M Y'),
-            'tanggalBayar' => $pembayaran->tanggal_bayar->format('d F Y, H:i')
+            'periodeText' => $pembayaran->periode_akhir->format('d M Y') . ' - ' . $pembayaran->periode_akhir->format('d M Y'),
+            'upah_harian' => $pembayaran->total_upah_harian,
+            'lembur' => $pembayaran->total_upah_lembur,
+            'potongan' => $pembayaran->total_potongan,
+            'cicilan' => 0, // Sudah included di total_potongan
+            'total_bersih' => $pembayaran->total_nett,
         ];
         
         $pdf = \PDF::loadView('keuangan-tukang.slip-gaji-pdf', $data);
@@ -1186,10 +1190,74 @@ class KeuanganTukangController extends Controller
         $periodeMulai = Carbon::parse($request->periode_mulai);
         $periodeAkhir = Carbon::parse($request->periode_akhir);
         
-        // ✅ PERBAIKAN: Query pembayaran dalam range tanggal
+        // ✅ PERBAIKAN: Ambil SEMUA tukang aktif
+        $tukangsAktif = Tukang::where('status', 'aktif')
+                              ->orderBy('kode_tukang')
+                              ->get();
+        
+        // ✅ PERBAIKAN: Untuk setiap tukang aktif, cek apakah sudah ada pembayaran
+        // Jika belum, buat pembayaran baru dengan status "Belum Lunas"
+        foreach ($tukangsAktif as $tukang) {
+            $pembayaranExist = PembayaranGajiTukang::where('tukang_id', $tukang->id)
+                                                   ->whereBetween('periode_akhir', [$periodeMulai->format('Y-m-d'), $periodeAkhir->format('Y-m-d')])
+                                                   ->first();
+            
+            if (!$pembayaranExist) {
+                // Hitung kehadiran & upah untuk tukang ini
+                $kehadirans = KehadiranTukang::where('tukang_id', $tukang->id)
+                                            ->whereBetween('tanggal', [$periodeMulai, $periodeAkhir])
+                                            ->get();
+                
+                $jumlahKehadiran = $kehadirans->where('status', 'hadir')->count();
+                $jumlahSetengah = $kehadirans->where('status', 'setengah_hari')->count();
+                
+                $totalUpahHarian = $kehadirans->where('status', 'hadir')->sum('upah_harian')
+                                + ($kehadirans->where('status', 'setengah_hari')->sum('upah_harian') / 2);
+                
+                $totalUpahLembur = $kehadirans->whereIn('lembur', ['full', 'setengah_hari'])->sum('upah_lembur');
+                $lemburCashTerbayar = $kehadirans->where('lembur_dibayar_cash', true)->sum('upah_lembur');
+                
+                // Hitung potongan
+                $potonganLain = PotonganTukang::where('tukang_id', $tukang->id)
+                                             ->whereBetween('tanggal', [$periodeMulai, $periodeAkhir])
+                                             ->sum('jumlah');
+                
+                $potonganPinjaman = 0;
+                if ($tukang->auto_potong_pinjaman) {
+                    $potonganPinjaman = PinjamanTukang::where('tukang_id', $tukang->id)
+                                                    ->where('status', 'aktif')
+                                                    ->sum('cicilan_per_minggu');
+                }
+                
+                $totalPotongan = $potonganLain + $potonganPinjaman;
+                $totalKotor = $totalUpahHarian + ($totalUpahLembur - $lemburCashTerbayar);
+                $totalNett = $totalKotor - $totalPotongan;
+                
+                // Buat pembayaran baru
+                PembayaranGajiTukang::create([
+                    'tukang_id' => $tukang->id,
+                    'periode_mulai' => $periodeMulai->format('Y-m-d'),
+                    'periode_akhir' => $periodeAkhir->format('Y-m-d'),
+                    'tanggal_bayar' => $periodeAkhir->format('Y-m-d H:i:s'), // Default ke akhir periode
+                    'total_upah_harian' => $totalUpahHarian,
+                    'total_upah_lembur' => $totalUpahLembur,
+                    'lembur_cash_terbayar' => $lemburCashTerbayar,
+                    'total_kotor' => $totalKotor,
+                    'total_potongan' => $totalPotongan,
+                    'total_nett' => $totalNett,
+                    'rincian_potongan' => json_encode([]), // Empty JSON
+                    'status' => 'pending',
+                    'tanda_tangan_base64' => null, // Belum TTD
+                    'tanda_tangan_path' => null,
+                    'ip_address' => null,
+                    'device_info' => null,
+                ]);
+            }
+        }
+        
+        // ✅ Sekarang query pembayaran dengan semua tukang aktif (termasuk yang baru dibuat)
         $pembayarans = PembayaranGajiTukang::with('tukang')
-                                          ->whereBetween('tanggal_bayar', [$periodeMulai->startOfDay(), $periodeAkhir->endOfDay()])
-                                          ->orWhereBetween('periode_akhir', [$periodeMulai->format('Y-m-d'), $periodeAkhir->format('Y-m-d')])
+                                          ->whereBetween('periode_akhir', [$periodeMulai->format('Y-m-d'), $periodeAkhir->format('Y-m-d')])
                                           ->orderBy('periode_akhir', 'desc')
                                           ->orderBy('tukang_id')
                                           ->get();
@@ -1240,10 +1308,16 @@ class KeuanganTukangController extends Controller
                 $totalLain += $p->jumlah;
             }
             
+            // ✅ RE-CALCULATE TOTAL POTONGAN SESUAI STATUS AUTO_POTONG TERKINI
+            $totalPotonganTerupdate = $totalLain + $totalPinjaman;
+            $totalNettTerupdate = $pembayaran->total_kotor - $totalPotonganTerupdate;
+            
             // Assign sekaligus ke model
             $pembayaran->setAttribute('rincian_potongan_detail', $rincian);
             $pembayaran->setAttribute('total_potongan_pinjaman', $totalPinjaman);
             $pembayaran->setAttribute('total_potongan_lain', $totalLain);
+            $pembayaran->setAttribute('total_potongan', $totalPotonganTerupdate); // ✅ UPDATE dengan nilai baru
+            $pembayaran->setAttribute('total_nett', $totalNettTerupdate); // ✅ UPDATE gaji bersih juga
             
             return $pembayaran;
         });

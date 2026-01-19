@@ -25,7 +25,7 @@ class ManajemenPerawatanController extends Controller
 
     public function masterIndex()
     {
-        $masters = MasterPerawatan::withCount(['logs' => function($q) {
+        $masters = MasterPerawatan::with('ruangan')->withCount(['logs' => function($q) {
             $q->whereDate('tanggal_eksekusi', '>=', now()->subDays(30));
         }])->ordered()->get();
         
@@ -34,7 +34,8 @@ class ManajemenPerawatanController extends Controller
 
     public function masterCreate()
     {
-        return view('perawatan.master.create');
+        $ruangans = \App\Models\Ruangan::orderBy('nama_ruangan')->get();
+        return view('perawatan.master.create', compact('ruangans'));
     }
 
     public function masterStore(Request $request)
@@ -44,6 +45,7 @@ class ManajemenPerawatanController extends Controller
             'deskripsi' => 'nullable|string',
             'tipe_periode' => 'required|in:harian,mingguan,bulanan,tahunan',
             'kategori' => 'required|in:kebersihan,perawatan_rutin,pengecekan,lainnya',
+            'ruangan_id' => 'nullable|exists:ruangans,id',
             'urutan' => 'nullable|integer|min:0',
             'jam_mulai' => 'nullable|date_format:H:i',
             'jam_selesai' => 'nullable|date_format:H:i',
@@ -64,7 +66,8 @@ class ManajemenPerawatanController extends Controller
     public function masterEdit($id)
     {
         $master = MasterPerawatan::findOrFail($id);
-        return view('perawatan.master.edit', compact('master'));
+        $ruangans = \App\Models\Ruangan::orderBy('nama_ruangan')->get();
+        return view('perawatan.master.edit', compact('master', 'ruangans'));
     }
 
     public function masterUpdate(Request $request, $id)
@@ -74,6 +77,7 @@ class ManajemenPerawatanController extends Controller
             'deskripsi' => 'nullable|string',
             'tipe_periode' => 'required|in:harian,mingguan,bulanan,tahunan',
             'kategori' => 'required|in:kebersihan,perawatan_rutin,pengecekan,lainnya',
+            'ruangan_id' => 'nullable|exists:ruangans,id',
             'urutan' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'jam_mulai' => 'nullable|date_format:H:i',
@@ -110,8 +114,10 @@ class ManajemenPerawatanController extends Controller
         // Get config untuk status banner
         $config = ChecklistPeriodeConfig::byTipe($tipe)->first();
         
+        // ✅ PERBAIKAN: Ambil dengan relasi ruangan dan group by ruangan
         $masters = MasterPerawatan::active()
             ->byTipe($tipe)
+            ->with('ruangan')
             ->ordered()
             ->get();
 
@@ -121,7 +127,20 @@ class ManajemenPerawatanController extends Controller
             ->get()
             ->keyBy('master_perawatan_id');
 
-        return view('perawatan.checklist', compact('masters', 'logs', 'tipe', 'periodeKey', 'statusPeriode', 'config'));
+        // ✅ PERBAIKAN: Group masters by ruangan_id untuk tampilan per ruangan
+        $mastersByRuangan = $masters->groupBy(function($item) {
+            return $item->ruangan_id ?? 'tanpa-ruangan';
+        })->map(function($items, $ruanganId) {
+            return [
+                'ruangan_id' => $ruanganId,
+                'ruangan_nama' => $ruanganId === 'tanpa-ruangan' 
+                    ? 'Umum (Tanpa Ruangan)' 
+                    : ($items->first()->ruangan->nama_ruangan ?? 'Unknown'),
+                'items' => $items
+            ];
+        });
+
+        return view('perawatan.checklist', compact('masters', 'mastersByRuangan', 'logs', 'tipe', 'periodeKey', 'statusPeriode', 'config'));
     }
 
     public function checklistMingguan()
@@ -135,6 +154,7 @@ class ManajemenPerawatanController extends Controller
         
         $masters = MasterPerawatan::active()
             ->byTipe($tipe)
+            ->with('ruangan')
             ->ordered()
             ->get();
 
@@ -143,7 +163,20 @@ class ManajemenPerawatanController extends Controller
             ->get()
             ->keyBy('master_perawatan_id');
 
-        return view('perawatan.checklist', compact('masters', 'logs', 'tipe', 'periodeKey', 'statusPeriode', 'config'));
+        // Group by ruangan
+        $mastersByRuangan = $masters->groupBy(function($item) {
+            return $item->ruangan_id ?? 'tanpa-ruangan';
+        })->map(function($items, $ruanganId) {
+            return [
+                'ruangan_id' => $ruanganId,
+                'ruangan_nama' => $ruanganId === 'tanpa-ruangan' 
+                    ? 'Umum (Tanpa Ruangan)' 
+                    : ($items->first()->ruangan->nama_ruangan ?? 'Unknown'),
+                'items' => $items
+            ];
+        });
+
+        return view('perawatan.checklist', compact('masters', 'mastersByRuangan', 'logs', 'tipe', 'periodeKey', 'statusPeriode', 'config'));
     }
 
     public function checklistBulanan()
@@ -157,6 +190,7 @@ class ManajemenPerawatanController extends Controller
         
         $masters = MasterPerawatan::active()
             ->byTipe($tipe)
+            ->with('ruangan')
             ->ordered()
             ->get();
 
@@ -165,7 +199,20 @@ class ManajemenPerawatanController extends Controller
             ->get()
             ->keyBy('master_perawatan_id');
 
-        return view('perawatan.checklist', compact('masters', 'logs', 'tipe', 'periodeKey', 'statusPeriode', 'config'));
+        // Group by ruangan
+        $mastersByRuangan = $masters->groupBy(function($item) {
+            return $item->ruangan_id ?? 'tanpa-ruangan';
+        })->map(function($items, $ruanganId) {
+            return [
+                'ruangan_id' => $ruanganId,
+                'ruangan_nama' => $ruanganId === 'tanpa-ruangan' 
+                    ? 'Umum (Tanpa Ruangan)' 
+                    : ($items->first()->ruangan->nama_ruangan ?? 'Unknown'),
+                'items' => $items
+            ];
+        });
+
+        return view('perawatan.checklist', compact('masters', 'mastersByRuangan', 'logs', 'tipe', 'periodeKey', 'statusPeriode', 'config'));
     }
 
     public function checklistTahunan()
@@ -179,6 +226,7 @@ class ManajemenPerawatanController extends Controller
         
         $masters = MasterPerawatan::active()
             ->byTipe($tipe)
+            ->with('ruangan')
             ->ordered()
             ->get();
 
@@ -187,7 +235,20 @@ class ManajemenPerawatanController extends Controller
             ->get()
             ->keyBy('master_perawatan_id');
 
-        return view('perawatan.checklist', compact('masters', 'logs', 'tipe', 'periodeKey', 'statusPeriode', 'config'));
+        // Group by ruangan
+        $mastersByRuangan = $masters->groupBy(function($item) {
+            return $item->ruangan_id ?? 'tanpa-ruangan';
+        })->map(function($items, $ruanganId) {
+            return [
+                'ruangan_id' => $ruanganId,
+                'ruangan_nama' => $ruanganId === 'tanpa-ruangan' 
+                    ? 'Umum (Tanpa Ruangan)' 
+                    : ($items->first()->ruangan->nama_ruangan ?? 'Unknown'),
+                'items' => $items
+            ];
+        });
+
+        return view('perawatan.checklist', compact('masters', 'mastersByRuangan', 'logs', 'tipe', 'periodeKey', 'statusPeriode', 'config'));
     }
 
     public function executeChecklist(Request $request)
@@ -196,7 +257,7 @@ class ManajemenPerawatanController extends Controller
             'master_perawatan_id' => 'required|exists:master_perawatan,id',
             'tipe_periode' => 'required|in:harian,mingguan,bulanan,tahunan',
             'catatan' => 'nullable|string',
-            'foto_bukti' => 'nullable|image|max:2048'
+            'foto_bukti' => 'nullable|image|max:10240'
         ]);
 
         $periodeKey = $this->generatePeriodeKey($validated['tipe_periode']);

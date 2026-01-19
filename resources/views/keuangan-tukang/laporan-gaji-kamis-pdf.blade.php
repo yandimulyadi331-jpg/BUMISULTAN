@@ -193,7 +193,8 @@
                 $totalPotongan = 0;
                 $totalGajiBersih = 0;
                 $totalLunas = 0;
-                $totalPending = 0;
+                $totalBelumLunas = 0;
+                $totalBelumLunasCash = 0;
             @endphp
             @foreach($pembayaranGaji as $index => $pembayaran)
                 @php
@@ -204,12 +205,19 @@
                     $totalPotongan += $pembayaran->total_potongan;
                     $totalGajiBersih += $pembayaran->total_nett;
                     
-                    // Status berdasarkan TTD: Lunas = ada TTD, Belum = tidak ada TTD
+                    // ✅ PERBAIKAN: Status berdasarkan TTD
+                    // Lunas = ada TTD
+                    // Belum Lunas = tidak ada TTD
                     $isSudahBayar = !empty($pembayaran->tanda_tangan_base64);
-                    $statusText = $isSudahBayar ? 'Lunas' : 'Belum';
+                    $statusText = $isSudahBayar ? 'Lunas' : 'Belum Lunas';
+                    $statusClass = $isSudahBayar ? 'status-lunas' : 'status-pending';
                     
-                    if($isSudahBayar) $totalLunas++;
-                    else $totalPending++;
+                    if($isSudahBayar) {
+                        $totalLunas++;
+                    } else {
+                        $totalBelumLunas++;
+                        $totalBelumLunasCash += $pembayaran->total_nett;
+                    }
                     
                     // Hitung total kehadiran
                     $totalKehadiran = $pembayaran->jumlah_kehadiran + $pembayaran->jumlah_setengah;
@@ -236,11 +244,11 @@
                         @if($pembayaran->tanda_tangan_base64)
                             <img src="data:image/png;base64,{{ $pembayaran->tanda_tangan_base64 }}" style="width: 70px; height: 35px; border: 1px solid #666; display: block; margin: 0 auto; background: #fff; object-fit: contain;" alt="TTD">
                         @else
-                            <span style="font-size: 9px; background-color: #ffeb3b; color: #000; padding: 2px 4px; border-radius: 3px; font-weight: bold;">Belum</span>
+                            <span style="font-size: 9px; background-color: #ffeb3b; color: #000; padding: 2px 4px; border-radius: 3px; font-weight: bold;">Belum TTD</span>
                         @endif
                     </td>
                     <td class="text-center" style="padding: 4px; vertical-align: middle;">
-                        <span class="status-badge status-{{ $isSudahBayar ? 'lunas' : 'pending' }}">
+                        <span class="status-badge {{ $statusClass }}">
                             {{ $statusText }}
                         </span>
                     </td>
@@ -257,7 +265,7 @@
                 <td class="text-right">{{ number_format($totalKotor, 0, ',', '.') }}</td>
                 <td class="text-right">{{ number_format($totalPotongan, 0, ',', '.') }}</td>
                 <td class="text-right"><strong>{{ number_format($totalGajiBersih, 0, ',', '.') }}</strong></td>
-                <td class="text-center" colspan="2">Lunas: {{ $totalLunas }} | Belum: {{ $totalPending }}</td>
+                <td class="text-center" colspan="2">Lunas: {{ $totalLunas }} | Belum Lunas: {{ $totalBelumLunas }}</td>
             </tr>
         </tbody>
     </table>
@@ -268,9 +276,10 @@
         <ul style="margin: 5px 0; padding-left: 15px;">
             <li><strong>Hadir</strong> = Jumlah hari kehadiran (jika ada setengah hari ditampilkan format: H+setengah, jika tidak ada cukup H saja)</li>
             <li><strong>Tarif/Hari</strong> = Tarif harian tukang (ditentukan per tukang)</li>
-            <li><strong>Potongan</strong> = Cicilan pinjaman (HANYA jika auto_potong_pinjaman AKTIF) + denda/kerusakan (selalu ditampilkan)</li>
-            <li><strong>Approved</strong> = Tanda Tangan Digital (TTD) Tukang atau "Belum" jika tidak ada TTD</li>
-            <li><strong>Status</strong> = <span style="background-color: #4caf50; color: white; padding: 1px 4px; border-radius: 2px;">Lunas</span> (sudah ada TTD) | <span style="background-color: #ff9800; color: white; padding: 1px 4px; border-radius: 2px;">Belum</span> (belum ada TTD)</li>
+            <li><strong>Potongan</strong> = Cicilan pinjaman (HANYA jika auto_potong_pinjaman AKTIF) + denda/kerusakan (HANYA jika status AKTIF dalam periode tersebut)</li>
+            <li><strong>Approved</strong> = Tanda Tangan Digital (TTD) Tukang atau "Belum TTD" jika tidak ada TTD</li>
+            <li><strong>Status</strong> = <span style="background-color: #4caf50; color: white; padding: 1px 4px; border-radius: 2px;">Lunas</span> (sudah ada TTD) | <span style="background-color: #ff9800; color: white; padding: 1px 4px; border-radius: 2px;">Belum Lunas</span> (belum ada TTD)</li>
+            <li><strong>✅ FITUR BARU:</strong> Laporan menampilkan SEMUA tukang aktif. Tukang yang belum TTD Kamis otomatis muncul dengan status "Belum Lunas"</li>
         </ul>
     </div>
 
@@ -289,8 +298,8 @@
                 <div class="summary-value">{{ $totalLunas }} orang (Rp {{ number_format($pembayaranGaji->filter(function($p) { return !empty($p->tanda_tangan_base64); })->sum('total_nett'), 0, ',', '.') }})</div>
             </div>
             <div class="summary-row">
-                <div class="summary-label">Status Belum (Belum Dibayarkan):</div>
-                <div class="summary-value">{{ $totalPending }} orang (Rp {{ number_format($pembayaranGaji->filter(function($p) { return empty($p->tanda_tangan_base64); })->sum('total_nett'), 0, ',', '.') }})</div>
+                <div class="summary-label">Status Belum Lunas (Belum Dibayarkan):</div>
+                <div class="summary-value">{{ $totalBelumLunas }} orang (Rp {{ number_format($totalBelumLunasCash, 0, ',', '.') }})</div>
             </div>
         </div>
     </div>

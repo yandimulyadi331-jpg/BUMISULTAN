@@ -19,7 +19,43 @@
                      <p class="text-muted mb-0">{{ $periodeText }}</p>
                   @endif
                </div>
-               <div class="d-flex gap-2">
+               <div class="d-flex gap-2 flex-wrap align-items-center">
+                  <!-- Tombol Navigasi untuk Single Mode (Default) -->
+                  @if($mode == 'single' || !isset($mode))
+                     <div class="d-flex gap-1">
+                        <a href="{{ route('kehadiran-tukang.index', ['tanggal' => $tanggalSebelumnya]) }}" 
+                           class="btn btn-outline-secondary btn-sm">
+                           <i class="ti ti-chevron-left me-1"></i> Sebelumnya
+                        </a>
+                        <span class="btn btn-secondary btn-sm" style="pointer-events: none; min-width: 140px; text-align: center;">
+                           {{ Carbon\Carbon::parse($tanggal)->locale('id')->isoFormat('ddd, D MMM YYYY') }}
+                        </span>
+                        <a href="{{ route('kehadiran-tukang.index', ['tanggal' => $tanggalBerikutnya]) }}" 
+                           class="btn btn-outline-secondary btn-sm">
+                           Berikutnya <i class="ti ti-chevron-right ms-1"></i>
+                        </a>
+                     </div>
+                  @endif
+                  
+                  <!-- Tombol Navigasi untuk Range Mode -->
+                  @if($mode == 'range-single')
+                     <div class="d-flex gap-1">
+                        <a href="{{ route('kehadiran-tukang.index', ['tanggal_mulai' => $tanggal_mulai, 'tanggal_akhir' => $tanggal_akhir, 'tanggal' => $tanggal_prev]) }}" 
+                           class="btn btn-outline-secondary btn-sm {{ $canPrev ? '' : 'disabled' }}"
+                           {{ $canPrev ? '' : 'disabled' }}>
+                           <i class="ti ti-chevron-left me-1"></i> Sebelumnya
+                        </a>
+                        <span class="btn btn-secondary btn-sm" style="pointer-events: none; min-width: 140px; text-align: center;">
+                           {{ Carbon\Carbon::parse($tanggal)->locale('id')->isoFormat('ddd, D MMM') }}
+                        </span>
+                        <a href="{{ route('kehadiran-tukang.index', ['tanggal_mulai' => $tanggal_mulai, 'tanggal_akhir' => $tanggal_akhir, 'tanggal' => $tanggal_next]) }}" 
+                           class="btn btn-outline-secondary btn-sm {{ $canNext ? '' : 'disabled' }}"
+                           {{ $canNext ? '' : 'disabled' }}>
+                           Berikutnya <i class="ti ti-chevron-right ms-1"></i>
+                        </a>
+                     </div>
+                  @endif
+                  
                   @can('keuangan-tukang.index')
                   <a href="{{ route('keuangan-tukang.download-laporan-pengajuan-gaji') }}?periode_mulai={{ $periode_mulai }}&periode_akhir={{ $periode_akhir }}" 
                      class="btn btn-warning btn-sm"
@@ -65,6 +101,138 @@
                   <i class="ti ti-info-circle me-2"></i>
                   <strong>Hari Jumat (Libur)</strong> - Tidak ada absensi hari ini
                </div>
+            @elseif($mode == 'range-single')
+               <!-- Mode Range dengan Single Form - Tampilkan Info Range -->
+               <div class="alert alert-primary">
+                  <i class="ti ti-info-circle me-2"></i>
+                  <strong>Input Kehadiran dalam Range</strong> - Gunakan tombol Prev/Next untuk navigasi antar tanggal dari {{ Carbon\Carbon::parse($tanggal_mulai)->format('d M Y') }} hingga {{ Carbon\Carbon::parse($tanggal_akhir)->format('d M Y') }}
+               </div>
+               
+               @if(isset($isJumat) && $isJumat)
+                  <div class="alert alert-warning">
+                     <i class="ti ti-alert-triangle me-2"></i>
+                     <strong>Tanggal Jumat (Libur)</strong> - Tidak ada absensi hari ini, gunakan tombol navigasi untuk pindah ke hari lain
+                  </div>
+               @else
+                  <div class="alert alert-primary">
+                     <i class="ti ti-info-circle me-2"></i>
+                     <div>
+                        <strong>Status Kehadiran:</strong> Klik tombol untuk cycle → <strong>Tidak Hadir → Hadir → Setengah Hari</strong><br>
+                        <strong>Lembur:</strong> Klik tombol untuk cycle → <strong>Tidak → Full → Setengah Hari</strong><br>
+                        <small class="text-muted">💡 Tukang bisa lembur meskipun tidak hadir (contoh: lembur hari libur)</small>
+                     </div>
+                  </div>
+
+                  <div class="alert alert-success alert-dismissible" role="alert">
+                     <div class="d-flex align-items-center">
+                        <i class="ti ti-wallet ti-lg me-2"></i>
+                        <div>
+                           <strong>Info Keuangan:</strong> Untuk melihat akumulasi upah, lembur cash, pinjaman, dan potongan, silakan buka menu 
+                           <a href="{{ route('keuangan-tukang.index') }}" class="alert-link fw-bold">Keuangan Tukang</a>
+                        </div>
+                     </div>
+                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                  
+                  <!-- Tampilkan Form Input (sama seperti single mode) -->
+                  <div class="table-responsive">
+                     <table class="table table-hover table-bordered">
+                        <thead class="table-dark">
+                           <tr>
+                              <th width="5%">No</th>
+                              <th width="8%">Kode</th>
+                              <th width="20%">Nama Tukang</th>
+                              <th width="15%">Status Kehadiran</th>
+                              <th width="12%">Lembur</th>
+                              <th width="13%">Upah Harian</th>
+                              <th width="13%">Upah Lembur</th>
+                              <th width="14%">Total Upah</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           @forelse($tukangs as $index => $tukang)
+                              <tr id="row-{{ $tukang->id }}">
+                                 <td>{{ $index + 1 }}</td>
+                                 <td><strong>{{ $tukang->kode_tukang }}</strong></td>
+                                 <td>
+                                    <div class="d-flex align-items-center">
+                                       @if($tukang->foto)
+                                          <img src="{{ Storage::url('tukang/' . $tukang->foto) }}" 
+                                             class="rounded me-2" width="32" height="32" style="object-fit: cover;">
+                                       @endif
+                                       {{ $tukang->nama_tukang }}
+                                    </div>
+                                 </td>
+                                 <td class="text-center">
+                                    @php
+                                       $status = $tukang->kehadiran_hari_ini->status ?? 'tidak_hadir';
+                                    @endphp
+                                    <button type="button" 
+                                       class="btn btn-status btn-sm w-100 status-{{ $status }}" 
+                                       data-tukang-id="{{ $tukang->id }}"
+                                       data-tanggal="{{ $tanggal }}"
+                                       onclick="toggleStatus(this)">
+                                       <span class="status-text">
+                                          @if($status == 'hadir')
+                                             <i class="ti ti-check"></i> Hadir
+                                          @elseif($status == 'setengah_hari')
+                                             <i class="ti ti-clock"></i> Setengah Hari
+                                          @else
+                                             <i class="ti ti-x"></i> Tidak Hadir
+                                          @endif
+                                       </span>
+                                    </button>
+                                 </td>
+                                 <td class="text-center">
+                                    @php
+                                       $lembur = $tukang->kehadiran_hari_ini->lembur ?? 'tidak';
+                                       $lemburCash = $tukang->kehadiran_hari_ini->lembur_dibayar_cash ?? false;
+                                    @endphp
+                                    <button type="button" 
+                                       class="btn btn-lembur btn-sm w-100 lembur-{{ $lembur }}"
+                                       data-tukang-id="{{ $tukang->id }}"
+                                       data-tanggal="{{ $tanggal }}"
+                                       onclick="toggleLembur(this)"
+                                       {{ ($status == 'tidak_hadir') ? 'disabled' : '' }}>
+                                       <span class="lembur-text">
+                                          @if($lembur == 'full')
+                                             <i class="ti ti-clock-hour-8"></i> Full
+                                          @elseif($lembur == 'setengah_hari')
+                                             <i class="ti ti-clock-hour-4"></i> Setengah
+                                          @else
+                                             <i class="ti ti-minus"></i> Tidak
+                                          @endif
+                                       </span>
+                                    </button>
+                                 </td>
+                                 <td class="text-end upah-harian-{{ $tukang->id }}">
+                                    @php
+                                       $upahHarian = $tukang->kehadiran_hari_ini->upah_harian ?? 0;
+                                    @endphp
+                                    <strong class="text-success">Rp {{ number_format($upahHarian, 0, ',', '.') }}</strong>
+                                 </td>
+                                 <td class="text-end upah-lembur-{{ $tukang->id }}">
+                                    @php
+                                       $upahLembur = $tukang->kehadiran_hari_ini->upah_lembur ?? 0;
+                                    @endphp
+                                    <strong class="text-primary">Rp {{ number_format($upahLembur, 0, ',', '.') }}</strong>
+                                 </td>
+                                 <td class="text-end total-upah-{{ $tukang->id }}">
+                                    @php
+                                       $totalUpah = ($tukang->kehadiran_hari_ini->upah_harian ?? 0) + ($tukang->kehadiran_hari_ini->upah_lembur ?? 0);
+                                    @endphp
+                                    <strong class="text-info">Rp {{ number_format($totalUpah, 0, ',', '.') }}</strong>
+                                 </td>
+                              </tr>
+                           @empty
+                              <tr>
+                                 <td colspan="8" class="text-center">Tidak ada data tukang aktif</td>
+                              </tr>
+                           @endforelse
+                        </tbody>
+                     </table>
+                  </div>
+               @endif
             @elseif($mode == 'range')
                <div class="alert alert-primary">
                   <i class="ti ti-info-circle me-2"></i>
@@ -190,72 +358,98 @@
                      </table>
                   </div>
                @else
-                  <!-- TAMPILAN MODE RANGE TANGGAL -->
-                  <div class="table-responsive">
-                     <table class="table table-hover table-bordered table-sm">
-                        <thead class="table-dark">
-                           <tr>
-                              <th width="4%">No</th>
-                              <th width="6%">Kode</th>
-                              <th width="18%">Nama Tukang</th>
-                              <th width="8%">Hadir</th>
-                              <th width="8%">Setengah</th>
-                              <th width="8%">Tidak Hadir</th>
-                              <th width="8%">Lembur</th>
-                              <th width="16%">Total Upah</th>
-                              <th width="14%">Aksi</th>
-                           </tr>
-                        </thead>
-                        <tbody>
-                           @forelse($tukangs as $index => $tukang)
+                  <!-- TAMPILAN MODE RANGE TANGGAL - SUMMARY + TOMBOL TANGGAL -->
+                  <div class="card">
+                     <div class="card-header bg-light">
+                        <h6 class="mb-0">📅 Pilih Tanggal untuk Input Kehadiran</h6>
+                     </div>
+                     <div class="card-body">
+                        <div class="mb-3">
+                           <p class="text-muted mb-3">Klik salah satu tombol tanggal di bawah untuk membuka form input kehadiran lengkap untuk tanggal tersebut:</p>
+                           <div class="d-flex flex-wrap gap-2">
                               @php
-                                 $hadir = $tukang->kehadiran_list->where('status', 'hadir')->count();
-                                 $setengah = $tukang->kehadiran_list->where('status', 'setengah_hari')->count();
-                                 $tidakHadir = $tukang->kehadiran_list->where('status', 'tidak_hadir')->count();
-                                 $lembur = $tukang->kehadiran_list->whereIn('lembur', ['full', 'setengah_hari'])->count();
-                                 $totalUpah = $tukang->kehadiran_list->sum('total_upah');
+                                 $currentDate = Carbon\Carbon::parse($tanggal_mulai);
+                                 $endDate = Carbon\Carbon::parse($tanggal_akhir);
                               @endphp
-                              <tr id="row-{{ $tukang->id }}">
-                                 <td>{{ $index + 1 }}</td>
-                                 <td><strong>{{ $tukang->kode_tukang }}</strong></td>
-                                 <td>
-                                    <div class="d-flex align-items-center">
-                                       @if($tukang->foto)
-                                          <img src="{{ Storage::url('tukang/' . $tukang->foto) }}" 
-                                             class="rounded me-2" width="28" height="28" style="object-fit: cover;">
-                                       @endif
-                                       <span>{{ $tukang->nama_tukang }}</span>
-                                    </div>
-                                 </td>
-                                 <td class="text-center">
-                                    <span class="badge bg-success">{{ $hadir }}</span>
-                                 </td>
-                                 <td class="text-center">
-                                    <span class="badge bg-warning">{{ $setengah }}</span>
-                                 </td>
-                                 <td class="text-center">
-                                    <span class="badge bg-danger">{{ $tidakHadir }}</span>
-                                 </td>
-                                 <td class="text-center">
-                                    <span class="badge bg-info">{{ $lembur }}</span>
-                                 </td>
-                                 <td class="text-end">
-                                    <strong class="text-primary">Rp {{ number_format($totalUpah, 0, ',', '.') }}</strong>
-                                 </td>
-                                 <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-outline-primary" 
-                                       onclick="lihatDetailRange({{ $tukang->id }}, '{{ $tukang->nama_tukang }}')">
-                                       <i class="ti ti-eye"></i> Lihat
-                                    </button>
-                                 </td>
-                              </tr>
-                           @empty
-                              <tr>
-                                 <td colspan="9" class="text-center">Tidak ada data tukang aktif</td>
-                              </tr>
-                           @endforelse
-                        </tbody>
-                     </table>
+                              @while($currentDate <= $endDate)
+                                 @php
+                                    $isJumatLoop = $currentDate->isFriday();
+                                    $dateStr = $currentDate->format('Y-m-d');
+                                    $displayDate = $currentDate->locale('id')->isoFormat('ddd, D MMM');
+                                 @endphp
+                                 <a href="{{ route('kehadiran-tukang.index', ['tanggal' => $dateStr]) }}" 
+                                    class="btn {{ $isJumatLoop ? 'btn-secondary disabled' : 'btn-outline-primary' }} btn-sm"
+                                    title="{{ $isJumatLoop ? 'Hari Libur' : 'Klik untuk input kehadiran' }}"
+                                    {{ $isJumatLoop ? 'disabled' : '' }}>
+                                    <span>{{ $currentDate->format('d') }}</span>
+                                    <small class="d-block">{{ str_replace('Friday', 'Jumat', $currentDate->locale('id')->isoFormat('dddd')) }}</small>
+                                 </a>
+                                 @php $currentDate->addDay(); @endphp
+                              @endwhile
+                           </div>
+                        </div>
+                        <hr>
+                        <!-- RINGKASAN KEHADIRAN RANGE -->
+                        <div class="table-responsive">
+                           <table class="table table-hover table-bordered table-sm">
+                              <thead class="table-dark">
+                                 <tr>
+                                    <th width="4%">No</th>
+                                    <th width="6%">Kode</th>
+                                    <th width="20%">Nama Tukang</th>
+                                    <th width="8%">Hadir</th>
+                                    <th width="8%">Setengah</th>
+                                    <th width="8%">Tidak Hadir</th>
+                                    <th width="8%">Lembur</th>
+                                    <th width="18%">Total Upah</th>
+                                 </tr>
+                              </thead>
+                              <tbody>
+                                 @forelse($tukangs as $index => $tukang)
+                                    @php
+                                       $hadir = $tukang->kehadiran_list->where('status', 'hadir')->count();
+                                       $setengah = $tukang->kehadiran_list->where('status', 'setengah_hari')->count();
+                                       $tidakHadir = $tukang->kehadiran_list->where('status', 'tidak_hadir')->count();
+                                       $lembur = $tukang->kehadiran_list->whereIn('lembur', ['full', 'setengah_hari'])->count();
+                                       $totalUpah = $tukang->kehadiran_list->sum('total_upah');
+                                    @endphp
+                                    <tr>
+                                       <td>{{ $index + 1 }}</td>
+                                       <td><strong>{{ $tukang->kode_tukang }}</strong></td>
+                                       <td>
+                                          <div class="d-flex align-items-center">
+                                             @if($tukang->foto)
+                                                <img src="{{ Storage::url('tukang/' . $tukang->foto) }}" 
+                                                   class="rounded me-2" width="32" height="32" style="object-fit: cover;">
+                                             @endif
+                                             <span>{{ $tukang->nama_tukang }}</span>
+                                          </div>
+                                       </td>
+                                       <td class="text-center">
+                                          <span class="badge bg-success">{{ $hadir }}</span>
+                                       </td>
+                                       <td class="text-center">
+                                          <span class="badge bg-warning">{{ $setengah }}</span>
+                                       </td>
+                                       <td class="text-center">
+                                          <span class="badge bg-danger">{{ $tidakHadir }}</span>
+                                       </td>
+                                       <td class="text-center">
+                                          <span class="badge bg-info">{{ $lembur }}</span>
+                                       </td>
+                                       <td class="text-end">
+                                          <strong class="text-primary">Rp {{ number_format($totalUpah, 0, ',', '.') }}</strong>
+                                       </td>
+                                    </tr>
+                                 @empty
+                                    <tr>
+                                       <td colspan="8" class="text-center">Tidak ada data tukang aktif</td>
+                                    </tr>
+                                 @endforelse
+                              </tbody>
+                           </table>
+                        </div>
+                     </div>
                   </div>
                @endif
             @endif
@@ -468,26 +662,81 @@ function formatRupiah(angka) {
    return parseInt(angka).toLocaleString('id-ID');
 }
 
-// Fungsi untuk lihat detail kehadiran range tanggal (modal)
-function lihatDetailRange(tukangId, namaTukang) {
+// Fungsi untuk menghapus kehadiran
+function deleteKehadiran(tukangId, tanggal) {
    Swal.fire({
-      title: 'Detail Kehadiran - ' + namaTukang,
-      html: 'Loading...',
-      didOpen: () => {
-         Swal.showLoading();
+      title: 'Hapus Kehadiran?',
+      text: 'Apakah Anda yakin ingin menghapus data kehadiran?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Hapus',
+      cancelButtonText: 'Batal'
+   }).then((result) => {
+      if (result.isConfirmed) {
+         $.ajax({
+            url: '{{ route("kehadiran-tukang.destroy", "") }}' + tukangId,
+            method: 'DELETE',
+            data: {
+               _token: '{{ csrf_token() }}',
+               tanggal: tanggal
+            },
+            success: function(response) {
+               if (response.success) {
+                  Swal.fire('Berhasil', 'Data kehadiran berhasil dihapus', 'success').then(() => {
+                     location.reload();
+                  });
+               }
+            },
+            error: function(xhr) {
+               Swal.fire('Error', xhr.responseJSON?.message || 'Gagal menghapus data', 'error');
+            }
+         });
       }
    });
+}
+
+// Override updateUpahDisplay untuk mendukung mode range
+const originalUpdateUpahDisplay = updateUpahDisplay;
+function updateUpahDisplay(tukangId, response) {
+   const mode = response.mode || 'single';
    
-   // Bisa dikembangkan untuk menampilkan detail per hari dalam modal
-   // Untuk sekarang, akan menampilkan notifikasi sederhana
-   setTimeout(() => {
-      Swal.fire({
-         title: 'Detail Kehadiran',
-         html: '<p>Fitur detail per hari akan segera ditambahkan</p><p><small class="text-muted">Tukang: ' + namaTukang + '</small></p>',
-         icon: 'info',
-         confirmButtonText: 'OK'
-      });
-   }, 500);
+   if (mode === 'range') {
+      // Update untuk mode range
+      const tanggal = response.tanggal;
+      
+      // Update Upah Harian
+      const upahHarianCell = document.querySelector('.upah-harian-range-' + tukangId + '-' + tanggal);
+      if (upahHarianCell && response.upah_harian !== undefined) {
+         upahHarianCell.innerHTML = '<strong class="text-success">Rp ' + formatRupiah(response.upah_harian) + '</strong>';
+         upahHarianCell.style.backgroundColor = '#d4edda';
+         setTimeout(() => {
+            upahHarianCell.style.backgroundColor = '';
+         }, 1000);
+      }
+      
+      // Update Upah Lembur
+      const upahLemburCell = document.querySelector('.upah-lembur-range-' + tukangId + '-' + tanggal);
+      if (upahLemburCell && response.upah_lembur !== undefined) {
+         upahLemburCell.innerHTML = '<strong class="text-primary">Rp ' + formatRupiah(response.upah_lembur) + '</strong>';
+         upahLemburCell.style.backgroundColor = '#cfe2ff';
+         setTimeout(() => {
+            upahLemburCell.style.backgroundColor = '';
+         }, 1000);
+      }
+      
+      // Update Total Upah
+      const totalUpahCell = document.querySelector('.total-upah-range-' + tukangId + '-' + tanggal);
+      if (totalUpahCell && response.total_upah !== undefined) {
+         totalUpahCell.innerHTML = '<strong class="text-info">Rp ' + formatRupiah(response.total_upah) + '</strong>';
+         totalUpahCell.style.backgroundColor = '#d1ecf1';
+         setTimeout(() => {
+            totalUpahCell.style.backgroundColor = '';
+         }, 1000);
+      }
+   } else {
+      // Gunakan original function untuk mode single
+      originalUpdateUpahDisplay.call(this, tukangId, response);
+   }
 }
 </script>
 @endpush

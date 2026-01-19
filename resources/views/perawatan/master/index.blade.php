@@ -104,7 +104,8 @@
                                                 <th width="5%">Urutan</th>
                                                 <th width="25%">Nama Kegiatan</th>
                                                 <th width="20%">Deskripsi</th>
-                                                <th width="15%">Kategori</th>
+                                                <th width="12%">Ruangan</th>
+                                                <th width="13%">Kategori</th>
                                                 <th width="10%" class="text-center">Status</th>
                                                 <th width="10%" class="text-center">Eksekusi (30hr)</th>
                                                 <th width="15%" class="text-center">Aksi</th>
@@ -121,6 +122,13 @@
                                                 </td>
                                                 <td>
                                                     <small class="text-muted">{{ Str::limit($master->deskripsi, 50) }}</small>
+                                                </td>
+                                                <td>
+                                                    @if($master->ruangan)
+                                                        <span class="badge bg-cyan">{{ $master->ruangan->nama_ruangan }}</span>
+                                                    @else
+                                                        <small class="text-muted">Umum</small>
+                                                    @endif
                                                 </td>
                                                 <td>
                                                     @php

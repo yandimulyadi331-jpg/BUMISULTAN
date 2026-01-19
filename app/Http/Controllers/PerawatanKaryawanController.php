@@ -168,7 +168,7 @@ class PerawatanKaryawanController extends Controller
             ->with(['logs' => function($query) use ($periodeKey) {
                 $query->where('periode_key', $periodeKey)
                       ->with('user:id,name');
-            }])
+            }, 'ruangan'])
             ->get();
         
         // Hitung progress GLOBAL
@@ -179,9 +179,27 @@ class PerawatanKaryawanController extends Controller
         
         $progress = $totalChecklist > 0 ? round(($completedChecklist / $totalChecklist) * 100) : 0;
         
+        // Group by Ruangan untuk tampilan yang lebih organized
+        $checklistsByRuangan = $checklists->groupBy(function($item) {
+            return $item->ruangan_id ?? 'tanpa-ruangan';
+        })->map(function($items, $ruanganId) {
+            return [
+                'ruangan_id' => $ruanganId,
+                'ruangan_nama' => $ruanganId === 'tanpa-ruangan' 
+                    ? 'Umum (Tanpa Ruangan)' 
+                    : ($items->first()->ruangan->nama_ruangan ?? 'Unknown'),
+                'items' => $items,
+                'total' => $items->count(),
+                'completed' => $items->filter(function($item) {
+                    return $item->logs->where('status', 'completed')->count() > 0;
+                })->count()
+            ];
+        });
+        
         return view('perawatan.karyawan.checklist', compact(
             'tipe',
             'checklists',
+            'checklistsByRuangan',
             'periodeKey',
             'totalChecklist',
             'completedChecklist',
@@ -201,7 +219,7 @@ class PerawatanKaryawanController extends Controller
             'master_perawatan_id' => 'required|exists:master_perawatan,id',
             'periode_key' => 'required|string',
             'catatan' => 'nullable|string|max:500',
-            'foto_bukti' => 'required|image|max:2048'
+            'foto_bukti' => 'required|image|max:10240'
         ]);
 
         $user = Auth::user();

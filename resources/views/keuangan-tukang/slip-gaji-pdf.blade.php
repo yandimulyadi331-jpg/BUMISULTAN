@@ -146,7 +146,7 @@
         <p style="font-size: 10px; margin: 2px 0;">Jl. Raya Jonggol No.37, RT.02/RW.02, Jonggol, Kec. Jonggol</p>
         <p style="font-size: 10px; margin: 2px 0;">Kabupaten Bogor, Jawa Barat 16830</p>
         <p style="font-size: 12px; margin-top: 8px; font-weight: bold;">SLIP PEMBAYARAN GAJI TUKANG DAN KENEK</p>
-        <p style="font-size: 11px;">Periode: {{ $periode }}</p>
+        <p style="font-size: 11px;">Periode: {{ $periodeText ?? 'N/A' }}</p>
     </div>
 
     <div class="info-section">

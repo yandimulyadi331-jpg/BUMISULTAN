@@ -16,41 +16,107 @@ class KehadiranTukangController extends Controller
     /**
      * Halaman absensi harian - List semua tukang aktif hari ini
      * Support 2 mode: single tanggal atau range tanggal
+     * OPSI 2: Range mode menampilkan single form dengan navigasi prev/next
      */
     public function index(Request $request)
     {
-        // ✅ FITUR BARU: Support range tanggal
+        // ✅ FITUR BARU: Support range tanggal dengan navigasi
         if ($request->has('tanggal_mulai') && $request->has('tanggal_akhir')) {
-            // Mode range tanggal
+            // Mode range tanggal - tapi tampilkan single form dengan navigasi
             $tanggalMulai = Carbon::parse($request->input('tanggal_mulai'));
             $tanggalAkhir = Carbon::parse($request->input('tanggal_akhir'));
+            
+            // Tentukan tanggal yang ditampilkan (default: tanggal_mulai atau dari parameter)
+            $tanggalTampil = $request->input('tanggal', $tanggalMulai->format('Y-m-d'));
+            $carbonDateTampil = Carbon::parse($tanggalTampil);
+            
+            // Validasi tanggal dalam range
+            if ($carbonDateTampil < $tanggalMulai || $carbonDateTampil > $tanggalAkhir) {
+                $carbonDateTampil = $tanggalMulai;
+                $tanggalTampil = $tanggalMulai->format('Y-m-d');
+            }
+            
+            // Hitung tanggal prev dan next (skip Jumat)
+            $tanggalPrev = $carbonDateTampil->copy()->subDay();
+            $tanggalNext = $carbonDateTampil->copy()->addDay();
+            
+            // Skip Jumat untuk prev
+            while ($tanggalPrev >= $tanggalMulai && $tanggalPrev->isFriday()) {
+                $tanggalPrev->subDay();
+            }
+            
+            // Skip Jumat untuk next
+            while ($tanggalNext <= $tanggalAkhir && $tanggalNext->isFriday()) {
+                $tanggalNext->addDay();
+            }
+            
+            // Cek apakah bisa prev dan next
+            $canPrev = $tanggalPrev >= $tanggalMulai && !$tanggalPrev->isFriday();
+            $canNext = $tanggalNext <= $tanggalAkhir && !$tanggalNext->isFriday();
+            
+            // Cek apakah hari Jumat (libur)
+            $isJumat = $carbonDateTampil->isFriday();
             
             // Ambil semua tukang aktif
             $tukangs = Tukang::where('status', 'aktif')
                         ->orderBy('kode_tukang')
                         ->get();
             
-            // Ambil data kehadiran dalam range tanggal untuk setiap tukang
+            // Ambil data kehadiran untuk tanggal yang ditampilkan
             foreach ($tukangs as $tukang) {
-                $tukang->kehadiran_list = KehadiranTukang::where('tukang_id', $tukang->id)
-                                                    ->whereBetween('tanggal', [$tanggalMulai, $tanggalAkhir])
-                                                    ->orderBy('tanggal')
-                                                    ->get();
+                $tukang->kehadiran_hari_ini = KehadiranTukang::where('tukang_id', $tukang->id)
+                                                    ->where('tanggal', $tanggalTampil)
+                                                    ->first();
+            }
+            
+            // Hitung periode minggu untuk download report
+            $hariSekarang = $carbonDateTampil->dayOfWeek;
+            if ($hariSekarang == 5) { // Jumat
+                $periodeMulai = $carbonDateTampil->copy()->subDays(6);
+                $periodeAkhir = $carbonDateTampil->copy()->subDay();
+            } elseif ($hariSekarang == 6) { // Sabtu
+                $periodeMulai = $carbonDateTampil->copy();
+                $periodeAkhir = $carbonDateTampil->copy()->addDays(5);
+            } else { // Minggu - Kamis
+                $hariKeSabtu = ($hariSekarang == 0) ? 1 : 7 - $hariSekarang + 1;
+                $periodeMulai = $carbonDateTampil->copy()->subDays($hariKeSabtu);
+                $periodeAkhir = $periodeMulai->copy()->addDays(5);
             }
             
             $data = [
                 'tukangs' => $tukangs,
+                'tanggal' => $tanggalTampil,
                 'tanggal_mulai' => $tanggalMulai->format('Y-m-d'),
                 'tanggal_akhir' => $tanggalAkhir->format('Y-m-d'),
-                'mode' => 'range',
+                'tanggal_prev' => $canPrev ? $tanggalPrev->format('Y-m-d') : null,
+                'tanggal_next' => $canNext ? $tanggalNext->format('Y-m-d') : null,
+                'canPrev' => $canPrev,
+                'canNext' => $canNext,
+                'isJumat' => $isJumat,
+                'hariNama' => $carbonDateTampil->locale('id')->isoFormat('dddd, D MMMM YYYY'),
+                'mode' => 'range-single', // Mode khusus: tampil single tapi dalam context range
                 'periodeText' => $tanggalMulai->locale('id')->isoFormat('D MMMM') . ' - ' . $tanggalAkhir->locale('id')->isoFormat('D MMMM YYYY'),
-                'periode_mulai' => $tanggalMulai->format('Y-m-d'),
-                'periode_akhir' => $tanggalAkhir->format('Y-m-d')
+                'periode_mulai' => $periodeMulai->format('Y-m-d'),
+                'periode_akhir' => $periodeAkhir->format('Y-m-d')
             ];
         } else {
             // Mode single tanggal (original behavior)
             $tanggal = $request->input('tanggal', date('Y-m-d'));
             $carbonDate = Carbon::parse($tanggal);
+            
+            // ✅ TAMBAH: Hitung tanggal sebelumnya dan berikutnya (skip Jumat)
+            $tanggalSebelumnya = $carbonDate->copy()->subDay();
+            $tanggalBerikutnya = $carbonDate->copy()->addDay();
+            
+            // Skip Jumat untuk sebelumnya
+            while ($tanggalSebelumnya->isFriday()) {
+                $tanggalSebelumnya->subDay();
+            }
+            
+            // Skip Jumat untuk berikutnya
+            while ($tanggalBerikutnya->isFriday()) {
+                $tanggalBerikutnya->addDay();
+            }
             
             // Cek apakah hari Jumat (libur)
             $isJumat = $carbonDate->isFriday();
@@ -86,6 +152,8 @@ class KehadiranTukangController extends Controller
                 'tanggal' => $tanggal,
                 'tanggal_mulai' => $tanggal,
                 'tanggal_akhir' => $tanggal,
+                'tanggalSebelumnya' => $tanggalSebelumnya->format('Y-m-d'),
+                'tanggalBerikutnya' => $tanggalBerikutnya->format('Y-m-d'),
                 'isJumat' => $isJumat,
                 'hariNama' => $carbonDate->locale('id')->isoFormat('dddd, D MMMM YYYY'),
                 'mode' => 'single',
@@ -192,7 +260,9 @@ class KehadiranTukangController extends Controller
                 'upah_harian' => $kehadiran->upah_harian,
                 'upah_lembur' => $kehadiran->upah_lembur,
                 'total_upah' => $kehadiran->upah_harian + $kehadiran->upah_lembur,
-                'upah' => number_format($kehadiran->total_upah, 0, ',', '.')
+                'upah' => number_format($kehadiran->total_upah, 0, ',', '.'),
+                'tanggal' => $kehadiran->tanggal,
+                'mode' => 'range'
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -259,7 +329,9 @@ class KehadiranTukangController extends Controller
                 'upah_lembur' => $kehadiran->upah_lembur,
                 'total_upah' => $kehadiran->upah_harian + $kehadiran->upah_lembur,
                 'upah' => number_format($kehadiran->total_upah, 0, ',', '.'),
-                'upah_lembur_formatted' => number_format($kehadiran->upah_lembur, 0, ',', '.')
+                'upah_lembur_formatted' => number_format($kehadiran->upah_lembur, 0, ',', '.'),
+                'tanggal' => $kehadiran->tanggal,
+                'mode' => 'range'
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -556,6 +628,41 @@ class KehadiranTukangController extends Controller
             DB::rollBack();
             \Log::error('Sync Keuangan Error: ' . $e->getMessage());
             return false;
+        }
+    }
+    
+    /**
+     * Hapus data kehadiran (via AJAX untuk range mode)
+     */
+    public function deleteKehadiran(Request $request)
+    {
+        try {
+            $kehadiran = KehadiranTukang::where('tukang_id', $request->tukang_id)
+                                        ->where('tanggal', $request->tanggal)
+                                        ->first();
+            
+            if (!$kehadiran) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data kehadiran tidak ditemukan'
+                ], 404);
+            }
+            
+            // Hapus data keuangan terkait
+            KeuanganTukang::where('kehadiran_tukang_id', $kehadiran->id)->delete();
+            
+            // Hapus data kehadiran
+            $kehadiran->delete();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Data kehadiran berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 }

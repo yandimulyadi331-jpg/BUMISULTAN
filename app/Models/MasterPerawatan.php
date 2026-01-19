@@ -18,6 +18,7 @@ class MasterPerawatan extends Model
         'tipe_periode',
         'urutan',
         'kategori',
+        'ruangan_id',
         'is_active',
         'jam_mulai',
         'jam_selesai',
@@ -40,6 +41,14 @@ class MasterPerawatan extends Model
     public function logs()
     {
         return $this->hasMany(PerawatanLog::class, 'master_perawatan_id');
+    }
+
+    /**
+     * Relasi ke Ruangan
+     */
+    public function ruangan()
+    {
+        return $this->belongsTo(Ruangan::class, 'ruangan_id');
     }
 
     public function scopeActive($query)
