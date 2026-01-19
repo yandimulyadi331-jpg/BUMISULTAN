@@ -247,7 +247,23 @@
                                 </div>
                             </div>
 
-
+                            <div class="mb-3">
+                                <label class="form-label">Ruangan/Area</label>
+                                <select name="ruangan_id" class="form-select @error('ruangan_id') is-invalid @enderror">
+                                    <option value="">Tanpa Ruangan (Umum)</option>
+                                    @if(isset($ruangans))
+                                        @foreach($ruangans as $ruangan)
+                                            <option value="{{ $ruangan->id }}" {{ old('ruangan_id') == $ruangan->id ? 'selected' : '' }}>
+                                                {{ $ruangan->nama_ruangan }}
+                                            </option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                                @error('ruangan_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="form-hint">Pilih ruangan jika checklist ini hanya untuk area tertentu</small>
+                            </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Nomor Urutan</label>
