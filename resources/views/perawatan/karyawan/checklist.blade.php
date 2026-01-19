@@ -1071,41 +1071,31 @@
                             @endphp
                             <span class="kategori-badge">
                                 <i class="ti ti-{{ $badge['icon'] }}"></i> {{ $badge['text'] }}
-                        </span>
-                        
-                        @if($isChecked && $log)
-                            <span class="time-badge">
-                                <i class="ti ti-check-circle"></i> 
-                                {{ $log->waktu_eksekusi ? date('H:i', strtotime($log->waktu_eksekusi)) : '' }}
                             </span>
-                            <span class="user-badge">
-                                <i class="ti ti-user"></i> {{ $log->user ? $log->user->name : 'Unknown' }}
-                            </span>
-                        @endif
-                    </div>
-                    
-                    @if($isChecked && $log)
-                        @if($log->catatan)
-                        <div class="note-section">
-                            <div class="note-text">
-                                <i class="ti ti-note"></i> {{ $log->catatan }}
-                            </div>
                         </div>
-                        @endif
-                        
-                        @if($log->foto_bukti)
-                        <img src="{{ asset('storage/perawatan/' . $log->foto_bukti) }}" 
-                             class="foto-preview" 
-                             alt="Foto Bukti">
-                        @endif
-                        
-                        <button class="btn btn-uncheck" 
-                                data-id="{{ $checklist->id }}">
-                            <i class="ti ti-x"></i> Batalkan Checklist
-                        </button>
-                    @endif
+                    </div>
                 </div>
-            </div>
+                
+                @if($isChecked && $log)
+                    @if($log->catatan)
+                    <div class="note-section">
+                        <div class="note-text">
+                            <i class="ti ti-note"></i> {{ $log->catatan }}
+                        </div>
+                    </div>
+                    @endif
+                    
+                    @if($log->foto_bukti)
+                    <img src="{{ asset('storage/perawatan/' . $log->foto_bukti) }}" 
+                         class="foto-preview" 
+                         alt="Foto Bukti">
+                    @endif
+                    
+                    <button class="btn btn-uncheck" 
+                            data-id="{{ $checklist->id }}">
+                        <i class="ti ti-x"></i> Batalkan Checklist
+                    </button>
+                @endif
             </div>
             @empty
                 <div class="empty-state">
@@ -1114,6 +1104,7 @@
                 </div>
             @endforelse
         </div>
+        @empty
         @endforelse
     @else
         {{-- Fallback: Jika tidak ada grouped data, tampilkan dengan kategori saja --}}
@@ -1164,35 +1155,30 @@
                         <span class="kategori-badge">
                             <i class="ti ti-{{ $badge['icon'] }}"></i> {{ $badge['text'] }}
                         </span>
-                        @if($isChecked && $log)
-                            <span class="user-badge">
-                                <i class="ti ti-user"></i> {{ $log->user ? $log->user->name : 'Unknown' }}
-                            </span>
-                        @endif
                     </div>
-                    
-                    @if($isChecked && $log)
-                        @if($log->catatan)
-                        <div class="note-section">
-                            <div class="note-text">
-                                <i class="ti ti-note"></i> {{ $log->catatan }}
-                            </div>
-                        </div>
-                        @endif
-                        
-                        @if($log->foto_bukti)
-                        <img src="{{ asset('storage/perawatan/' . $log->foto_bukti) }}" 
-                             class="foto-preview" 
-                             alt="Foto Bukti">
-                        @endif
-                        
-                        <button class="btn btn-uncheck" 
-                                data-id="{{ $checklist->id }}">
-                            <i class="ti ti-x"></i> Batalkan Checklist
-                        </button>
-                    @endif
                 </div>
             </div>
+            
+            @if($isChecked && $log)
+                @if($log->catatan)
+                <div class="note-section">
+                    <div class="note-text">
+                        <i class="ti ti-note"></i> {{ $log->catatan }}
+                    </div>
+                </div>
+                @endif
+                
+                @if($log->foto_bukti)
+                <img src="{{ asset('storage/perawatan/' . $log->foto_bukti) }}" 
+                     class="foto-preview" 
+                     alt="Foto Bukti">
+                @endif
+                
+                <button class="btn btn-uncheck" 
+                        data-id="{{ $checklist->id }}">
+                    <i class="ti ti-x"></i> Batalkan Checklist
+                </button>
+            @endif
         </div>
         @empty
             <div class="empty-state">
