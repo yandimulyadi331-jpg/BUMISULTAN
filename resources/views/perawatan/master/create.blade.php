@@ -191,6 +191,62 @@
                                 </div>
                             </div>
 
+                            <!-- Sistem Point -->
+                            <div class="card bg-light mb-3">
+                                <div class="card-header">
+                                    <h4 class="card-title mb-0">⭐ Sistem Point - Pengaturan Beban Kerja</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label required">Points</label>
+                                                <input type="number" name="points" class="form-control @error('points') is-invalid @enderror" 
+                                                    min="1" max="100" value="{{ old('points', 1) }}" placeholder="1" required>
+                                                @error('points')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                                <small class="form-hint">Jumlah poin untuk pekerjaan ini</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Contoh Point</label>
+                                                <div class="btn-group w-100" role="group">
+                                                    <input type="radio" class="btn-check" name="point_preset" id="point_ringan" value="1">
+                                                    <label class="btn btn-outline-success" for="point_ringan">Ringan (1)</label>
+                                                    
+                                                    <input type="radio" class="btn-check" name="point_preset" id="point_sedang" value="5">
+                                                    <label class="btn btn-outline-warning" for="point_sedang">Sedang (5)</label>
+                                                    
+                                                    <input type="radio" class="btn-check" name="point_preset" id="point_berat" value="10">
+                                                    <label class="btn btn-outline-danger" for="point_berat">Berat (10)</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Deskripsi Alasan Point</label>
+                                        <textarea name="point_description" rows="2" class="form-control @error('point_description') is-invalid @enderror" 
+                                            placeholder="Misal: Pekerjaan ringan, hanya 5 menit. Atau: Pekerjaan berat, memerlukan 1 jam kerja fisik.">{{ old('point_description') }}</textarea>
+                                        @error('point_description')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        <small class="form-hint">Jelaskan alasan Anda memberikan point sebanyak ini</small>
+                                    </div>
+
+                                    <div class="alert alert-info mb-0">
+                                        <strong>📊 Panduan Point:</strong>
+                                        <ul class="mb-0 mt-2">
+                                            <li><strong>1-3 Point:</strong> Pekerjaan sangat ringan (misal: cuci gelas, aliran kamar mandi)</li>
+                                            <li><strong>4-7 Point:</strong> Pekerjaan sedang (misal: membersihkan 1 ruangan, merapikan barang)</li>
+                                            <li><strong>8-10+ Point:</strong> Pekerjaan berat (misal: mengecat, perbaikan elektrik, cleaning mendalam)</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="mb-3">
                                 <label class="form-label">Ruangan/Area</label>
                                 <select name="ruangan_id" class="form-select @error('ruangan_id') is-invalid @enderror">
@@ -258,6 +314,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const jadwalMingguan = document.getElementById('jadwal_mingguan');
     const jadwalBulanan = document.getElementById('jadwal_bulanan');
     const jadwalTahunan = document.getElementById('jadwal_tahunan');
+    
+    // Handle points preset buttons
+    const pointPreset = document.querySelectorAll('input[name="point_preset"]');
+    const pointsInput = document.querySelector('input[name="points"]');
+    
+    pointPreset.forEach(radio => {
+        radio.addEventListener('change', function() {
+            pointsInput.value = this.value;
+        });
+    });
     
     function toggleJadwal() {
         const tipe = tipeSelect.value;

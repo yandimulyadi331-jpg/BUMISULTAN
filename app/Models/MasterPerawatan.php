@@ -25,7 +25,9 @@ class MasterPerawatan extends Model
         'tanggal_target',
         'bulan_target',
         'hari_minggu',
-        'tanggal_bulan'
+        'tanggal_bulan',
+        'points',
+        'point_description'
     ];
 
     protected $casts = [

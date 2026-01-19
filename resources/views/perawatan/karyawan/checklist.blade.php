@@ -1059,7 +1059,13 @@
                         <div class="checklist-desc">{{ $checklist->deskripsi }}</div>
                         @endif
                         
-                        <div style="margin-top: 8px;">
+                        @if($checklist->point_description)
+                        <div class="checklist-desc" style="font-style: italic; color: #7c8db0; margin-top: 6px;">
+                            <i class="ti ti-info-circle" style="margin-right: 4px;"></i>{{ $checklist->point_description }}
+                        </div>
+                        @endif
+                        
+                        <div style="margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                             @php
                                 $kategoriBadge = [
                                     'kebersihan' => ['icon' => 'wash', 'text' => 'Kebersihan'],
@@ -1072,6 +1078,14 @@
                             <span class="kategori-badge">
                                 <i class="ti ti-{{ $badge['icon'] }}"></i> {{ $badge['text'] }}
                             </span>
+                            @if($checklist->points)
+                                @php
+                                    $pointColor = $checklist->points <= 3 ? '#52c77a' : ($checklist->points <= 7 ? '#ffa500' : '#ff6b6b');
+                                @endphp
+                                <span class="badge" style="background: {{ $pointColor }}; color: white; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: 600;">
+                                    ⭐ {{ $checklist->points }} pts
+                                </span>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -1142,7 +1156,13 @@
                     <div class="checklist-desc">{{ $checklist->deskripsi }}</div>
                     @endif
                     
-                    <div style="margin-top: 8px;">
+                    @if($checklist->point_description)
+                    <div class="checklist-desc" style="font-style: italic; color: #7c8db0; margin-top: 6px;">
+                        <i class="ti ti-info-circle" style="margin-right: 4px;"></i>{{ $checklist->point_description }}
+                    </div>
+                    @endif
+                    
+                    <div style="margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                         @php
                             $kategoriBadge = [
                                 'kebersihan' => ['icon' => 'wash', 'text' => 'Kebersihan'],
@@ -1155,6 +1175,14 @@
                         <span class="kategori-badge">
                             <i class="ti ti-{{ $badge['icon'] }}"></i> {{ $badge['text'] }}
                         </span>
+                        @if($checklist->points)
+                            @php
+                                $pointColor = $checklist->points <= 3 ? '#52c77a' : ($checklist->points <= 7 ? '#ffa500' : '#ff6b6b');
+                            @endphp
+                            <span class="badge" style="background: {{ $pointColor }}; color: white; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: 600;">
+                                ⭐ {{ $checklist->points }} pts
+                            </span>
+                        @endif
                     </div>
                 </div>
             </div>

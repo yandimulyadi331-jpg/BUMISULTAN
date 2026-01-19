@@ -13,7 +13,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h5 class="text-white mb-0">
-                            <i class="ti ti-chef-hat me-2"></i>Jadwal Khidmat - Belanja Masak Santri (7 Hari Terbaru)
+                            <i class="ti ti-chef-hat me-2"></i>Jadwal Khidmat - Belanja Masak Santri
                         </h5>
                         <small class="text-white-50">Sistem otomatis membuat jadwal baru ketika 7 hari selesai semua</small>
                     </div>
@@ -25,35 +25,91 @@
                 </div>
             </div>
 
+            <!-- Date Navigation Section -->
+            <div class="card-header bg-light border-bottom">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <a href="{{ route('khidmat.index', ['tanggal' => $tanggalKemarin->toDateString()]) }}" 
+                           class="btn btn-outline-primary btn-sm w-100">
+                            <i class="ti ti-arrow-left me-1"></i> Kemarin ({{ $tanggalKemarin->format('d/m') }})
+                        </a>
+                    </div>
+                    <div class="col-md-6 text-center">
+                        <div class="p-3 bg-white rounded border">
+                            <h6 class="mb-1 text-muted">Tanggal Khidmat</h6>
+                            <h4 class="mb-0 text-primary fw-bold">
+                                <i class="ti ti-calendar me-2"></i>{{ $namaHariSelected }}, {{ $tanggalDisplay }}
+                            </h4>
+                            @if($tanggalSelected->isToday())
+                                <span class="badge bg-success mt-2"><i class="ti ti-check me-1"></i>Hari Ini</span>
+                            @elseif($tanggalSelected->isPast())
+                                <span class="badge bg-secondary mt-2"><i class="ti ti-calendar-off me-1"></i>Tanggal Lalu</span>
+                            @else
+                                <span class="badge bg-info mt-2"><i class="ti ti-calendar-future me-1"></i>Tanggal Mendatang</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ route('khidmat.index', ['tanggal' => $tanggalBesok->toDateString()]) }}" 
+                           class="btn btn-outline-primary btn-sm w-100">
+                            Besok ({{ $tanggalBesok->format('d/m') }}) <i class="ti ti-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                    <div class="col-12 mt-3 text-center">
+                        <a href="{{ route('khidmat.index') }}" class="btn btn-warning btn-sm">
+                            <i class="ti ti-calendar-today me-1"></i> Kembali ke Hari Ini
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <div class="card-body">
                 <!-- Notifikasi menggunakan Toastr -->
                 
-                <!-- Filter Pencarian -->
-                <div class="row mb-3">
-                    <div class="col-md-5">
-                        <label class="form-label fw-bold">
-                            <i class="ti ti-search me-1"></i>Cari Jadwal Lama:
-                        </label>
-                        <input type="text" id="searchJadwal" class="form-control" placeholder="Ketik kelompok/tanggal untuk cari jadwal lama...">
-                        <small class="text-muted">Kosongkan untuk lihat 7 hari terbaru</small>
+                <!-- Status Tanggal Terpilih -->
+                @if($jadwal->isEmpty())
+                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+                        <i class="ti ti-info-circle me-2"></i>
+                        <strong>Tidak ada data khidmat</strong> untuk {{ $namaHariSelected }}, {{ $tanggalDisplay }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold">Filter Status:</label>
-                        <select id="filterStatus" class="form-select">
-                            <option value="">Semua</option>
-                            <option value="belum">Belum Selesai</option>
-                            <option value="selesai">Sudah Selesai</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4 text-end">
-                        <label class="form-label d-block">&nbsp;</label>
-                        <button type="button" class="btn btn-info" id="btnResetFilter">
-                            <i class="ti ti-refresh me-1"></i> Reset (Tampilkan 7 Hari Terbaru)
-                        </button>
+                @endif
+
+                <!-- Filter Pencarian (Monitoring/Arsip Lama) -->
+                <div class="card mt-3 mb-3 bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3">
+                            <i class="ti ti-search me-1"></i>Monitor / Cari Jadwal Lama
+                        </h6>
+                        <div class="row g-2">
+                            <div class="col-md-5">
+                                <label class="form-label form-label-sm fw-bold">Cari Kelompok / Tanggal:</label>
+                                <input type="text" id="searchJadwal" class="form-control form-control-sm" placeholder="Ketik untuk cari jadwal...">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label form-label-sm fw-bold">Filter Status:</label>
+                                <select id="filterStatus" class="form-select form-select-sm">
+                                    <option value="">Semua Status</option>
+                                    <option value="belum">Belum Selesai</option>
+                                    <option value="selesai">Sudah Selesai</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label form-label-sm d-block">&nbsp;</label>
+                                <button type="button" class="btn btn-sm btn-info w-100" id="btnResetFilter">
+                                    <i class="ti ti-refresh me-1"></i> Lihat 7 Hari Terakhir
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Table -->
+                <!-- Table Jadwal Hari Ini/Terpilih -->
+                @if($jadwal->isNotEmpty())
+                <h6 class="mb-3 text-primary fw-bold">
+                    <i class="ti ti-calendar-check me-1"></i>Data Khidmat - {{ $namaHariSelected }}, {{ $tanggalDisplay }}
+                </h6>
+                @endif
                 <div class="table-responsive">
                     <table class="table table-striped table-hover" id="jadwalKhidmatTable">
                         <thead class="table-light">
@@ -129,7 +185,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="9" class="text-center">Belum ada jadwal khidmat</td>
+                                <td colspan="11" class="text-center text-muted py-3">Belum ada jadwal khidmat</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -173,7 +229,20 @@ $(document).ready(function() {
             url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/id.json'
         },
         order: [[2, 'desc']],
-        pageLength: 10
+        pageLength: 10,
+        columnDefs: [
+            { targets: 0, orderable: false, searchable: false }, // No
+            { targets: 1, orderable: true, searchable: true },   // Kelompok
+            { targets: 2, orderable: true, searchable: true },   // Tanggal
+            { targets: 3, orderable: false, searchable: true },  // Petugas
+            { targets: 4, orderable: true, searchable: false },  // Saldo Awal
+            { targets: 5, orderable: true, searchable: false },  // Saldo Masuk
+            { targets: 6, orderable: true, searchable: false },  // Total Belanja
+            { targets: 7, orderable: true, searchable: false },  // Saldo Akhir
+            { targets: 8, orderable: false, searchable: false }, // Kebersihan
+            { targets: 9, orderable: false, searchable: false }, // Status
+            { targets: 10, orderable: false, searchable: false } // Aksi
+        ]
     });
 
     // AJAX Search untuk jadwal lama
@@ -225,7 +294,7 @@ $(document).ready(function() {
                 status: status
             },
             beforeSend: function() {
-                $('#jadwalKhidmatTable tbody').html('<tr><td colspan="10" class="text-center"><i class="ti ti-loader ti-spin me-2"></i>Mencari jadwal...</td></tr>');
+                $('#jadwalKhidmatTable tbody').html('<tr><td colspan="11" class="text-center"><i class="ti ti-loader ti-spin me-2"></i>Mencari jadwal...</td></tr>');
             },
             success: function(response) {
                 if (response.success) {
@@ -243,12 +312,13 @@ $(document).ready(function() {
         table.clear();
         
         if (data.length === 0) {
-            $('#jadwalKhidmatTable tbody').html('<tr><td colspan="10" class="text-center text-muted">Tidak ada data ditemukan</td></tr>');
+            $('#jadwalKhidmatTable tbody').html('<tr><td colspan="11" class="text-center text-muted">Tidak ada data ditemukan</td></tr>');
             return;
         }
         
         data.forEach(function(item, index) {
             const petugasNames = item.petugas.map(p => p.santri.nama_lengkap).join(', ') || '-';
+            const petugasBadges = item.petugas.map(p => `<span class="badge bg-info me-1">${p.santri.nama_lengkap}</span>`).join('') || '-';
             const kebersihanIcon = item.status_kebersihan === 'bersih' 
                 ? '<i class="ti ti-check text-success"></i>' 
                 : '<i class="ti ti-x text-danger"></i>';
@@ -261,6 +331,7 @@ $(document).ready(function() {
                     <td>${index + 1}</td>
                     <td>${item.nama_kelompok}</td>
                     <td>${new Date(item.tanggal_jadwal).toLocaleDateString('id-ID')}</td>
+                    <td>${petugasBadges}</td>
                     <td>Rp ${parseFloat(item.saldo_awal).toLocaleString('id-ID')}</td>
                     <td>Rp ${parseFloat(item.saldo_masuk).toLocaleString('id-ID')}</td>
                     <td>Rp ${parseFloat(item.total_belanja).toLocaleString('id-ID')}</td>

@@ -19,7 +19,8 @@ class PerawatanLog extends Model
         'status',
         'catatan',
         'foto_bukti',
-        'periode_key'
+        'periode_key',
+        'points_earned'
     ];
 
     protected $casts = [

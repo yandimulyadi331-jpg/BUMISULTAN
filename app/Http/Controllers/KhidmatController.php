@@ -14,6 +14,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\KhidmatTemplateExport;
 use App\Imports\KhidmatBelanjaImport;
+use Carbon\Carbon;
 
 class KhidmatController extends Controller
 {
@@ -25,13 +26,85 @@ class KhidmatController extends Controller
         // Auto-generate jadwal seminggu jika belum ada atau semua sudah selesai
         $this->autoGenerateJadwal();
 
-        // Hanya tampilkan 7 jadwal terbaru (jadwal aktif saat ini)
-        $jadwal = JadwalKhidmat::with(['petugas.santri', 'belanja', 'foto'])
+        // Get tanggal parameter from request, default to today
+        $tanggalSelected = request('tanggal') 
+            ? \Carbon\Carbon::parse(request('tanggal')) 
+            : \Carbon\Carbon::today();
+
+        // Pastikan jadwal untuk tanggal yang dipilih ada
+        $this->ensureJadwalExistForDate($tanggalSelected);
+
+        // Get jadwal untuk tanggal yang dipilih
+        $jadwalHari = JadwalKhidmat::with(['petugas.santri', 'belanja', 'foto'])
+            ->whereDate('tanggal_jadwal', $tanggalSelected)
+            ->first();
+
+        // Get 7 hari terbaru untuk fallback search (tetap ada untuk backward compatibility)
+        $jadwalTujuhHari = JadwalKhidmat::with(['petugas.santri', 'belanja', 'foto'])
             ->orderBy('tanggal_jadwal', 'desc')
             ->limit(7)
             ->get();
 
-        return view('khidmat.index', compact('jadwal'));
+        // Berikan jadwal sebagai array untuk view kompatibilitas
+        $jadwal = $jadwalHari ? collect([$jadwalHari]) : collect([]);
+        
+        // Format nama hari untuk display
+        $namaHari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        $namaHariSelected = $namaHari[$tanggalSelected->dayOfWeek];
+        $tanggalDisplay = $tanggalSelected->format('d/m/Y');
+
+        // Tombol navigasi
+        $tanggalKemarin = $tanggalSelected->copy()->subDay();
+        $tanggalBesok = $tanggalSelected->copy()->addDay();
+
+        return view('khidmat.index', compact(
+            'jadwal', 
+            'tanggalSelected', 
+            'namaHariSelected', 
+            'tanggalDisplay',
+            'tanggalKemarin',
+            'tanggalBesok',
+            'jadwalTujuhHari'
+        ));
+    }
+
+    /**
+     * Pastikan jadwal ada untuk tanggal yang dipilih
+     */
+    private function ensureJadwalExistForDate($tanggal)
+    {
+        // Cek apakah sudah ada jadwal untuk tanggal ini
+        $jadwalExists = JadwalKhidmat::whereDate('tanggal_jadwal', $tanggal)->exists();
+        
+        if ($jadwalExists) {
+            return; // Sudah ada, tidak perlu buat
+        }
+
+        // Jika tidak ada, buat jadwal baru untuk tanggal ini
+        // Ambil saldo akhir dari jadwal terakhir
+        $jadwalTerakhir = JadwalKhidmat::orderBy('tanggal_jadwal', 'desc')->first();
+        $saldoAwal = $jadwalTerakhir ? $jadwalTerakhir->saldo_akhir : 0;
+
+        // Tentukan nama hari
+        $namaHari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+        $hariIndex = ($tanggal->dayOfWeek + 6) % 7; // Convert to 0=Senin
+        $namaHari_ = $namaHari[$hariIndex];
+
+        try {
+            JadwalKhidmat::create([
+                'nama_kelompok' => 'Kelompok ' . $namaHari_,
+                'tanggal_jadwal' => $tanggal,
+                'status_kebersihan' => 'bersih',
+                'status_selesai' => false,
+                'saldo_awal' => $saldoAwal,
+                'saldo_masuk' => 0,
+                'total_belanja' => 0,
+                'saldo_akhir' => $saldoAwal,
+                'keterangan' => 'Auto-generated'
+            ]);
+        } catch (\Exception $e) {
+            // Silent fail - tidak crash jika ada error
+        }
     }
 
     /**

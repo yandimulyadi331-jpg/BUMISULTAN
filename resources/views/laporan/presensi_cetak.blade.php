@@ -340,6 +340,29 @@
                                             formatAngkaDesimal($potongan_jam) .
                                             ' Jam</strong></p>';
                                     @endphp
+                                @elseif($d[$tanggal_presensi]['status'] == 'pc')
+                                    @php
+                                        $bgcolor = '#ff6b35';
+                                        $textcolor = 'white';
+                                        $jml_pulangcepat++;
+                                        $pulang_cepat_jam = $d[$tanggal_presensi]['pulang_cepat_jam'] ?? '0';
+                                        $ket =
+                                            '<h4 style="font-weight: bold; margin-bottom:10px; background-color:#ff6b35; color:white; padding:5px; border-radius:3px; text-align:center;">PC - PULANG CEPAT</h4><p style="margin-top:8px;">Pulang lebih awal</p>
+                                        <p style="color:#ffe0cc; margin-top:5px;"><strong>PC : ' .
+                                            formatAngkaDesimal($pulang_cepat_jam) .
+                                            ' Jam</strong></p>';
+                                    @endphp
+                                @elseif($d[$tanggal_presensi]['status'] == 'pj')
+                                    @php
+                                        $bgcolor = '#ffa500';
+                                        $textcolor = 'white';
+                                        $potongan_jam_value = $d[$tanggal_presensi]['potongan_jam'] ?? '0';
+                                        $ket =
+                                            '<h4 style="font-weight: bold; margin-bottom:10px; background-color:#ffa500; color:white; padding:5px; border-radius:3px; text-align:center;">PJ - POTONGAN JAM</h4><p style="margin-top:8px;">Terlambat masuk/Pulang cepat</p>
+                                        <p style="color:#ffe699; margin-top:5px;"><strong>PJ : ' .
+                                            formatAngkaDesimal($potongan_jam_value) .
+                                            ' Jam</strong></p>';
+                                    @endphp
                                 @endif
                             @else
                                 @php

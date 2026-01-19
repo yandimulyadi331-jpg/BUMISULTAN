@@ -87,7 +87,7 @@ use App\Http\Controllers\TukangController;
 use App\Http\Controllers\KehadiranTukangController;
 use App\Http\Controllers\KeuanganTukangController;
 use App\Http\Controllers\PinjamanController;
-use App\Http\Controllers\PinjamanIbuController;
+// use App\Http\Controllers\PinjamanIbuController; // DISABLED - Menu dihapus
 use App\Http\Controllers\LaporanKeuanganController;
 use App\Http\Controllers\LaporanKeuanganKaryawanController;
 use App\Http\Controllers\ManajemenPerawatanController;
@@ -1773,8 +1773,9 @@ Route::middleware('role:super admin')->prefix('pinjaman')->name('pinjaman.')->co
 });
 
 // ===================================
-// PINJAMAN VIA IBU (Same logic as regular Pinjaman)
+// PINJAMAN VIA IBU - DIHAPUS (Disabled)
 // ===================================
+/* COMMENTED OUT - Menu Pinjaman via Ibu telah dihapus dari aplikasi
 Route::middleware('role:super admin')->prefix('pinjaman-ibu')->name('pinjaman-ibu.')->controller(PinjamanIbuController::class)->group(function () {
     // List & Dashboard
     Route::get('/', 'index')->name('index');
@@ -1817,6 +1818,7 @@ Route::middleware('role:super admin')->prefix('pinjaman-ibu')->name('pinjaman-ib
     // Laporan
     Route::get('/laporan/index', 'laporan')->name('laporan');
 });
+*/
 
 // ===================================
 // MANAJEMEN PERAWATAN GEDUNG

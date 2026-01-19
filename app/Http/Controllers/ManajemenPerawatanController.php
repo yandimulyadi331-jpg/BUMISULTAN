@@ -7,6 +7,8 @@ use App\Models\PerawatanLog;
 use App\Models\PerawatanLaporan;
 use App\Models\PerawatanStatusPeriode;
 use App\Models\ChecklistPeriodeConfig;
+use App\Models\KpiCrew;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -51,7 +53,9 @@ class ManajemenPerawatanController extends Controller
             'jam_selesai' => 'nullable|date_format:H:i',
             'hari_minggu' => 'nullable|integer|min:1|max:7',
             'tanggal_bulan' => 'nullable|integer|min:1|max:31',
-            'tanggal_target' => 'nullable|date'
+            'tanggal_target' => 'nullable|date',
+            'points' => 'required|integer|min:1|max:100',
+            'point_description' => 'nullable|string|max:500'
         ]);
 
         $validated['urutan'] = $validated['urutan'] ?? 0;
@@ -84,7 +88,9 @@ class ManajemenPerawatanController extends Controller
             'jam_selesai' => 'nullable|date_format:H:i',
             'hari_minggu' => 'nullable|integer|min:1|max:7',
             'tanggal_bulan' => 'nullable|integer|min:1|max:31',
-            'tanggal_target' => 'nullable|date'
+            'tanggal_target' => 'nullable|date',
+            'points' => 'required|integer|min:1|max:100',
+            'point_description' => 'nullable|string|max:500'
         ]);
 
         $master = MasterPerawatan::findOrFail($id);
@@ -275,12 +281,16 @@ class ManajemenPerawatanController extends Controller
             ], 422);
         }
 
+        // Get master perawatan untuk mendapatkan points
+        $master = MasterPerawatan::findOrFail($validated['master_perawatan_id']);
+        $pointsEarned = $master->points ?? 0;
+
         $fotoBukti = null;
         if ($request->hasFile('foto_bukti')) {
             $fotoBukti = $request->file('foto_bukti')->store('perawatan/bukti', 'public');
         }
 
-        // Create log
+        // Create log with points earned
         PerawatanLog::create([
             'master_perawatan_id' => $validated['master_perawatan_id'],
             'user_id' => Auth::id(),
@@ -289,15 +299,20 @@ class ManajemenPerawatanController extends Controller
             'status' => 'completed',
             'catatan' => $validated['catatan'] ?? null,
             'foto_bukti' => $fotoBukti,
-            'periode_key' => $periodeKey
+            'periode_key' => $periodeKey,
+            'points_earned' => $pointsEarned
         ]);
+
+        // ✅ TAMBAHAN: Update KPI crew dengan points perawatan
+        $this->updateKpiCrewPoints(Auth::user(), $pointsEarned);
 
         // Update status periode
         $this->updateStatusPeriode($validated['tipe_periode'], $periodeKey);
 
         return response()->json([
             'success' => true,
-            'message' => 'Checklist berhasil dicentang!'
+            'message' => 'Checklist berhasil dicentang! (+' . $pointsEarned . ' points)',
+            'points_earned' => $pointsEarned
         ]);
     }
 
@@ -315,6 +330,12 @@ class ManajemenPerawatanController extends Controller
             ->first();
 
         if ($log) {
+            // ✅ TAMBAHAN: Kurangi points dari KPI crew sebelum delete
+            $user = User::find($log->user_id);
+            if ($user && $log->points_earned > 0) {
+                $this->updateKpiCrewPoints($user, -$log->points_earned);
+            }
+
             // Delete foto if exists
             if ($log->foto_bukti && Storage::disk('public')->exists($log->foto_bukti)) {
                 Storage::disk('public')->delete($log->foto_bukti);
@@ -727,4 +748,56 @@ class ManajemenPerawatanController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Helper method untuk update KPI crew dengan points perawatan
+     * @param User $user - User yang menyelesaikan checklist
+     * @param int $points - Points yang ditambahkan (bisa negatif untuk pengurangan)
+     */
+    private function updateKpiCrewPoints($user, $points)
+    {
+        try {
+            // Ambil data karyawan dari user
+            $karyawan = $user->karyawan;
+            if (!$karyawan || !$karyawan->nik) {
+                return; // Skip jika user tidak memiliki karyawan atau nik
+            }
+
+            // Dapatkan bulan dan tahun sekarang
+            $bulan = now()->month;
+            $tahun = now()->year;
+
+            // Cari atau buat KPI crew record
+            $kpiCrew = KpiCrew::firstOrCreate(
+                [
+                    'nik' => $karyawan->nik,
+                    'bulan' => $bulan,
+                    'tahun' => $tahun
+                ],
+                [
+                    'kehadiran_count' => 0,
+                    'aktivitas_count' => 0,
+                    'perawatan_count' => 0,
+                    'kehadiran_point' => 0,
+                    'aktivitas_point' => 0,
+                    'perawatan_point' => 0,
+                    'total_point' => 0
+                ]
+            );
+
+            // Update perawatan_point dan total_point
+            $newPerawatanPoint = max(0, $kpiCrew->perawatan_point + $points); // Jangan biarkan negatif
+            $newTotalPoint = max(0, $kpiCrew->total_point + $points);
+
+            $kpiCrew->update([
+                'perawatan_count' => $points > 0 ? $kpiCrew->perawatan_count + 1 : max(0, $kpiCrew->perawatan_count - 1),
+                'perawatan_point' => $newPerawatanPoint,
+                'total_point' => $newTotalPoint
+            ]);
+        } catch (\Exception $e) {
+            // Log error tapi jangan crash aplikasi
+            \Log::error('Error updating KPI crew: ' . $e->getMessage());
+        }
+    }
 }
+

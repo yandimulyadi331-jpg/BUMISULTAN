@@ -100,13 +100,41 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="flex-grow-1">
-                            <h5 class="mb-1">
-                                @if($statusPeriode->is_completed)
-                                    <i class="ti ti-circle-check text-success me-2"></i>Semua Checklist Selesai!
-                                @else
-                                    <i class="ti ti-hourglass-empty text-warning me-2"></i>Checklist Belum Selesai
-                                @endif
-                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="mb-1">
+                                        @if($statusPeriode->is_completed)
+                                            <i class="ti ti-circle-check text-success me-2"></i>Semua Checklist Selesai!
+                                        @else
+                                            <i class="ti ti-hourglass-empty text-warning me-2"></i>Checklist Belum Selesai
+                                        @endif
+                                    </h5>
+                                </div>
+                                <div class="col-md-6">
+                                    @php
+                                        $completedItems = $logs->count();
+                                        $totalItems = $masters->count();
+                                        $totalPoints = $masters->sum('points') ?? 0;
+                                        $earnedPoints = $logs->sum(function($log) { 
+                                            return optional($log->master)->points ?? 0; 
+                                        });
+                                    @endphp
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="text-center">
+                                                <div class="h5 mb-1">{{ $completedItems }}/{{ $totalItems }}</div>
+                                                <div class="text-muted small">Checklist Selesai</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="text-center">
+                                                <div class="h5 mb-1">⭐ {{ $earnedPoints }}/{{ $totalPoints }}</div>
+                                                <div class="text-muted small">Points Terkumpul</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="ms-3">
                             @if($statusPeriode->is_completed)
@@ -200,9 +228,22 @@
                                            id="checklist_{{ $master->id }}">
                                 </div>
                                 <label class="form-check-label flex-grow-1 cursor-pointer" for="checklist_{{ $master->id }}">
-                                    <strong>{{ $master->nama_master_perawatan }}</strong>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <strong>{{ $master->nama_kegiatan }}</strong>
+                                        @if($master->points)
+                                            @php
+                                                $pointColor = $master->points <= 3 ? 'success' : ($master->points <= 7 ? 'warning' : 'danger');
+                                            @endphp
+                                            <span class="badge bg-{{ $pointColor }}">⭐ {{ $master->points }} pts</span>
+                                        @endif
+                                    </div>
                                     @if($master->deskripsi)
-                                    <div class="small text-muted">{{ $master->deskripsi }}</div>
+                                        <div class="small text-muted">{{ $master->deskripsi }}</div>
+                                    @endif
+                                    @if($master->point_description)
+                                        <div class="small text-muted" style="font-style: italic;">
+                                            <i class="ti ti-info-circle"></i> {{ $master->point_description }}
+                                        </div>
                                     @endif
                                 </label>
                                 @if($isChecked)
@@ -259,9 +300,22 @@
                                            style="width: 1.5rem; height: 1.5rem; cursor: pointer;">
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h6 class="mb-1 {{ $isChecked ? 'text-success' : '' }}">{{ $master->nama_kegiatan }}</h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <h6 class="mb-0 {{ $isChecked ? 'text-success' : '' }}">{{ $master->nama_kegiatan }}</h6>
+                                        @if($master->points)
+                                            @php
+                                                $pointColor = $master->points <= 3 ? 'success' : ($master->points <= 7 ? 'warning' : 'danger');
+                                            @endphp
+                                            <span class="badge bg-{{ $pointColor }}">⭐ {{ $master->points }} pts</span>
+                                        @endif
+                                    </div>
                                     @if($master->deskripsi)
                                         <p class="text-muted small mb-1">{{ $master->deskripsi }}</p>
+                                    @endif
+                                    @if($master->point_description)
+                                        <p class="text-muted small mb-1" style="font-style: italic;">
+                                            <i class="ti ti-info-circle"></i> {{ $master->point_description }}
+                                        </p>
                                     @endif
                                 </div>
                                 <div>

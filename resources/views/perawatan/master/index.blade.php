@@ -102,10 +102,11 @@
                                         <thead>
                                             <tr>
                                                 <th width="5%">Urutan</th>
-                                                <th width="25%">Nama Kegiatan</th>
-                                                <th width="20%">Deskripsi</th>
+                                                <th width="20%">Nama Kegiatan</th>
+                                                <th width="15%">Deskripsi</th>
+                                                <th width="8%">Points</th>
                                                 <th width="12%">Ruangan</th>
-                                                <th width="13%">Kategori</th>
+                                                <th width="12%">Kategori</th>
                                                 <th width="10%" class="text-center">Status</th>
                                                 <th width="10%" class="text-center">Eksekusi (30hr)</th>
                                                 <th width="15%" class="text-center">Aksi</th>
@@ -122,6 +123,16 @@
                                                 </td>
                                                 <td>
                                                     <small class="text-muted">{{ Str::limit($master->deskripsi, 50) }}</small>
+                                                </td>
+                                                <td>
+                                                    @if($master->points)
+                                                        @php
+                                                            $pointColor = $master->points <= 3 ? 'success' : ($master->points <= 7 ? 'warning' : 'danger');
+                                                        @endphp
+                                                        <span class="badge bg-{{ $pointColor }}">⭐ {{ $master->points }} pts</span>
+                                                    @else
+                                                        <span class="badge bg-secondary">-</span>
+                                                    @endif
                                                 </td>
                                                 <td>
                                                     @if($master->ruangan)
