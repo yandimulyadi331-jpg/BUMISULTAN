@@ -628,16 +628,18 @@
     @if($recentActivities->count() > 0)
     <div class="section-title">Aktivitas Terakhir</div>
     @foreach($recentActivities->take(5) as $activity)
-    <div class="activity-item">
-        <div class="activity-title">{{ $activity->masterPerawatan->nama_kegiatan }}</div>
-        <div class="activity-time">
-            <i class="ti ti-calendar"></i> {{ $activity->tanggal_eksekusi->format('d M Y') }}
-            <i class="ti ti-clock ms-2"></i> {{ date('H:i', strtotime($activity->waktu_eksekusi)) }}
+        @if($activity->masterPerawatan)  <!-- Safe null check -->
+        <div class="activity-item">
+            <div class="activity-title">{{ $activity->masterPerawatan->nama_kegiatan }}</div>
+            <div class="activity-time">
+                <i class="ti ti-calendar"></i> {{ $activity->tanggal_eksekusi->format('d M Y') }}
+                <i class="ti ti-clock ms-2"></i> {{ date('H:i', strtotime($activity->waktu_eksekusi)) }}
+            </div>
+            @if($activity->catatan)
+            <div class="activity-note">{{ $activity->catatan }}</div>
+            @endif
         </div>
-        @if($activity->catatan)
-        <div class="activity-note">{{ $activity->catatan }}</div>
         @endif
-    </div>
     @endforeach
     @endif
 </div>

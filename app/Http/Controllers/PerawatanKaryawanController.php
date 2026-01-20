@@ -63,6 +63,7 @@ class PerawatanKaryawanController extends Controller
             
         // History aktivitas terakhir
         $recentActivities = PerawatanLog::where('user_id', $user->id)
+            ->whereNotNull('master_perawatan_id')  // Exclude records dengan null foreign key
             ->with('masterPerawatan')
             ->orderBy('created_at', 'desc')
             ->take(10)
