@@ -36,4 +36,5 @@ Route::prefix('notifications')->group(function () {
 // Checklist API Routes
 Route::middleware('auth:sanctum')->prefix('checklist')->name('api.checklist.')->group(function () {
     Route::post('/status', [App\Http\Controllers\Api\ChecklistController::class, 'checkStatus'])->name('status');
+    Route::post('/force-pulang', [App\Http\Controllers\Api\ChecklistController::class, 'forcePulang'])->name('force-pulang');
 });

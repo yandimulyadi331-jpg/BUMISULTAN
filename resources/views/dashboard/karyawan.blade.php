@@ -1019,21 +1019,23 @@
                         </div>
                     </div>
                     <div class="modal-body">
-                        <h3 style="color: var(--text-primary); font-weight: 700; text-align: center; margin: 20px 0;">Oops...</h3>
+                        <h3 style="color: var(--text-primary); font-weight: 700; text-align: center; margin: 20px 0;">Selesaikan Checklist Dulu?</h3>
                         <p style="color: var(--text-primary); text-align: center; line-height: 1.6; margin: 15px 0;">
-                            Tidak dapat absen pulang! Selesaikan checklist shift Anda 
+                            Masih ada checklist yang belum selesai
                             <span id="checklistProgressText" style="font-weight: 600;">
                                 (34/50 selesai, 68% tersisa 16 tugas)
-                            </span> 
-                            terlebih dahulu sebelum pulang.
+                            </span>
+                        </p>
+                        <p style="color: var(--text-secondary); text-align: center; font-size: 0.9rem; margin: 10px 0;">
+                            Anda dapat melanjutkan absen pulang atau menyelesaikan checklist terlebih dahulu.
                         </p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-pulang" id="btnPulang">
-                            <i class="ti ti-door-exit"></i> Pulang
+                        <button type="button" class="btn btn-selesaikan" id="btnSelesaikan" style="flex: 1;">
+                            <i class="ti ti-checklist"></i> Selesaikan
                         </button>
-                        <button type="button" class="btn btn-selesaikan" id="btnSelesaikan">
-                            <i class="ti ti-checklist"></i> Selesaikan Checklist
+                        <button type="button" class="btn btn-pulang" id="btnPulang" style="flex: 1; background: #27ae60; border-color: #27ae60;">
+                            <i class="ti ti-door-exit"></i> Pulang
                         </button>
                     </div>
                 </div>
@@ -1708,11 +1710,50 @@
             document.body.style.overflow = 'auto';
         }
 
-        // Tombol Pulang - tutup modal dan lanjutkan
+        // Tombol Pulang - call API force-pulang and proceed
         btnPulang.addEventListener('click', function() {
-            hideChecklistModal();
-            // Mark that user chose to go home despite incomplete checklist
-            sessionStorage.setItem('checklistNotificationShown', 'true');
+            // Disable button to prevent double click
+            btnPulang.disabled = true;
+            btnPulang.innerHTML = '<i class="ti ti-loader"></i> Loading...';
+
+            // Get today's date
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const todayDate = `${year}-${month}-${day}`;
+
+            // Call force-pulang API
+            fetch('{{ route('api.checklist.force-pulang') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    date: todayDate
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.forcePulangAllowed) {
+                    // Store flag bahwa user force pulang
+                    sessionStorage.setItem('forcePulangAllowed', 'true');
+                    hideChecklistModal();
+                    // Proceed with checkout/pulang
+                    console.log('Force pulang allowed, proceeding with checkout...');
+                } else {
+                    alert('Gagal: ' + (data.message || 'Tidak dapat melanjutkan'));
+                    btnPulang.disabled = false;
+                    btnPulang.innerHTML = '<i class="ti ti-door-exit"></i> Pulang';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan. Coba lagi.');
+                btnPulang.disabled = false;
+                btnPulang.innerHTML = '<i class="ti ti-door-exit"></i> Pulang';
+            });
         });
 
         // Tombol Selesaikan - redirect ke halaman checklist

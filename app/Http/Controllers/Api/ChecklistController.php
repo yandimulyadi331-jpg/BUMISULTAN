@@ -100,4 +100,51 @@ class ChecklistController extends Controller
                 : 'Semua checklist sudah selesai'
         ]);
     }
+
+    /**
+     * Force pulang - bypass checklist requirement
+     * User klik tombol "Pulang" di notifikasi checklist
+     */
+    public function forcePulang(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $date = $request->input('date', now()->format('Y-m-d'));
+
+            // Get presensi
+            $userkaryawan = $user->userkaryawan;
+            if (!$userkaryawan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User bukan karyawan'
+                ], 403);
+            }
+
+            $nik = $userkaryawan->nik;
+            $presensiToday = Presensi::where('nik', $nik)
+                ->where('tanggal', $date)
+                ->first();
+
+            if (!$presensiToday) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada presensi hari ini'
+                ], 404);
+            }
+
+            // Store flag bahwa user force pulang
+            // Return success, biarkan aplikasi mobile handle absen pulang
+            return response()->json([
+                'success' => true,
+                'forcePulangAllowed' => true,
+                'message' => 'Anda dapat melanjutkan absen pulang'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
