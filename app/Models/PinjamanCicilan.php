@@ -95,13 +95,28 @@ class PinjamanCicilan extends Model
     }
 
     /**
-     * Proses pembayaran cicilan
+     * Proses pembayaran cicilan - SEDERHANA & AKURAT
+     * Tanpa early settlement, hanya pembayaran normal ke cicilan terkait
      */
     public function prosesPembayaran($jumlahBayar, $metodePembayaran, $noReferensi = null, $buktiBayar = null, $keterangan = null)
     {
-        $totalTagihan = $this->sisa_cicilan;
+        // ✅ Validasi dasar
+        if ($jumlahBayar <= 0) {
+            return [
+                'success' => false,
+                'errors' => ['Jumlah pembayaran harus lebih dari 0'],
+            ];
+        }
+
+        $cicilanNormal = $this->jumlah_cicilan;
         
-        // Update pembayaran
+        // ✅ PEMBAYARAN NORMAL - SEDERHANA
+        $dataSebulum = [
+            'jumlah_dibayar' => $this->jumlah_dibayar,
+            'sisa_cicilan' => $this->sisa_cicilan,
+            'status' => $this->status,
+        ];
+        
         $this->jumlah_dibayar += $jumlahBayar;
         $this->tanggal_bayar = now();
         $this->metode_pembayaran = $metodePembayaran;
@@ -110,11 +125,11 @@ class PinjamanCicilan extends Model
         $this->dibayar_oleh = auth()->id();
         $this->keterangan = $keterangan;
 
-        // Update sisa cicilan
-        if ($this->jumlah_dibayar >= $totalTagihan) {
+        // ✅ Hitung status cicilan berdasar nominal normal
+        if ($this->jumlah_dibayar >= $this->jumlah_cicilan) {
             $this->sisa_cicilan = 0;
             $this->status = 'lunas';
-            $kembalian = $this->jumlah_dibayar - $totalTagihan;
+            $kembalian = $this->jumlah_dibayar - $this->jumlah_cicilan;
         } else {
             $this->sisa_cicilan = $this->jumlah_cicilan - $this->jumlah_dibayar;
             $this->status = 'sebagian';
@@ -123,13 +138,18 @@ class PinjamanCicilan extends Model
 
         $this->save();
 
-        // Update total pembayaran di pinjaman induk
+        // ✅ UPDATE PINJAMAN INDUK
         $pinjaman = $this->pinjaman;
-        $pinjaman->total_terbayar += $jumlahBayar;
-        $pinjaman->sisa_pinjaman = $pinjaman->total_pinjaman - $pinjaman->total_terbayar;
+        $sisaPinjamanLama = $pinjaman->sisa_pinjaman;
         
-        // Cek apakah sudah lunas semua
-        if ($pinjaman->sisa_pinjaman <= 0) {
+        $pinjaman->total_terbayar += $jumlahBayar;
+        $pinjaman->sisa_pinjaman = max(0, $pinjaman->total_pinjaman - $pinjaman->total_terbayar);
+        
+        // ✅ FIX: Cek SEMUA cicilan LUNAS, bukan hanya sisa_pinjaman
+        $semuaCicilanLunas = $pinjaman->cicilan()->where('status', '!=', 'lunas')->count() === 0;
+        $totalCicilanKe = $pinjaman->cicilan()->count();
+        
+        if ($semuaCicilanLunas && $totalCicilanKe > 0) {
             $pinjaman->status = 'lunas';
             $pinjaman->tanggal_lunas = now();
         } else {
@@ -137,8 +157,14 @@ class PinjamanCicilan extends Model
         }
 
         $pinjaman->save();
+        
+        // ✅ AUTO-SYNC: Pastikan total_pinjaman selalu = sum(cicilan)
+        // Ini menjaga konsistensi data jika ada pembayaran partial atau nominal tidak pas
+        $totalCicilanSebenarnya = $pinjaman->cicilan()->sum('jumlah_cicilan');
+        if ($pinjaman->total_pinjaman != $totalCicilanSebenarnya) {
+            $pinjaman->update(['total_pinjaman' => $totalCicilanSebenarnya]);
+        }
 
-        // Log history
         $pinjaman->logHistory(
             'bayar_cicilan',
             null,
@@ -150,6 +176,22 @@ class PinjamanCicilan extends Model
                 'metode' => $metodePembayaran,
             ]
         );
+
+        // ✅ TRIGGER EVENT REAL-TIME: Dispatch event untuk update laporan otomatis
+        event(new \App\Events\PinjamanPaymentUpdated($pinjaman, $this, [
+            'sebelum' => array_merge($dataSebulum, [
+                'sisa_pinjaman' => $sisaPinjamanLama,
+                'total_terbayar' => $pinjaman->total_terbayar - $jumlahBayar,
+            ]),
+            'sesudah' => [
+                'jumlah_dibayar' => $this->jumlah_dibayar,
+                'sisa_cicilan' => $this->sisa_cicilan,
+                'status_cicilan' => $this->status,
+                'sisa_pinjaman' => $pinjaman->sisa_pinjaman,
+                'total_terbayar' => $pinjaman->total_terbayar,
+                'status_pinjaman' => $pinjaman->status,
+            ],
+        ]));
 
         return [
             'success' => true,
@@ -211,4 +253,85 @@ class PinjamanCicilan extends Model
             $this->save();
         }
     }
+
+    /**
+     * ✅ FITUR EARLY SETTLEMENT (Pelunasan Lebih Awal)
+     * 
+     * Handle ketika ada pembayaran yang melunasin semua sisa pinjaman sekaligus
+     * - Hapus cicilan belum bayar (tidak relevan)
+     * - Update status pinjaman = LUNAS
+     * - Set tanggal_lunas & tanggal_pelunasan_awal
+     * - Catat di history untuk audit
+     */
+    public static function handleEarlySettlement(Pinjaman $pinjaman)
+    {
+        // Cek apakah sisa_pinjaman sudah 0 atau negatif (fully paid)
+        if ($pinjaman->sisa_pinjaman <= 0) {
+            try {
+                // ✅ HAPUS cicilan belum bayar (tidak relevan lagi)
+                $cicilanBelumBayar = self::where('pinjaman_id', $pinjaman->id)
+                    ->where('status', '!=', 'lunas')
+                    ->where('status', '!=', 'sebagian')
+                    ->count();
+                
+                if ($cicilanBelumBayar > 0) {
+                    self::where('pinjaman_id', $pinjaman->id)
+                        ->where('status', 'belum_bayar')
+                        ->delete();
+                }
+                
+                // ✅ UPDATE status pinjaman menjadi LUNAS
+                $pinjaman->update([
+                    'status' => 'lunas',
+                    'tanggal_lunas' => now(),
+                ]);
+                
+                // ✅ LOG HISTORY untuk audit trail
+                $pinjaman->logHistory(
+                    'early_settlement',
+                    'berjalan',
+                    'lunas',
+                    'Pinjaman LUNAS dengan pelunasan lebih awal (pembayaran satu kali untuk semua sisa)'
+                );
+                
+                return true;
+            } catch (\Exception $e) {
+                \Log::error('Error dalam handleEarlySettlement: ' . $e->getMessage());
+                return false;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * ✅ SYNC DATA PINJAMAN: Auto-update saat ada pembayaran
+     * Memastikan total_pinjaman, sisa_pinjaman, total_terbayar selalu sinkron
+     */
+    public function syncPinjamanData()
+    {
+        $pinjaman = $this->pinjaman;
+        
+        // Hitung ulang dari cicilan yang sebenarnya ada
+        $totalCicilan = $pinjaman->cicilan()->sum('jumlah_cicilan');
+        $totalBayar = $pinjaman->cicilan()->sum('jumlah_dibayar');
+        $sisaPinjaman = max(0, $totalCicilan - $totalBayar);
+        
+        // Update jika ada perbedaan
+        if ($pinjaman->total_pinjaman != $totalCicilan ||
+            $pinjaman->total_terbayar != $totalBayar ||
+            $pinjaman->sisa_pinjaman != $sisaPinjaman) {
+            
+            $pinjaman->update([
+                'total_pinjaman' => $totalCicilan,
+                'total_terbayar' => $totalBayar,
+                'sisa_pinjaman' => $sisaPinjaman,
+            ]);
+            
+            return true;
+        }
+        
+        return false;
+    }
 }
+

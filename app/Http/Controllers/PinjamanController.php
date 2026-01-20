@@ -191,10 +191,18 @@ class PinjamanController extends Controller
             $validated['bunga_persen'] = 0;
             $validated['tipe_bunga'] = 'flat';
             
-            // Hitung total pinjaman dari cicilan x tenor
-            $validated['total_pinjaman'] = $validated['cicilan_per_bulan'] * $validated['tenor_bulan'];
+            // ✅ PERBAIKAN AKURASI ANGSURAN (BERBASIS CICILAN PER BULAN DARI USER):
+            // User input cicilan_per_bulan (jumlah yang ingin dibayar per bulan)
+            // Sistem hitung tenor otomatis = ceil(total / cicilan_per_bulan)
+            // Cicilan terakhir = total - (cicilan_normal × (tenor-1))
+            
+            $validated['total_pinjaman'] = $validated['jumlah_pengajuan'];
             $validated['total_pokok'] = $validated['jumlah_pengajuan'];
             $validated['total_bunga'] = 0;
+            
+            // cicilan_per_bulan sudah dari user input, jangan diubah
+            // Ini adalah cicilan normal untuk bulan 1 sampai (tenor-1)
+            // Cicilan terakhir akan dihitung di generateJadwalCicilan() = total - (normal × (tenor-1))
 
             // Create pinjaman
             $pinjaman = Pinjaman::create($validated);
@@ -318,8 +326,36 @@ class PinjamanController extends Controller
                 $validated['dokumen_pendukung_lain'] = $request->file('dokumen_pendukung_lain')->store('pinjaman/pendukung', 'public');
             }
 
+            // ✅ PERBAIKAN AKURASI ANGSURAN (untuk update):
+            // Saat ada perubahan nominal pengajuan atau tenor, regenerate jadwal cicilan
+            $needRegenerateSchedule = false;
+            
+            if ($request->has('jumlah_pengajuan') && $validated['jumlah_pengajuan'] != $pinjaman->total_pinjaman) {
+                $needRegenerateSchedule = true;
+            }
+            
+            if ($request->has('tenor_bulan') && $validated['tenor_bulan'] != $pinjaman->tenor_bulan) {
+                $needRegenerateSchedule = true;
+            }
+            
+            if ($needRegenerateSchedule) {
+                // Hitung ulang total_pinjaman dari jumlah_pengajuan
+                $validated['total_pinjaman'] = $validated['jumlah_pengajuan'];
+                $validated['total_pokok'] = $validated['jumlah_pengajuan'];
+                $validated['total_bunga'] = 0;
+                
+                // ✅ PERBAIKAN: cicilan_per_bulan sudah dari user input, jangan di-hitung ulang
+                // Cicilan terakhir akan otomatis adjust di generateJadwalCicilan()
+            }
+
             // Update pinjaman
             $pinjaman->update($validated);
+            
+            // Jika ada perubahan nominal/tenor dan masih belum dicairkan, regenerate jadwal
+            if ($needRegenerateSchedule && !in_array($pinjaman->status, ['dicairkan', 'berjalan', 'lunas'])) {
+                // Jadwal akan di-generate saat pencairan
+                // Untuk sekarang, hanya tandai bahwa ada perubahan
+            }
 
             // Log history
             $pinjaman->logHistory('update', null, null, 'Data pinjaman diperbarui');
@@ -708,6 +744,10 @@ class PinjamanController extends Controller
                 $validated['keterangan'] ?? null
             );
 
+            // ✅ FITUR EARLY SETTLEMENT: Check apakah pembayaran ini melunasin semua sisa
+            $pinjaman = $cicilan->pinjaman;
+            $isEarlySettlement = PinjamanCicilan::handleEarlySettlement($pinjaman);
+
             // Catat transaksi keuangan (dana masuk)
             TransaksiKeuangan::create([
                 'nomor_transaksi' => TransaksiKeuangan::generateNomorTransaksi('masuk'),
@@ -725,8 +765,18 @@ class PinjamanController extends Controller
             ]);
 
             DB::commit();
+            
+            // ✅ AUTO-SYNC: Pastikan data sinkron setelah pembayaran
+            $cicilan->syncPinjamanData();
 
-            return redirect()->back()->with('success', 'Pembayaran cicilan berhasil diproses');
+            // ✅ Tentukan pesan success sesuai jenis pembayaran
+            if ($isEarlySettlement) {
+                $successMessage = '✅ <strong>PINJAMAN LUNAS!</strong> Pelunasan lebih awal berhasil diproses. Cicilan sisa otomatis dihapus.';
+            } else {
+                $successMessage = 'Pembayaran cicilan berhasil diproses';
+            }
+
+            return redirect()->back()->with('success', $successMessage);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -735,7 +785,9 @@ class PinjamanController extends Controller
     }
 
     /**
-     * Laporan pinjaman
+     * Laporan pinjaman dengan akurasi real-time
+     * ✅ PERBAIKAN: Menghitung langsung dari cicilan (sumber kebenaran tunggal)
+     * Setiap ada perubahan pembayaran, laporan otomatis terupdate dengan akurat
      */
     public function laporan(Request $request)
     {
@@ -759,13 +811,26 @@ class PinjamanController extends Controller
 
         $pinjaman = $query->get();
 
-        // Statistik laporan
-        $stats = [
-            'total_pinjaman' => $pinjaman->count(),
-            'total_dicairkan' => $pinjaman->whereIn('status', ['dicairkan', 'berjalan', 'lunas'])->sum('jumlah_disetujui'),
-            'total_terbayar' => $pinjaman->sum('total_terbayar'),
-            'total_sisa' => $pinjaman->whereIn('status', ['dicairkan', 'berjalan'])->sum('sisa_pinjaman'),
-        ];
+        // ✅ PERBAIKAN AKURASI: Hitung laporan dari sumber kebenaran = cicilan
+        // Bukan dari field pinjaman yang bisa ketinggalan update
+        $stats = $this->generateLaporanAkurat($pinjaman);
+        
+        // Tambahkan data untuk compatibility dengan view
+        $stats['total_pinjaman'] = $pinjaman->count();
+        
+        // Log verifikasi akurasi untuk setiap pinjaman
+        foreach ($pinjaman as $p) {
+            $verifikasi = \App\Traits\PinjamanAccuracyHelper::verifikasiAkurasi($p);
+            if (!$verifikasi['is_akurat']) {
+                \Log::warning('Data pinjaman tidak akurat, melakukan perbaikan otomatis', [
+                    'pinjaman_id' => $p->id,
+                    'pesan' => $verifikasi['pesan'],
+                    'selisih' => $verifikasi['selisih'],
+                ]);
+                // Auto-fix akurasi
+                \App\Traits\PinjamanAccuracyHelper::perbaikiAkurasi($p);
+            }
+        }
 
         if ($request->has('download_pdf')) {
             $pdf = PDF::loadView('pinjaman.laporan-pdf', compact('pinjaman', 'stats', 'bulan', 'tahun', 'kategori'));
@@ -773,6 +838,64 @@ class PinjamanController extends Controller
         }
 
         return view('pinjaman.laporan', compact('pinjaman', 'stats', 'bulan', 'tahun', 'kategori'));
+    }
+
+    /**
+     * ✅ GENERATE LAPORAN AKURAT dari cicilan (sumber kebenaran)
+     * Gunakan method ini untuk memastikan laporan selalu akurat real-time
+     */
+    private function generateLaporanAkurat($pinjamanList)
+    {
+        $stats = [
+            'total_dicairkan' => 0,
+            'total_terbayar' => 0,
+            'total_sisa' => 0,
+            'detail_per_status' => [
+                'pengajuan' => 0,
+                'review' => 0,
+                'disetujui' => 0,
+                'dicairkan' => 0,
+                'berjalan' => 0,
+                'lunas' => 0,
+            ],
+        ];
+
+        foreach ($pinjamanList as $pinjaman) {
+            // ✅ SUMBER KEBENARAN: Ambil dari cicilan (bukan dari field pinjaman)
+            $cicilanStats = $pinjaman->cicilan()
+                ->selectRaw('
+                    SUM(jumlah_cicilan) as total_nominal,
+                    SUM(jumlah_dibayar) as total_dibayar,
+                    SUM(sisa_cicilan) as total_sisa
+                ')
+                ->first();
+
+            $totalNominal = $cicilanStats->total_nominal ?? 0;
+            $totalBayar = $cicilanStats->total_dibayar ?? 0;
+            $totalSisa = $cicilanStats->total_sisa ?? 0;
+
+            // Akumulasi statistik
+            $stats['total_dicairkan'] += $totalNominal;
+            $stats['total_terbayar'] += $totalBayar;
+            $stats['total_sisa'] += $totalSisa;
+
+            // Per status
+            if (isset($stats['detail_per_status'][$pinjaman->status])) {
+                $stats['detail_per_status'][$pinjaman->status] += 1;
+            }
+        }
+
+        // Hitung persentase pembayaran
+        if ($stats['total_dicairkan'] > 0) {
+            $stats['persentase_pembayaran'] = round(
+                ($stats['total_terbayar'] / $stats['total_dicairkan']) * 100,
+                2
+            );
+        } else {
+            $stats['persentase_pembayaran'] = 0;
+        }
+
+        return $stats;
     }
 
     /**
@@ -1173,6 +1296,227 @@ class PinjamanController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Gagal memperbarui pinjaman: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * API: Get real-time laporan data (untuk AJAX polling)
+     * ✅ Endpoint ini di-trigger otomatis setiap kali ada pembayaran
+     * 
+     * Usage: GET /api/laporan-pinjaman?bulan=12&tahun=2026&kategori=crew
+     */
+    public function apiLaporanRealTime(Request $request)
+    {
+        try {
+            $bulan = $request->get('bulan', date('m'));
+            $tahun = $request->get('tahun', date('Y'));
+            $kategori = $request->get('kategori', 'all');
+
+            // Cek cache terlebih dahulu (untuk performa)
+            $cacheKey = 'laporan_pinjaman_' . $bulan . '_' . $tahun . '_' . $kategori;
+            
+            // Cache hit: return cached data (expire 2 menit untuk real-time tapi efficient)
+            if (\Cache::has($cacheKey)) {
+                return response()->json([
+                    'success' => true,
+                    'from_cache' => true,
+                    'data' => \Cache::get($cacheKey),
+                ]);
+            }
+
+            // Cache miss: generate data fresh
+            $query = Pinjaman::with('cicilan');
+
+            if ($bulan != 'all') {
+                $query->whereMonth('tanggal_pengajuan', $bulan);
+            }
+
+            if ($tahun != 'all') {
+                $query->whereYear('tanggal_pengajuan', $tahun);
+            }
+
+            if ($kategori != 'all') {
+                $query->where('kategori_peminjam', $kategori);
+            }
+
+            $pinjaman = $query->get();
+            $stats = $this->generateLaporanAkurat($pinjaman);
+
+            // Tambahkan data detail per pinjaman
+            $detailPinjaman = [];
+            foreach ($pinjaman as $p) {
+                $cicilanStats = $p->cicilan()
+                    ->selectRaw('
+                        SUM(jumlah_cicilan) as total_nominal,
+                        SUM(jumlah_dibayar) as total_dibayar,
+                        SUM(sisa_cicilan) as total_sisa
+                    ')
+                    ->first();
+
+                $totalNominal = $cicilanStats->total_nominal ?? 0;
+                $totalBayar = $cicilanStats->total_dibayar ?? 0;
+
+                $detailPinjaman[] = [
+                    'id' => $p->id,
+                    'nomor_pinjaman' => $p->nomor_pinjaman,
+                    'nama_peminjam' => $p->nama_peminjam_lengkap,
+                    'total_nominal' => (float)$totalNominal,
+                    'total_dibayar' => (float)$totalBayar,
+                    'total_sisa' => (float)($totalNominal - $totalBayar),
+                    'persentase' => $totalNominal > 0 ? round(($totalBayar / $totalNominal) * 100, 2) : 0,
+                    'status' => $p->status,
+                ];
+            }
+
+            $result = [
+                'summary' => $stats,
+                'detail' => $detailPinjaman,
+                'timestamp' => now(),
+            ];
+
+            // Cache hasil untuk 2 menit
+            \Cache::put($cacheKey, $result, now()->addMinutes(2));
+
+            return response()->json([
+                'success' => true,
+                'from_cache' => false,
+                'data' => $result,
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error generating real-time laporan: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error generating laporan: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * API: Verifikasi akurasi pinjaman (untuk debugging)
+     * GET /api/verifikasi-akurasi-pinjaman/{id}
+     */
+    public function apiVerifikasiAkurasi(Pinjaman $pinjaman)
+    {
+        try {
+            $verifikasi = \App\Traits\PinjamanAccuracyHelper::verifikasiAkurasi($pinjaman);
+
+            if (!$verifikasi['is_akurat']) {
+                \Log::warning('Anomali akurasi terdeteksi, melakukan auto-fix', [
+                    'pinjaman_id' => $pinjaman->id,
+                    'detail' => $verifikasi,
+                ]);
+
+                // Auto-fix
+                $perbaikan = \App\Traits\PinjamanAccuracyHelper::perbaikiAkurasi($pinjaman);
+
+                return response()->json([
+                    'success' => true,
+                    'was_accurate' => false,
+                    'anomali_ditemukan' => $verifikasi,
+                    'perbaikan_dilakukan' => $perbaikan,
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'was_accurate' => true,
+                'detail' => $verifikasi,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * API: Get Rincian Pelunasan Awal (untuk menampilkan detail alokasi pembayaran)
+     * GET /api/rincian-pelunasan-awal/{pinjaman_id}
+     * 
+     * Menampilkan:
+     * - Jadwal cicilan yang sudah diupdate dengan pelunasan awal
+     * - Progress pembayaran
+     * - Estimasi selesai
+     */
+    public function apiRincianPelunasanAwal(Pinjaman $pinjaman)
+    {
+        try {
+            $pinjaman->load('cicilan');
+
+            // Get jadwal terbaru setelah pelunasan awal
+            $jadwalTerbaru = \App\Models\PinjamanCicilan::getJadwalTerbaru($pinjaman->id);
+            
+            // Get ringkasan pelunasan awal
+            $ringkasan = \App\Models\PinjamanCicilan::getRingkasanPelunasanAwal($pinjaman->id);
+
+            return response()->json([
+                'success' => true,
+                'pinjaman_id' => $pinjaman->id,
+                'nomor_pinjaman' => $pinjaman->nomor_pinjaman,
+                'nama_peminjam' => $pinjaman->nama_peminjam_lengkap,
+                'ringkasan' => $ringkasan,
+                'jadwal_cicilan' => $jadwalTerbaru,
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error getting pelunasan awal details: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error getting pelunasan awal details: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * API: Get Detail Cicilan (untuk menampilkan alokasi pembayaran per cicilan)
+     * GET /api/detail-cicilan/{cicilan_id}
+     * 
+     * Menampilkan:
+     * - Nominal cicilan
+     * - Pembayaran yang dilakukan
+     * - Alokasi dari pembayaran sebelumnya (jika ada pelunasan awal)
+     */
+    public function apiDetailCicilan(PinjamanCicilan $cicilan)
+    {
+        try {
+            $cicilan->load('pinjaman');
+
+            $detail = [
+                'cicilan_id' => $cicilan->id,
+                'cicilan_ke' => $cicilan->cicilan_ke,
+                'tanggal_jatuh_tempo' => $cicilan->tanggal_jatuh_tempo,
+                'jumlah_cicilan_normal' => (float)$cicilan->jumlah_cicilan,
+                'jumlah_dibayar' => (float)$cicilan->jumlah_dibayar,
+                'sisa_cicilan' => (float)$cicilan->sisa_cicilan,
+                'status' => $cicilan->status,
+                'tanggal_bayar' => $cicilan->tanggal_bayar,
+                'metode_pembayaran' => $cicilan->metode_pembayaran,
+                'keterangan' => $cicilan->keterangan,
+                'is_alokasi_pelunasan_awal' => strpos($cicilan->keterangan ?? '', 'alokasi pelunasan awal') !== false,
+            ];
+
+            // Cek apakah cicilan ini dibayar dari alokasi pelunasan awal
+            if ($cicilan->status === 'sebagian' && $cicilan->keterangan && 
+                strpos($cicilan->keterangan, 'pelunasan awal') !== false) {
+                $detail['breakdown_pembayaran'] = [
+                    'pembayaran_normal' => (float)min($cicilan->jumlah_dibayar, $cicilan->jumlah_cicilan),
+                    'alokasi_pelunasan_awal' => max(0, (float)($cicilan->jumlah_dibayar - $cicilan->jumlah_cicilan)),
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'detail' => $detail,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 }

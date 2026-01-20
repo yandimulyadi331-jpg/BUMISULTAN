@@ -250,7 +250,7 @@
                             </div>
                             <div>
                                 <small class="text-muted">Sisa:</small>
-                                <strong class="text-danger">Rp {{ number_format($pinjaman->sisa_pinjaman, 0, ',', '.') }}</strong>
+                                <strong class="text-danger">Rp {{ number_format(max($pinjaman->sisa_pinjaman, 0), 0, ',', '.') }}</strong>
                             </div>
                         </div>
                     </div>
@@ -701,7 +701,7 @@
                 
                 <div class="alert alert-info">
                     <strong>Sisa Pinjaman Saat Ini:</strong><br>
-                    <h4 class="text-danger mb-0">Rp {{ number_format($pinjaman->sisa_pinjaman, 0, ',', '.') }}</h4>
+                    <h4 class="text-danger mb-0">Rp {{ number_format(max($pinjaman->sisa_pinjaman, 0), 0, ',', '.') }}</h4>
                     <small>dari total Rp {{ number_format($pinjaman->total_pinjaman, 0, ',', '.') }}</small>
                 </div>
                 
@@ -969,7 +969,7 @@
                             </div>
                             <div class="col-md-4">
                                 <small>Sisa:</small><br>
-                                <strong class="text-danger">Rp {{ number_format($pinjaman->sisa_pinjaman, 0, ',', '.') }}</strong>
+                                <strong class="text-danger">Rp {{ number_format(max($pinjaman->sisa_pinjaman, 0), 0, ',', '.') }}</strong>
                             </div>
                         </div>
                     </div>
@@ -1082,10 +1082,9 @@ $(document).ready(function() {
             $('#transfer-fields input').prop('required', false);
         }
     });
-
     // Preview Perhitungan Tambah Pinjaman
     $('#jumlah_tambahan, #cicilan_baru').on('input change', function() {
-        var sisaPinjaman = {{ $pinjaman->sisa_pinjaman }};
+        var sisaPinjaman = Math.max({{ $pinjaman->sisa_pinjaman }}, 0);
         var jumlahTambahan = parseFloat($('#jumlah_tambahan').val()) || 0;
         var cicilanBaru = parseFloat($('#cicilan_baru').val()) || 0;
 

@@ -191,8 +191,11 @@ class PinjamanIbuController extends Controller
             $validated['bunga_persen'] = 0;
             $validated['tipe_bunga'] = 'flat';
             
-            // Hitung total pinjaman dari cicilan x tenor
-            $validated['total_pinjaman'] = $validated['cicilan_per_bulan'] * $validated['tenor_bulan'];
+            // ✅ FIX: Total pinjaman HARUS dari jumlah yang disetujui, bukan computed dari cicilan
+            // Contoh: Pinjaman Rp 5.000.000 dengan cicilan Rp 2.000.000/bulan selama 3 bulan
+            // Total = Rp 5.000.000 (BENAR), bukan Rp 6.000.000 (SALAH)
+            // Cicilan akan menjadi: Rp 2M, Rp 2M, Rp 1M
+            $validated['total_pinjaman'] = $validated['jumlah_disetujui'] ?? $validated['jumlah_pengajuan'];
             $validated['total_pokok'] = $validated['jumlah_pengajuan'];
             $validated['total_bunga'] = 0;
 
@@ -400,6 +403,7 @@ class PinjamanIbuController extends Controller
                     'disetujui_oleh' => auth()->id(),
                     'tanggal_persetujuan' => now(),
                     'jumlah_disetujui' => $validated['jumlah_disetujui'],
+                    'total_pinjaman' => $validated['jumlah_disetujui'], // ✅ FIX: Sync total_pinjaman saat approve
                     'catatan_persetujuan' => $validated['catatan_persetujuan'] ?? null,
                 ]);
 
@@ -461,10 +465,18 @@ class PinjamanIbuController extends Controller
             $statusLama = $pinjaman->status;
             $validated['status'] = 'dicairkan';
             $validated['dicairkan_oleh'] = auth()->id();
+            
+            // ✅ FIX: Pastikan total_pinjaman = jumlah_disetujui saat cairkan
+            $validated['total_pinjaman'] = $pinjaman->jumlah_disetujui;
+            $validated['sisa_pinjaman'] = $pinjaman->jumlah_disetujui;
+            $validated['total_terbayar'] = 0; // Reset pembayaran
 
             $pinjaman->update($validated);
+            
+            // ✅ Refresh model agar total_pinjaman terbaru
+            $pinjaman->refresh();
 
-            // Generate jadwal cicilan
+            // Generate jadwal cicilan dengan total_pinjaman yang benar
             $pinjaman->generateJadwalCicilan();
 
             // Catat transaksi keuangan (dana keluar)
@@ -725,6 +737,9 @@ class PinjamanIbuController extends Controller
             ]);
 
             DB::commit();
+            
+            // ✅ AUTO-SYNC: Pastikan data sinkron setelah pembayaran
+            $cicilan->syncPinjamanData();
 
             return redirect()->back()->with('success', 'Pembayaran cicilan berhasil diproses');
 

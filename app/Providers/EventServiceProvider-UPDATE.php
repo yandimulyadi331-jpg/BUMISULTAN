@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Event;
 class EventServiceProvider extends ServiceProvider
 {
     /**
-     * The event to listener mappings for the application.
+     * The event listener mappings for the application.
      *
      * @var array<class-string, array<int, class-string>>
      */
@@ -18,7 +18,8 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],
-        // ========== PINJAMAN REAL-TIME EVENTS ==========
+        
+        // ✅ PINJAMAN REAL-TIME EVENT LISTENER (NEW)
         'App\Events\PinjamanPaymentUpdated' => [
             'App\Listeners\UpdateLaporanPinjaman',
         ],

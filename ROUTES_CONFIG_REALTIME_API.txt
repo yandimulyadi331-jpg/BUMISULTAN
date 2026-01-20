@@ -1,0 +1,67 @@
+// 📄 FILE: routes/web.php
+// TAMBAHKAN ROUTES INI DI DALAM middleware('auth') GROUP
+
+// ✅ REAL-TIME LAPORAN API ENDPOINTS
+Route::middleware('auth')->group(function () {
+    
+    // ... existing routes ...
+    
+    // ✨ NEW: Real-Time Laporan Pinjaman APIs
+    // GET /api/laporan-pinjaman?bulan=1&tahun=2026&kategori=crew
+    Route::get('api/laporan-pinjaman', 
+        [App\Http\Controllers\PinjamanController::class, 'apiLaporanRealTime']);
+    
+    // GET /api/verifikasi-akurasi-pinjaman/{id}
+    Route::get('api/verifikasi-akurasi-pinjaman/{pinjaman}', 
+        [App\Http\Controllers\PinjamanController::class, 'apiVerifikasiAkurasi']);
+    
+});
+
+
+// ============================================
+// CARA MENGGUNAKAN:
+// ============================================
+
+/*
+1. Buka file routes/web.php
+
+2. Cari section yang ada middleware('auth')
+
+3. Tambahkan routes di atas di dalam group tersebut
+
+4. Save dan test:
+   - Browser: http://localhost:8000/api/laporan-pinjaman
+   - Expected: JSON response
+
+5. Jika 404, restart artisan:
+   php artisan serve
+*/
+
+
+// ============================================
+// COMPLETE EXAMPLE (routes/web.php):
+// ============================================
+
+/*
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PinjamanController;
+
+Route::get('/', function () {
+    return view('welcome');
+})->middleware('auth');
+
+Route::middleware('auth')->group(function () {
+    
+    // Existing pinjaman routes
+    Route::resource('pinjaman', PinjamanController::class);
+    Route::get('pinjaman/{pinjaman}/print', [PinjamanController::class, 'print'])->name('pinjaman.print');
+    Route::get('laporan/pinjaman', [PinjamanController::class, 'laporan'])->name('pinjaman.laporan');
+    
+    // ✨ NEW: Real-Time Laporan APIs
+    Route::get('api/laporan-pinjaman', [PinjamanController::class, 'apiLaporanRealTime']);
+    Route::get('api/verifikasi-akurasi-pinjaman/{pinjaman}', [PinjamanController::class, 'apiVerifikasiAkurasi']);
+    
+});
+*/

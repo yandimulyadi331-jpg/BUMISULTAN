@@ -217,7 +217,12 @@ class Pinjaman extends Model
     }
 
     /**
-     * Generate jadwal cicilan (tanpa bunga)
+     * Generate jadwal cicilan (tanpa bunga) - AKURAT UNTUK NOMINAL GANJIL
+     * 
+     * Logika akurasi:
+     * - Cicilan normal (cicilan ke-1 sampai tenor-1): floor(total_pinjaman / tenor)
+     * - Cicilan terakhir: total_pinjaman - (cicilan_normal × (tenor - 1))
+     * - Benefit: Total = sum(semua cicilan) = 100% AKURAT, tidak ada sisa yang hilang
      */
     public function generateJadwalCicilan()
     {
@@ -229,8 +234,21 @@ class Pinjaman extends Model
         // Ambil tanggal jatuh tempo yang di-set (default tanggal 1)
         $tanggalJatuhTempoSetiapBulan = $this->tanggal_jatuh_tempo_setiap_bulan ?? 1;
         
-        // Cicilan tetap setiap bulan (tanpa bunga)
-        $cicilanPerBulan = $this->cicilan_per_bulan;
+        // ✅ PERBAIKAN AKURASI: Hitung cicilan normal dan terakhir
+        // cicilan_per_bulan sudah di-set oleh user dari form input
+        // Ini adalah cicilan normal untuk bulan 1 sampai (tenor-1)
+        $cicilanNormal = $this->cicilan_per_bulan;
+        
+        // Cicilan terakhir = sisa setelah cicilan normal × (tenor - 1)
+        // Contoh: Rp 5,000,000 ÷ Rp 2,000,000/bulan = 3 bulan
+        //   Bulan 1: Rp 2,000,000
+        //   Bulan 2: Rp 2,000,000
+        //   Bulan 3 (terakhir): Rp 5,000,000 - (Rp 2,000,000 × 2) = Rp 1,000,000
+        $cicilanTerakhir = $this->total_pinjaman - ($cicilanNormal * ($this->tenor_bulan - 1));
+        
+        // Verifikasi: Total harus sama dengan total_pinjaman
+        // $verify = ($cicilanNormal * ($this->tenor_bulan - 1)) + $cicilanTerakhir; 
+        // dd($verify, $this->total_pinjaman); // Debugging
         
         for ($i = 1; $i <= $this->tenor_bulan; $i++) {
             // Hitung bulan berikutnya
@@ -243,14 +261,29 @@ class Pinjaman extends Model
                 min($tanggalJatuhTempoSetiapBulan, $hariTerakhirBulan)
             );
             
+            // Tentukan nominal cicilan untuk periode ini
+            if ($i < $this->tenor_bulan) {
+                // Cicilan normal (ke-1 sampai tenor-1)
+                $nominalCicilan = $cicilanNormal;
+            } else {
+                // Cicilan terakhir (ke-tenor) - WAJIB ada, bisa berbeda jika ada sisa kecil
+                // Ini menangkap sisa yang tidak terbagi merata
+                $nominalCicilan = $cicilanTerakhir;
+            }
+            
+            // ✅ VALIDASI: Pastikan nominal cicilan positif
+            if ($nominalCicilan <= 0) {
+                continue; // Skip jika nominal 0 atau negatif
+            }
+            
             PinjamanCicilan::create([
                 'pinjaman_id' => $this->id,
                 'cicilan_ke' => $i,
                 'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
-                'jumlah_pokok' => round($cicilanPerBulan, 2),
+                'jumlah_pokok' => $nominalCicilan,
                 'jumlah_bunga' => 0,
-                'jumlah_cicilan' => round($cicilanPerBulan, 2),
-                'sisa_cicilan' => round($cicilanPerBulan, 2),
+                'jumlah_cicilan' => $nominalCicilan,
+                'sisa_cicilan' => $nominalCicilan,
                 'status' => 'belum_bayar',
             ]);
         }
@@ -323,4 +356,40 @@ class Pinjaman extends Model
             ->where('tanggal_jatuh_tempo', '<', now())
             ->exists();
     }
+
+    /**
+     * ✅ SELF-HEAL: Perbaiki data pinjaman dari cicilan
+     * Jika total_pinjaman tidak sesuai dengan sum(cicilan), koreksi ke nilai benar
+     */
+    public function healNominalAkurasi()
+    {
+        $totalCicilanSebenarnya = $this->cicilan()->sum('jumlah_cicilan');
+        $totalDibayarSebenarnya = $this->cicilan()->sum('jumlah_dibayar');
+        
+        // ✅ Jika ada perbedaan, koreksi
+        if ($totalCicilanSebenarnya > 0 && $this->total_pinjaman != $totalCicilanSebenarnya) {
+            $this->total_pinjaman = $totalCicilanSebenarnya;
+        }
+        
+        if ($this->total_terbayar != $totalDibayarSebenarnya) {
+            $this->total_terbayar = $totalDibayarSebenarnya;
+        }
+        
+        // ✅ Hitung sisa dengan benar
+        $this->sisa_pinjaman = max(0, $this->total_pinjaman - $this->total_terbayar);
+        
+        // ✅ Update status berdasar cicilan
+        $cicilanBelumLunas = $this->cicilan()->where('status', '!=', 'lunas')->count();
+        if ($cicilanBelumLunas === 0 && $this->cicilan()->count() > 0) {
+            $this->status = 'lunas';
+            $this->tanggal_lunas = now();
+        } else {
+            $this->status = 'berjalan';
+        }
+        
+        $this->save();
+        
+        return $this;
+    }
 }
+

@@ -481,10 +481,14 @@
                 $sectionNumber = $pinjaman->nama_penjamin ? 'V' : 'IV';
             }
             
-            // Hitung summary
+            // ✅ FIX: Hitung summary dari cicilan (sumber kebenaran)
             $totalCicilan = $pinjaman->cicilan->sum('jumlah_cicilan');
             $totalDibayar = $pinjaman->cicilan->sum('jumlah_dibayar');
-            $sisaPinjaman = $totalCicilan - $totalDibayar;
+            
+            // ✅ Pastikan tidak pernah negative
+            $sisaPinjaman = max(0, $totalCicilan - $totalDibayar);
+            
+            // ✅ Jika sisa sudah 0, semua cicilan pasti LUNAS
             $cicilanLunas = $pinjaman->cicilan->where('status', 'lunas')->count();
             $totalCicilan_count = $pinjaman->cicilan->count();
         @endphp

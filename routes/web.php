@@ -1770,6 +1770,19 @@ Route::middleware('role:super admin')->prefix('pinjaman')->name('pinjaman.')->co
     
     // Laporan
     Route::get('/laporan/index', 'laporan')->name('laporan');
+    
+    // ========== REAL-TIME LAPORAN & PELUNASAN AWAL API ==========
+    // Real-time laporan dengan akurasi nominal
+    Route::get('/api/laporan-pinjaman', 'apiLaporanRealTime')->name('api.laporan-realtime');
+    
+    // Verifikasi akurasi nominal pinjaman
+    Route::get('/api/verifikasi-akurasi-pinjaman/{pinjaman}', 'apiVerifikasiAkurasi')->name('api.verifikasi-akurasi');
+    
+    // Rincian pelunasan awal (early settlement)
+    Route::get('/api/rincian-pelunasan-awal/{pinjaman}', 'apiRincianPelunasanAwal')->name('api.rincian-pelunasan-awal');
+    
+    // Detail cicilan individual dengan breakdown pembayaran
+    Route::get('/api/detail-cicilan/{cicilan}', 'apiDetailCicilan')->name('api.detail-cicilan');
 });
 
 // ===================================
