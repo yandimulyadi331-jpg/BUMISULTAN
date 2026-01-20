@@ -177,6 +177,8 @@ Route::middleware('auth')->group(function () {
     Route::controller(DashboardController::class)->group(function () {
         Route::get('/dashboard', 'index')->name('dashboard.index');
         Route::post('/dashboard/kirim-ucapan-birthday', 'kirimUcapanBirthday')->name('dashboard.kirim.ucapan.birthday');
+        Route::post('/dashboard/kirim-penagihan-pinjaman', 'kirimPenangihanPinjaman')->name('dashboard.kirim.penagihan.pinjaman');
+        Route::post('/dashboard/get-pesan-penagihan', 'getPesanPenagihan')->name('dashboard.get.pesan.penagihan');
     });
     
     // Tugas Luar Routes

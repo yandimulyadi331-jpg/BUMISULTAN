@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
 
 class Pinjaman extends Model
 {
@@ -355,6 +356,66 @@ class Pinjaman extends Model
             ->where('status', '!=', 'lunas')
             ->where('tanggal_jatuh_tempo', '<', now())
             ->exists();
+    }
+
+    /**
+     * Ambil cicilan yang sudah jatuh tempo (belum lunas dan tanggal jatuh tempo sudah terlewati atau hari ini)
+     */
+    public function getCicilanJatuhTempo()
+    {
+        return $this->cicilan()
+            ->where('status', '!=', 'lunas')
+            ->where('tanggal_jatuh_tempo', '<=', now()->format('Y-m-d'))
+            ->orderBy('cicilan_ke', 'asc')
+            ->get();
+    }
+
+    /**
+     * Cek apakah pinjaman ini sudah jatuh tempo
+     */
+    public function isJatuhTempo(): bool
+    {
+        // Pinjaman jatuh tempo jika:
+        // 1. Status berjalan/dicairkan (belum lunas)
+        // 2. Ada cicilan yang belum lunas dan sudah melewati tanggal jatuh tempo
+        if (!in_array($this->status, ['dicairkan', 'berjalan'])) {
+            return false;
+        }
+
+        return $this->getCicilanJatuhTempo()->count() > 0;
+    }
+
+    /**
+     * Ambil cicilan pertama yang jatuh tempo
+     */
+    public function getCicilanPertamaJatuhTempo()
+    {
+        return $this->getCicilanJatuhTempo()->first();
+    }
+
+    /**
+     * Hitung jumlah hari tertunda untuk cicilan pertama
+     */
+    public function getHariTertundaAttribute(): int
+    {
+        $cicilanJatuhTempo = $this->getCicilanPertamaJatuhTempo();
+        if (!$cicilanJatuhTempo) {
+            return 0;
+        }
+
+        return now()->diffInDays(Carbon::parse($cicilanJatuhTempo->tanggal_jatuh_tempo), false);
+    }
+
+    /**
+     * Scope: Ambil pinjaman yang sudah jatuh tempo
+     */
+    public function scopeJatuhTempo($query)
+    {
+        return $query->whereIn('status', ['dicairkan', 'berjalan'])
+            ->whereHas('cicilan', function($q) {
+                $q->where('status', '!=', 'lunas')
+                  ->where('tanggal_jatuh_tempo', '<=', now()->format('Y-m-d'));
+            });
     }
 
     /**

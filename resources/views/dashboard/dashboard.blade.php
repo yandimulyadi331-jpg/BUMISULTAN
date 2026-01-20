@@ -437,6 +437,118 @@
         </div>
     </div>
 
+    <!-- Pinjaman Jatuh Tempo Section -->
+    <div class="row mt-3">
+        <div class="col">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">
+                            <i class="ti ti-alert-circle text-danger me-2"></i>Pinjaman Jatuh Tempo
+                        </h4>
+                        <small class="text-muted">Daftar pinjaman yang sudah melewati tanggal jatuh tempo</small>
+                    </div>
+                    <span class="badge bg-label-danger rounded-pill">{{ count($pinjamanJatuhTempo ?? []) }} Pinjaman</span>
+                </div>
+                <div class="card-body">
+                @if (isset($pinjamanJatuhTempo) && count($pinjamanJatuhTempo) > 0)
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                        <div>
+                            <h6 class="mb-0">Kirim Pesan Penagihan</h6>
+                            <small class="text-muted">Kirim pesan WhatsApp penagihan ke peminjam yang memiliki cicilan tertunda</small>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tablePinjamanJatuhTempo">
+                            <thead>
+                                <tr>
+                                    <th>No. Pinjaman</th>
+                                    <th>Nama Peminjam</th>
+                                    <th>Cicilan Ke</th>
+                                    <th>Nominal</th>
+                                    <th>Tgl Jatuh Tempo</th>
+                                    <th>Tertunda (hari)</th>
+                                    <th>Sisa Pinjaman</th>
+                                    <th>Progress</th>
+                                    <th class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($pinjamanJatuhTempo as $pinjaman)
+                                    @php
+                                        $hariTertunda = $pinjaman['hari_tertunda'];
+                                        $badgeColor = $hariTertunda > 30 ? 'danger' : ($hariTertunda > 14 ? 'warning' : 'info');
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            <strong>{{ $pinjaman['nomor_pinjaman'] }}</strong>
+                                        </td>
+                                        <td>
+                                            {{ $pinjaman['nama_peminjam'] }}
+                                            <br><small class="text-muted">{{ $pinjaman['kategori_peminjam'] }}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-label-primary">{{ $pinjaman['cicilan_ke'] }}</span>
+                                        </td>
+                                        <td>
+                                            <strong>Rp {{ number_format($pinjaman['jumlah_cicilan'], 0, ',', '.') }}</strong>
+                                        </td>
+                                        <td>
+                                            {{ \Carbon\Carbon::parse($pinjaman['tanggal_jatuh_tempo'])->format('d-m-Y') }}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-label-{{ $badgeColor }}">
+                                                {{ $hariTertunda }} hari
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong>Rp {{ number_format($pinjaman['sisa_pinjaman'], 0, ',', '.') }}</strong>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-success" 
+                                                     role="progressbar" 
+                                                     style="width: {{ $pinjaman['persentase_pembayaran'] }}%;"
+                                                     aria-valuenow="{{ $pinjaman['persentase_pembayaran'] }}" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="100">
+                                                    {{ number_format($pinjaman['persentase_pembayaran'], 1) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-success" 
+                                                    onclick="kirimPenangihanPinjaman({{ $pinjaman['id'] }}, '{{ $pinjaman['nama_peminjam'] }}')"
+                                                    title="Kirim pesan penagihan via WhatsApp">
+                                                <i class="ti ti-brand-whatsapp"></i>
+                                            </button>
+                                            <a href="{{ route('pinjaman.show', $pinjaman['id']) }}" 
+                                               class="btn btn-sm btn-info" 
+                                               title="Lihat detail pinjaman">
+                                                <i class="ti ti-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="d-flex align-items-center justify-content-center my-5">
+                        <div class="text-center">
+                            <div class="mb-3">
+                                <i class="ti ti-thumb-up display-5 text-success"></i>
+                            </div>
+                            <h5 class="text-success">Semua Pinjaman Lancar</h5>
+                            <p class="text-muted mb-0">Tidak ada pinjaman yang jatuh tempo saat ini. Semua peminjam telah membayar tepat waktu!</p>
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
         
         <!-- KPI Crew Section -->
         <div class="row mt-3">
@@ -967,6 +1079,78 @@
                     text: 'Terjadi kesalahan saat mengirim ucapan: ' + error.message
                 });
             });
+    }
+
+    /**
+     * Fungsi untuk kirim pesan penagihan pinjaman jatuh tempo via WhatsApp
+     * Membuka WhatsApp dengan template pesan yang sudah tersedia
+     */
+    function kirimPenangihanPinjaman(pinjamanId, namaPeminjam) {
+        Swal.fire({
+            title: 'Buka WhatsApp',
+            html: `<p>Akan membuka aplikasi WhatsApp dengan template pesan penagihan untuk:</p>
+                   <p class="text-success fw-bold">${namaPeminjam}</p>
+                   <p class="text-muted small">Pesan sudah siap, tinggal klik kirim!</p>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Buka WhatsApp',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#25d366',
+            cancelButtonColor: '#6c757d'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Ambil data pinjaman via AJAX untuk mendapatkan template pesan
+                fetch('{{ route('dashboard.get.pesan.penagihan') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        pinjaman_id: pinjamanId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Format nomor untuk WhatsApp (pastikan format 62xxx)
+                        let phoneNumber = data.no_telp;
+                        if (!phoneNumber.startsWith('62')) {
+                            phoneNumber = '62' + phoneNumber;
+                        }
+                        
+                        // Buat URL WhatsApp dengan encoded message
+                        const encodedMessage = encodeURIComponent(data.pesan);
+                        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+                        
+                        // Buka WhatsApp
+                        window.open(whatsappUrl, '_blank');
+                        
+                        // Tampilkan success notification
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'WhatsApp Dibuka!',
+                            text: 'Aplikasi WhatsApp sedang dibuka. Tinggal klik tombol Kirim setelah membaca pesan.',
+                            timer: 3000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal!',
+                            text: data.message
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Terjadi kesalahan: ' + error.message
+                    });
+                });
+            }
+        });
     }
 
     // ========================================

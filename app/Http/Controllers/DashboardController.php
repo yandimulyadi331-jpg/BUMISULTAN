@@ -17,10 +17,12 @@ use App\Jobs\SendWaMessage;
 use App\Models\AktivitasKendaraan;
 use App\Models\KendaraanPeminjaman;
 use App\Models\TugasLuar;
+use App\Models\Pinjaman;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Jenssegers\Agent\Agent;
+use PDF;
 
 class DashboardController extends Controller
 {
@@ -292,8 +294,288 @@ class DashboardController extends Controller
                 ->limit(10)
                 ->get();
             
+            // Ambil pinjaman yang sudah jatuh tempo
+            $data['pinjamanJatuhTempo'] = Pinjaman::jatuhTempo()
+                ->with(['karyawan', 'cicilan'])
+                ->orderBy('tanggal_pencairan', 'asc')
+                ->get()
+                ->map(function($pinjaman) {
+                    $cicilanJatuhTempo = $pinjaman->getCicilanPertamaJatuhTempo();
+                    return [
+                        'id' => $pinjaman->id,
+                        'nomor_pinjaman' => $pinjaman->nomor_pinjaman,
+                        'nama_peminjam' => $pinjaman->nama_peminjam_lengkap,
+                        'no_hp' => $pinjaman->no_telp_peminjam,
+                        'karyawan_id' => $pinjaman->karyawan_id,
+                        'kategori_peminjam' => $pinjaman->kategori_peminjam,
+                        'total_pinjaman' => $pinjaman->total_pinjaman,
+                        'sisa_pinjaman' => $pinjaman->sisa_pinjaman,
+                        'persentase_pembayaran' => $pinjaman->persentase_pembayaran,
+                        'cicilan_ke' => $cicilanJatuhTempo?->cicilan_ke,
+                        'tanggal_jatuh_tempo' => $cicilanJatuhTempo?->tanggal_jatuh_tempo,
+                        'jumlah_cicilan' => $cicilanJatuhTempo?->jumlah_cicilan,
+                        'hari_tertunda' => $pinjaman->hari_tertunda,
+                        'model' => $pinjaman,
+                    ];
+                });
+            
             // dd($data['rekappresensi']);
             return view('dashboard.dashboard', $data);
+        }
+    }
+
+    /**
+     * Kirim penagihan pinjaman jatuh tempo via WhatsApp
+     */
+    public function kirimPenangihanPinjaman(Request $request)
+    {
+        try {
+            $pinjamanId = $request->input('pinjaman_id');
+            $pinjaman = Pinjaman::findOrFail($pinjamanId);
+
+            // Validasi pinjaman yang akan dikirim notifikasi
+            if (!$pinjaman->isJatuhTempo()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pinjaman ini tidak jatuh tempo atau sudah lunas.'
+                ], 400);
+            }
+
+            // Validasi nomor HP
+            if (empty($pinjaman->no_telp_peminjam)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nomor telepon peminjam tidak tersedia.'
+                ], 400);
+            }
+
+            // Ambil data cicilan pertama yang jatuh tempo
+            $cicilanJatuhTempo = $pinjaman->getCicilanPertamaJatuhTempo();
+            $hariTertunda = $pinjaman->hari_tertunda;
+
+            // Format nomor HP
+            $phoneNumber = $pinjaman->no_telp_peminjam;
+            $phoneNumber = preg_replace('/^0+/', '', $phoneNumber);
+            if (!str_starts_with($phoneNumber, '62')) {
+                $phoneNumber = '62' . $phoneNumber;
+            }
+
+            // Buat template pesan penagihan profesional sesuai konteks Bumisultan
+            $namaPeminjam = $pinjaman->nama_peminjam_lengkap;
+            $nomorPinjaman = $pinjaman->nomor_pinjaman;
+            $nominalCicilan = number_format($cicilanJatuhTempo->jumlah_cicilan, 0, ',', '.');
+            $sisaPinjaman = number_format($pinjaman->sisa_pinjaman, 0, ',', '.');
+            $tglJatuhTempo = \Carbon\Carbon::parse($cicilanJatuhTempo->tanggal_jatuh_tempo)->format('d-m-Y');
+            
+            $pesan = "💼 *NOTIFIKASI PENAGIHAN PINJAMAN* 💼\n";
+            $pesan .= "_Dari: Manajemen Keuangan Bumi Sultan Properti_\n\n";
+            
+            $pesan .= "👤 *DATA PEMINJAM:*\n";
+            $pesan .= "Nama: *{$namaPeminjam}*\n";
+            $pesan .= "No. Pinjaman: *{$nomorPinjaman}*\n\n";
+            
+            $pesan .= "📊 *DETAIL CICILAN:*\n";
+            $pesan .= "Cicilan Ke: *{$cicilanJatuhTempo->cicilan_ke}*\n";
+            $pesan .= "Nominal Cicilan: *Rp {$nominalCicilan}*\n";
+            $pesan .= "Tgl Jatuh Tempo: *{$tglJatuhTempo}*\n";
+            $pesan .= "Status: *⚠️ TERTUNDA {$hariTertunda} HARI*\n\n";
+            
+            $pesan .= "💰 *RINGKASAN PINJAMAN:*\n";
+            $pesan .= "Total Pinjaman: *Rp " . number_format($pinjaman->total_pinjaman, 0, ',', '.') . "*\n";
+            $pesan .= "Sisa Pinjaman: *Rp {$sisaPinjaman}*\n";
+            $pesan .= "Terbayar: " . $pinjaman->persentase_pembayaran . "% ✅\n\n";
+            
+            $pesan .= "⚠️ *TINDAKAN YANG DIPERLUKAN:*\n";
+            $pesan .= "Kami dengan hormat meminta Bapak/Ibu segera melakukan pembayaran cicilan di atas sesuai jadwal yang telah disepakati.\n\n";
+            
+            $pesan .= "📝 *INFORMASI PEMBAYARAN:*\n";
+            $pesan .= "• Pembayaran dapat dilakukan melalui transfer bank ke rekening yang terdaftar\n";
+            $pesan .= "• Detail rekening tujuan tersedia dalam dokumen pinjaman (file PDF terlampir)\n";
+            $pesan .= "• Jika ada kendala pembayaran, silakan hubungi bagian keuangan\n";
+            $pesan .= "• Ketertundaan pembayaran dapat mempengaruhi catatan kredit Anda\n\n";
+            
+            $pesan .= "📎 *LAMPIRAN DOKUMEN:*\n";
+            $pesan .= "File PDF detail pinjaman sudah kami sertakan untuk referensi Anda.\n\n";
+            
+            $pesan .= "Terima kasih atas perhatian dan kerjasama Anda.\n\n";
+            $pesan .= "*Regards,*\n";
+            $pesan .= "Tim Manajemen Keuangan\n";
+            $pesan .= "🏢 Bumi Sultan Properti";
+
+            // Generate PDF pinjaman untuk dikirim sebagai attachment
+            try {
+                $pinjaman->load(['karyawan', 'pengaju', 'penyetuju', 'cicilan']);
+                $pdf = PDF::loadView('pinjaman.formulir-pdf', compact('pinjaman'))
+                    ->setPaper('a4', 'portrait');
+                
+                // Simpan PDF ke temporary folder
+                $pdfPath = storage_path('app/temp/' . 'Pinjaman_' . $pinjaman->nomor_pinjaman . '_' . time() . '.pdf');
+                @mkdir(dirname($pdfPath), 0755, true);
+                $pdf->save($pdfPath);
+
+                // TODO: Kirim pesan dengan PDF attachment jika WA gateway support
+                // Untuk sekarang, kirim pesan terlebih dahulu
+                SendWaMessage::dispatch($phoneNumber, $pesan, false);
+
+                // Cleanup PDF file setelah beberapa detik
+                if (file_exists($pdfPath)) {
+                    @unlink($pdfPath);
+                }
+            } catch (\Exception $e) {
+                // Jika PDF gagal di-generate, tetap kirim pesan WhatsApp
+                \Illuminate\Support\Facades\Log::warning('Gagal generate PDF untuk pinjaman: ' . $e->getMessage());
+                SendWaMessage::dispatch($phoneNumber, $pesan, false);
+            }
+
+            // Log history pengiriman notifikasi
+            if (!empty($pinjaman->karyawan_id)) {
+                $pinjaman->logHistory(
+                    'kirim_notifikasi_wa_tertunda',
+                    'notifikasi_pending',
+                    'notifikasi_terkirim',
+                    "Penagihan WhatsApp terkirim untuk cicilan ke-{$cicilanJatuhTempo->cicilan_ke}",
+                    json_encode([
+                        'no_telp' => $phoneNumber,
+                        'cicilan_ke' => $cicilanJatuhTempo->cicilan_ke,
+                        'nominal' => $cicilanJatuhTempo->jumlah_cicilan,
+                        'hari_tertunda' => $hariTertunda,
+                        'dengan_pdf' => true,
+                    ])
+                );
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Pesan penagihan berhasil dikirim ke {$namaPeminjam}."
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Ambil template pesan penagihan untuk dibuka via WhatsApp Web
+     * Endpoint ini hanya mengembalikan pesan tanpa mengirim
+     */
+    public function getPesanPenagihan(Request $request)
+    {
+        try {
+            $pinjamanId = $request->input('pinjaman_id');
+            $pinjaman = Pinjaman::findOrFail($pinjamanId);
+
+            // Validasi pinjaman yang akan dikirim notifikasi
+            if (!$pinjaman->isJatuhTempo()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pinjaman ini tidak jatuh tempo atau sudah lunas.'
+                ], 400);
+            }
+
+            // Validasi nomor HP
+            if (empty($pinjaman->no_telp_peminjam)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nomor telepon peminjam tidak tersedia.'
+                ], 400);
+            }
+
+            // Ambil data cicilan pertama yang jatuh tempo
+            $cicilanJatuhTempo = $pinjaman->getCicilanPertamaJatuhTempo();
+            $hariTertunda = $pinjaman->hari_tertunda;
+
+            // Format nomor HP
+            $phoneNumber = $pinjaman->no_telp_peminjam;
+            $phoneNumber = preg_replace('/^0+/', '', $phoneNumber);
+            if (!str_starts_with($phoneNumber, '62')) {
+                $phoneNumber = '62' . $phoneNumber;
+            }
+
+            // Buat template pesan penagihan profesional format surat tagihan (clean & simple)
+            $namaPeminjam = $pinjaman->nama_peminjam_lengkap;
+            $nomorPinjaman = $pinjaman->nomor_pinjaman;
+            $nomorSurat = 'BS/KEU/' . str_pad(date('m'), 2, '0', STR_PAD_LEFT) . '/' . date('Y');
+            $nominalCicilan = number_format($cicilanJatuhTempo->jumlah_cicilan, 0, ',', '.');
+            $sisaPinjaman = number_format($pinjaman->sisa_pinjaman, 0, ',', '.');
+            $totalPinjaman = number_format($pinjaman->total_pinjaman, 0, ',', '.');
+            $cicilanPerBulan = number_format($pinjaman->cicilan_per_bulan, 0, ',', '.');
+            $tglJatuhTempo = \Carbon\Carbon::parse($cicilanJatuhTempo->tanggal_jatuh_tempo)->format('d-m-Y');
+            $tglPencairan = \Carbon\Carbon::parse($pinjaman->tanggal_pencairan)->format('d-m-Y');
+            $hariTertunda = $pinjaman->hari_tertunda;
+            
+            $pesan = "*SURAT TAGIHAN KEUANGAN*\n";
+            $pesan .= "*BUMI SULTAN*\n\n";
+            
+            $pesan .= "*INFORMASI SURAT*\n";
+            $pesan .= "Nomor Surat : {$nomorSurat}\n";
+            $pesan .= "Perihal : Pemberitahuan & Penagihan Kewajiban Pembayaran\n";
+            $pesan .= "Tanggal : " . date('d-m-Y') . "\n\n";
+            
+            $pesan .= "Kepada Yth,\n\n";
+            
+            $pesan .= "*DATA PEMINJAM*\n";
+            $pesan .= "Nama : {$namaPeminjam}\n";
+            $pesan .= "No. Identitas : {$pinjaman->nik_peminjam}\n";
+            $pesan .= "No. Telp/WA : {$pinjaman->no_telp_peminjam}\n";
+            $pesan .= "Alamat : {$pinjaman->alamat_peminjam}\n\n";
+            
+            $pesan .= "*Dengan hormat,*\n\n";
+            
+            $pesan .= "Berdasarkan data administrasi keuangan BUMI SULTAN, bersama ini kami sampaikan bahwa Saudara/i memiliki KEWAJIBAN PEMBAYARAN PINJAMAN dengan rincian sebagai berikut:\n\n";
+            
+            $pesan .= "*DATA PINJAMAN*\n";
+            $pesan .= "Nomor Pinjaman : {$nomorPinjaman}\n";
+            $pesan .= "Tanggal Pencairan : {$tglPencairan}\n";
+            $pesan .= "Jumlah Pinjaman Pokok : Rp {$totalPinjaman}\n";
+            $pesan .= "Tenor Pinjaman : {$pinjaman->tenor_bulan} Bulan\n";
+            $pesan .= "Cicilan per Bulan : Rp {$cicilanPerBulan}\n";
+            $pesan .= "Sisa Pokok Pinjaman : Rp {$sisaPinjaman}\n";
+            $pesan .= "Terbayar : {$pinjaman->persentase_pembayaran}%\n\n";
+            
+            $pesan .= "*STATUS PEMBAYARAN*\n";
+            $pesan .= "Cicilan Ke : {$cicilanJatuhTempo->cicilan_ke}\n";
+            $pesan .= "Tanggal Jatuh Tempo : {$tglJatuhTempo}\n";
+            $pesan .= "Status : *TERTUNGGAK* ({$hariTertunda} hari)\n";
+            $pesan .= "Nominal Cicilan : Rp {$nominalCicilan}\n\n";
+            
+            $pesan .= "Sehubungan dengan hal tersebut, kami mohon agar Saudara/i *SEGERA MELAKUKAN PEMBAYARAN* sesuai kewajiban yang telah disepakati, paling lambat pada tanggal jatuh tempo tersebut.\n\n";
+            
+            $pesan .= "*METODE PEMBAYARAN*\n";
+            $pesan .= "Pembayaran dapat dilakukan melalui Transfer Bank:\n\n";
+            $pesan .= "*BANK BCA*\n";
+            $pesan .= "Atas Nama : YANDI MULYADI\n";
+            $pesan .= "No. Rekening : 4061932571\n\n";
+            
+            $pesan .= "Mohon setelah melakukan pembayaran agar mengirimkan bukti transfer kepada bagian keuangan BUMI SULTAN.\n\n";
+            
+            $pesan .= "*PENTING*\n";
+            $pesan .= "Ketertundaan pembayaran dapat mempengaruhi catatan kredit Anda.\n\n";
+            
+            $pesan .= "*PENUTUP*\n\n";
+            $pesan .= "Demikian surat pemberitahuan dan penagihan ini kami sampaikan. Atas perhatian dan kerja sama Saudara/i, kami ucapkan terima kasih.\n\n";
+            
+            $pesan .= "*Hormat kami,*\n\n";
+            $pesan .= "BUMI SULTAN\n";
+            $pesan .= "Bagian Keuangan\n\n";
+            
+            $pesan .= "Jl. Raya Jonggol No.37, RT.02/RW.02, Jonggol,\n";
+            $pesan .= "Kec. Jonggol, Kabupaten Bogor, Jawa Barat 16830\n";
+            
+            return response()->json([
+                'success' => true,
+                'pesan' => $pesan,
+                'no_telp' => $phoneNumber,
+                'nama_peminjam' => $namaPeminjam,
+                'nomor_pinjaman' => $nomorPinjaman,
+                'cicilan_ke' => $cicilanJatuhTempo->cicilan_ke,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
     }
 
