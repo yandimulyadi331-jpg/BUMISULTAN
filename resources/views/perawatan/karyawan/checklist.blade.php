@@ -992,13 +992,49 @@
         </div>
     </div>
 
+    <!-- Filter Jam Kerja (Shift) -->
+    @php
+        // Get unique jam kerja dari checklist
+        $jamKerjaOptions = [];
+        if(isset($checklistsByRuangan) && !empty($checklistsByRuangan)) {
+            foreach($checklistsByRuangan as $ruang) {
+                foreach($ruang['items'] as $item) {
+                    if($item->kode_jam_kerja) {
+                        $jamKerjaOptions[$item->kode_jam_kerja] = $item->jamKerja?->nama_jam_kerja ?? 'Unknown';
+                    }
+                }
+            }
+        }
+    @endphp
+    
+    @if(!empty($jamKerjaOptions))
+    <div class="filter-container" style="margin-bottom: 15px;">
+        <div style="color: var(--text-secondary); font-size: 11px; font-weight: 700; padding: 0 20px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">
+            <i class="ti ti-clock"></i> Jam Kerja
+        </div>
+        <div style="display: flex; gap: 10px; overflow-x: auto; padding: 0 20px; padding-bottom: 10px; scrollbar-width: thin;">
+            <button class="filter-btn jam-kerja-btn active" data-jam-kerja="all" style="flex-shrink: 0;">Semua</button>
+            @foreach($jamKerjaOptions as $kode => $nama)
+                <button class="filter-btn jam-kerja-btn" data-jam-kerja="{{ $kode }}" style="flex-shrink: 0;">
+                    ⏰ {{ $nama }}
+                </button>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     <!-- Filter Kategori -->
     <div class="filter-container">
-        <button class="filter-btn active" data-kategori="all">Semua</button>
-        <button class="filter-btn" data-kategori="kebersihan"><i class="ti ti-wash"></i> Kebersihan</button>
-        <button class="filter-btn" data-kategori="perawatan_rutin"><i class="ti ti-tool"></i> Perawatan</button>
-        <button class="filter-btn" data-kategori="pengecekan"><i class="ti ti-search"></i> Pengecekan</button>
-        <button class="filter-btn" data-kategori="lainnya"><i class="ti ti-list"></i> Lainnya</button>
+        <div style="color: var(--text-secondary); font-size: 11px; font-weight: 700; padding: 0 20px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">
+            <i class="ti ti-filter"></i> Kategori
+        </div>
+        <div style="display: flex; gap: 10px; overflow-x: auto; padding: 0 20px; padding-bottom: 10px; scrollbar-width: thin;">
+            <button class="filter-btn kategori-btn active" data-kategori="all" style="flex-shrink: 0;">Semua</button>
+            <button class="filter-btn kategori-btn" data-kategori="kebersihan" style="flex-shrink: 0;"><i class="ti ti-wash"></i> Kebersihan</button>
+            <button class="filter-btn kategori-btn" data-kategori="perawatan_rutin" style="flex-shrink: 0;"><i class="ti ti-tool"></i> Perawatan</button>
+            <button class="filter-btn kategori-btn" data-kategori="pengecekan" style="flex-shrink: 0;"><i class="ti ti-search"></i> Pengecekan</button>
+            <button class="filter-btn kategori-btn" data-kategori="lainnya" style="flex-shrink: 0;"><i class="ti ti-list"></i> Lainnya</button>
+        </div>
     </div>
 
     <!-- Checklist Items by Ruangan -->
@@ -1033,7 +1069,8 @@
             @endphp
             
             <div class="checklist-item {{ $isChecked ? 'completed' : '' }} {{ $isDisabled ? 'disabled' : '' }}" 
-                 data-kategori="{{ $checklist->kategori }}">
+                 data-kategori="{{ $checklist->kategori }}"
+                 data-jam-kerja="{{ $checklist->kode_jam_kerja ?? 'all' }}">
                 <div style="display: flex; align-items: start;">
                     <div class="checkbox-custom {{ $isChecked ? 'checked' : '' }} {{ $isDisabled ? 'disabled' : '' }}" 
                          data-id="{{ $checklist->id }}"
@@ -1075,6 +1112,18 @@
                                 ];
                                 $badge = $kategoriBadge[$checklist->kategori] ?? ['icon' => 'list', 'text' => 'Lainnya'];
                             @endphp
+                            
+                            <!-- Jam Kerja Badge (jika ada) -->
+                            @if($checklist->kode_jam_kerja && $checklist->jamKerja)
+                                <span class="jam-kerja-badge" style="background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%); color: white; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                                    <i class="ti ti-clock"></i> {{ $checklist->jamKerja->nama_jam_kerja }}
+                                </span>
+                            @else
+                                <span class="jam-kerja-badge" style="background: rgba(156, 39, 176, 0.1); color: #6a1b9a; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; border: 1px solid #6a1b9a; display: flex; align-items: center; gap: 4px;">
+                                    <i class="ti ti-users"></i> Semua Shift
+                                </span>
+                            @endif
+                            
                             <span class="kategori-badge">
                                 <i class="ti ti-{{ $badge['icon'] }}"></i> {{ $badge['text'] }}
                             </span>
@@ -1084,6 +1133,14 @@
                                 @endphp
                                 <span class="badge" style="background: {{ $pointColor }}; color: white; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: 600;">
                                     ⭐ {{ $checklist->points }} pts
+                                </span>
+                            @endif
+                            @if($isChecked && $log)
+                                <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                                    <i class="ti ti-user"></i> {{ $log->nama_karyawan ?? $log->user->name ?? 'Karyawan' }}
+                                </span>
+                                <span class="badge" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                                    <i class="ti ti-clock"></i> {{ \Carbon\Carbon::parse($log->waktu_eksekusi)->format('H:i') }}
                                 </span>
                             @endif
                         </div>
@@ -1122,10 +1179,10 @@
         @endforelse
     @else
         {{-- Fallback: Jika tidak ada grouped data, tampilkan dengan kategori saja --}}
-        @forelse($checklists as $checklist)
+        @forelse($masters as $checklist)
         @php
-            $isChecked = $checklist->logs->where('status', 'completed')->count() > 0;
-            $log = $checklist->logs->first();
+            $isChecked = isset($logs[$checklist->id]);
+            $log = isset($logs[$checklist->id]) ? $logs[$checklist->id] : null;
             $isDisabled = !$config || !$config->is_enabled;
         @endphp
         
@@ -1181,6 +1238,14 @@
                             @endphp
                             <span class="badge" style="background: {{ $pointColor }}; color: white; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: 600;">
                                 ⭐ {{ $checklist->points }} pts
+                            </span>
+                        @endif
+                        @if($isChecked && $log)
+                            <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                                <i class="ti ti-user"></i> {{ $log->nama_karyawan ?? $log->user->name ?? 'Karyawan' }}
+                            </span>
+                            <span class="badge" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                                <i class="ti ti-clock"></i> {{ \Carbon\Carbon::parse($log->waktu_eksekusi)->format('H:i') }}
                             </span>
                         @endif
                     </div>
@@ -1288,20 +1353,41 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    // Filter Kategori
-    $('.filter-btn').on('click', function() {
-        $('.filter-btn').removeClass('active');
+    let currentJamKerja = 'all';
+    let currentKategori = 'all';
+    
+    // Filter Jam Kerja
+    $('.jam-kerja-btn').on('click', function() {
+        $('.jam-kerja-btn').removeClass('active');
         $(this).addClass('active');
-        
-        const kategori = $(this).data('kategori');
-        
-        if (kategori === 'all') {
-            $('.checklist-item').show();
-        } else {
-            $('.checklist-item').hide();
-            $('.checklist-item[data-kategori="' + kategori + '"]').show();
-        }
+        currentJamKerja = $(this).data('jam-kerja');
+        applyFilters();
     });
+    
+    // Filter Kategori
+    $('.kategori-btn').on('click', function() {
+        $('.kategori-btn').removeClass('active');
+        $(this).addClass('active');
+        currentKategori = $(this).data('kategori');
+        applyFilters();
+    });
+    
+    // Apply both filters
+    function applyFilters() {
+        $('.checklist-item').each(function() {
+            const itemJamKerja = $(this).data('jam-kerja');
+            const itemKategori = $(this).data('kategori');
+            
+            let showJamKerja = currentJamKerja === 'all' || currentJamKerja === itemJamKerja;
+            let showKategori = currentKategori === 'all' || currentKategori === itemKategori;
+            
+            if (showJamKerja && showKategori) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    }
     
     // Klik Checkbox - PERBAIKI MODAL
     $('.checkbox-custom').on('click', function() {
