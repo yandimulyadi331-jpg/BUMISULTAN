@@ -71,25 +71,25 @@
                             <li class="nav-item" role="presentation">
                                 <a href="#harian" class="nav-link active" data-bs-toggle="tab" role="tab">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="icon me-1" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><rect x="4" y="5" width="16" height="16" rx="2" /><line x1="16" y1="3" x2="16" y2="7" /><line x1="8" y1="3" x2="8" y2="7" /><line x1="4" y1="11" x2="20" y2="11" /></svg>
-                                    Harian ({{ $masters->where('tipe_periode', 'harian')->count() }})
+                                    Harian <span class="badge bg-primary counter-harian">{{ $masters->where('tipe_periode', 'harian')->where('is_active', true)->count() }}</span>
                                 </a>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <a href="#mingguan" class="nav-link" data-bs-toggle="tab" role="tab">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="icon me-1" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><rect x="4" y="5" width="16" height="16" rx="2" /><line x1="16" y1="3" x2="16" y2="7" /><line x1="8" y1="3" x2="8" y2="7" /><line x1="4" y1="11" x2="20" y2="11" /><path d="M7 14h.01" /><path d="M11 14h.01" /></svg>
-                                    Mingguan ({{ $masters->where('tipe_periode', 'mingguan')->count() }})
+                                    Mingguan <span class="badge bg-primary counter-mingguan">{{ $masters->where('tipe_periode', 'mingguan')->where('is_active', true)->count() }}</span>
                                 </a>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <a href="#bulanan" class="nav-link" data-bs-toggle="tab" role="tab">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="icon me-1" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><rect x="4" y="5" width="16" height="16" rx="2" /><line x1="16" y1="3" x2="16" y2="7" /><line x1="8" y1="3" x2="8" y2="7" /><line x1="4" y1="11" x2="20" y2="11" /><rect x="8" y="15" width="2" height="2" /></svg>
-                                    Bulanan ({{ $masters->where('tipe_periode', 'bulanan')->count() }})
+                                    Bulanan <span class="badge bg-primary counter-bulanan">{{ $masters->where('tipe_periode', 'bulanan')->where('is_active', true)->count() }}</span>
                                 </a>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <a href="#tahunan" class="nav-link" data-bs-toggle="tab" role="tab">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="icon me-1" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><rect x="4" y="5" width="16" height="16" rx="2" /><line x1="16" y1="3" x2="16" y2="7" /><line x1="8" y1="3" x2="8" y2="7" /><line x1="4" y1="11" x2="20" y2="11" /><path d="M11 15h1" /><path d="M12 15v3" /></svg>
-                                    Tahunan ({{ $masters->where('tipe_periode', 'tahunan')->count() }})
+                                    Tahunan <span class="badge bg-primary counter-tahunan">{{ $masters->where('tipe_periode', 'tahunan')->where('is_active', true)->count() }}</span>
                                 </a>
                             </li>
                         </ul>
@@ -155,11 +155,19 @@
                                                     </span>
                                                 </td>
                                                 <td class="text-center">
-                                                    @if($master->is_active)
-                                                        <span class="badge bg-success">Aktif</span>
-                                                    @else
-                                                        <span class="badge bg-danger">Nonaktif</span>
-                                                    @endif
+                                                    <div class="d-flex align-items-center justify-content-center gap-2">
+                                                        <div class="form-check form-switch mb-0">
+                                                            <input class="form-check-input checklist-toggle" 
+                                                                   type="checkbox" 
+                                                                   id="toggle_checklist_{{ $master->id }}" 
+                                                                   data-checklist-id="{{ $master->id }}"
+                                                                   data-tipe-periode="{{ $master->tipe_periode }}"
+                                                                   {{ $master->is_active ? 'checked' : '' }}>
+                                                        </div>
+                                                        <span class="badge toggle-status-{{ $master->id }}" id="status-{{ $master->id }}">
+                                                            {{ $master->is_active ? '✅ Aktif' : '❌ Nonaktif' }}
+                                                        </span>
+                                                    </div>
                                                 </td>
                                                 <td class="text-center">
                                                     <span class="badge bg-info">{{ $master->logs_count ?? 0 }}x</span>
@@ -206,4 +214,135 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ⭐ Handle individual checklist toggle
+    document.querySelectorAll('.checklist-toggle').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const checklistId = this.dataset.checklistId;
+            const tipePeriode = this.dataset.tipePeriode;
+            const isActive = this.checked;
+            const statusBadge = document.querySelector(`#status-${checklistId}`);
+            
+            // Update badge instantly
+            if (isActive) {
+                statusBadge.textContent = '✅ Aktif';
+                statusBadge.className = 'badge bg-success toggle-status-' + checklistId;
+            } else {
+                statusBadge.textContent = '❌ Nonaktif';
+                statusBadge.className = 'badge bg-danger toggle-status-' + checklistId;
+            }
+            
+            // Send AJAX request to backend
+            fetch(`/perawatan/master/${checklistId}/toggle-status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    is_active: isActive
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update counter badge
+                    const counterElement = document.querySelector(`.counter-${tipePeriode}`);
+                    if (counterElement) {
+                        let currentCount = parseInt(counterElement.textContent);
+                        if (isActive) {
+                            currentCount++; // Toggle ON = +1
+                        } else {
+                            currentCount--; // Toggle OFF = -1
+                        }
+                        counterElement.textContent = currentCount;
+                    }
+                    
+                    const message = isActive 
+                        ? `✅ "${data.data.nama_kegiatan}" sekarang AKTIF` 
+                        : `❌ "${data.data.nama_kegiatan}" sekarang NONAKTIF`;
+                    
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: message,
+                        icon: 'success',
+                        toast: true,
+                        position: 'top-end',
+                        timer: 2000,
+                        timerProgressBar: true,
+                        showConfirmButton: false
+                    });
+                    
+                    // Broadcast to other tabs via WebSocket
+                    if (window.Echo !== undefined) {
+                        window.Echo.channel('checklist-updates')
+                            .whisper('ChecklistItemToggled', {
+                                checklist_id: checklistId,
+                                is_active: isActive,
+                                nama_kegiatan: data.data.nama_kegiatan
+                            });
+                    }
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.message || 'Gagal mengupdate status',
+                        icon: 'error'
+                    });
+                    this.checked = !isActive; // Revert toggle
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Terjadi kesalahan saat mengupdate',
+                    icon: 'error'
+                });
+                this.checked = !isActive; // Revert toggle
+            });
+        });
+    });
+    
+    // Listen for real-time updates from other users
+    if (window.Echo !== undefined) {
+        window.Echo.channel('checklist-updates')
+            .listen('ChecklistItemToggled', (data) => {
+                const toggle = document.querySelector(`#toggle_checklist_${data.checklist_id}`);
+                if (toggle && toggle.checked !== data.is_active) {
+                    toggle.checked = data.is_active;
+                    toggle.dispatchEvent(new Event('change'));
+                }
+            });
+    }
+});
+</script>
+
+<style>
+.toggle-status {
+    font-weight: 600;
+    min-width: 100px;
+}
+
+.form-check-input:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.form-check-input:not(:checked) {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.85rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+}
+</style>
 @endsection
