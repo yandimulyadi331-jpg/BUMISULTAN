@@ -37,7 +37,8 @@ class ManajemenPerawatanController extends Controller
     public function masterCreate()
     {
         $ruangans = \App\Models\Ruangan::orderBy('nama_ruangan')->get();
-        return view('perawatan.master.create', compact('ruangans'));
+        $jamKerjas = \App\Models\Jamkerja::orderBy('nama_jam_kerja')->get();
+        return view('perawatan.master.create', compact('ruangans', 'jamKerjas'));
     }
 
     public function masterStore(Request $request)
@@ -48,6 +49,7 @@ class ManajemenPerawatanController extends Controller
             'tipe_periode' => 'required|in:harian,mingguan,bulanan,tahunan',
             'kategori' => 'required|in:kebersihan,perawatan_rutin,pengecekan,lainnya',
             'ruangan_id' => 'nullable|exists:ruangans,id',
+            'kode_jam_kerja' => 'nullable|exists:presensi_jamkerja,kode_jam_kerja',
             'urutan' => 'nullable|integer|min:0',
             'jam_mulai' => 'nullable|date_format:H:i',
             'jam_selesai' => 'nullable|date_format:H:i',
@@ -71,7 +73,8 @@ class ManajemenPerawatanController extends Controller
     {
         $master = MasterPerawatan::findOrFail($id);
         $ruangans = \App\Models\Ruangan::orderBy('nama_ruangan')->get();
-        return view('perawatan.master.edit', compact('master', 'ruangans'));
+        $jamKerjas = \App\Models\Jamkerja::orderBy('nama_jam_kerja')->get();
+        return view('perawatan.master.edit', compact('master', 'ruangans', 'jamKerjas'));
     }
 
     public function masterUpdate(Request $request, $id)
@@ -82,6 +85,7 @@ class ManajemenPerawatanController extends Controller
             'tipe_periode' => 'required|in:harian,mingguan,bulanan,tahunan',
             'kategori' => 'required|in:kebersihan,perawatan_rutin,pengecekan,lainnya',
             'ruangan_id' => 'nullable|exists:ruangans,id',
+            'kode_jam_kerja' => 'nullable|exists:presensi_jamkerja,kode_jam_kerja',
             'urutan' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'jam_mulai' => 'nullable|date_format:H:i',
@@ -107,6 +111,35 @@ class ManajemenPerawatanController extends Controller
         
         return redirect()->route('perawatan.master.index')
             ->with('success', 'Master checklist berhasil dihapus!');
+    }
+
+    // ==================== TOGGLE CHECKLIST STATUS ====================
+
+    public function toggleChecklistStatus(Request $request, $id)
+    {
+        // ⭐ Validate input
+        $validated = $request->validate([
+            'is_active' => 'required|boolean'
+        ]);
+
+        // ⭐ Find master checklist
+        $master = MasterPerawatan::findOrFail($id);
+
+        // ⭐ Update status
+        $master->update([
+            'is_active' => $validated['is_active']
+        ]);
+
+        // ⭐ Return JSON response
+        return response()->json([
+            'success' => true,
+            'message' => 'Status checklist berhasil diupdate',
+            'data' => [
+                'id' => $master->id,
+                'nama_kegiatan' => $master->nama_kegiatan,
+                'is_active' => $master->is_active
+            ]
+        ]);
     }
 
     // ==================== EKSEKUSI CHECKLIST ====================
@@ -732,7 +765,9 @@ class ManajemenPerawatanController extends Controller
                     'completed' => $completedItems,
                     'total' => $totalItems,
                     'percentage' => $totalItems > 0 ? round(($completedItems / $totalItems) * 100) : 0
-                ]
+                ],
+                'allow_force_checkout' => true,
+                'checklist_url' => route('perawatan.karyawan.checklist', $validated['tipe_periode'])
             ], 403);
         }
 

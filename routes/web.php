@@ -544,6 +544,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/presensi/histori', 'histori')->name('presensi.histori')->can('presensi.index');
         Route::get('/presensi/create', 'create')->name('presensi.create')->can('presensi.create');
         Route::post('/presensi', 'store')->name('presensi.store')->can('presensi.create');
+        Route::post('/presensi/force-checkout', 'forceCheckout')->name('presensi.force-checkout')->can('presensi.create');
         Route::post('/presensi/edit', 'edit')->name('presensi.edit')->can('presensi.edit');
         Route::post('/presensi/update', 'update')->name('presensi.update')->can('presensi.edit');
         Route::delete('/presensi/{id}/delete', 'destroy')->name('presensi.delete')->can('presensi.delete');
@@ -1850,6 +1851,7 @@ Route::middleware('role:super admin')->prefix('perawatan')->name('perawatan.')->
         Route::get('/{id}/edit', 'masterEdit')->name('edit');
         Route::put('/{id}', 'masterUpdate')->name('update');
         Route::delete('/{id}', 'masterDestroy')->name('destroy');
+        Route::patch('/{id}/toggle-status', 'toggleChecklistStatus')->name('toggle-status');
     });
     
     // Eksekusi Checklist
