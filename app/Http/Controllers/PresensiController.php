@@ -432,66 +432,7 @@ class PresensiController extends Controller
                     }
                 }
             } else {
-                // ========================================
-                // VALIDASI CHECKLIST HARIAN SEBELUM ABSEN PULANG (BERBASIS JAM SHIFT)
-                // ========================================
-                if ($presensi_hariini && $presensi_hariini->jam_in != null) {
-                    $periodeKey = 'harian_' . $tanggal_presensi;
-                    
-                    // Ambil jam kerja untuk filter checklist sesuai shift
-                    $jamKerja = \App\Models\Jamkerja::where('kode_jam_kerja', $presensi_hariini->kode_jam_kerja)->first();
-                    
-                    if ($jamKerja) {
-                        // Query checklist harian yang sesuai dengan jam kerja shift karyawan
-                        $checklistQuery = \App\Models\MasterPerawatan::where('tipe_periode', 'harian')
-                            ->where('is_active', true);
-                        
-                        // Filter berdasarkan jam shift
-                        $checklistQuery->where(function($q) use ($jamKerja) {
-                            if ($jamKerja->lintashari == '0') {
-                                // Shift normal (tidak lintas hari): 08:00 - 17:00
-                                $q->where(function($subQ) use ($jamKerja) {
-                                    $subQ->whereTime('jam_mulai', '>=', $jamKerja->jam_masuk)
-                                         ->whereTime('jam_mulai', '<', $jamKerja->jam_pulang);
-                                })->orWhereNull('jam_mulai');
-                            } else {
-                                // Shift lintas hari: 20:00 - 08:00 (besok pagi)
-                                $q->where(function($subQ) use ($jamKerja) {
-                                    // Checklist malam (20:00 - 23:59) ATAU pagi (00:00 - 08:00)
-                                    $subQ->whereTime('jam_mulai', '>=', $jamKerja->jam_masuk)
-                                         ->orWhereTime('jam_mulai', '<', $jamKerja->jam_pulang);
-                                })->orWhereNull('jam_mulai');
-                            }
-                        });
-                        
-                        $totalChecklistHarian = $checklistQuery->count();
-                        
-                        if ($totalChecklistHarian > 0) {
-                            // Hitung checklist yang sudah selesai untuk shift ini
-                            $checklistIds = $checklistQuery->pluck('id')->toArray();
-                            
-                            $completedChecklistHarian = \App\Models\PerawatanLog::where('periode_key', $periodeKey)
-                                ->whereIn('master_perawatan_id', $checklistIds)
-                                ->where('status', 'completed')
-                                ->count();
-                            
-                            // Validasi: semua checklist shift harus selesai
-                            if ($completedChecklistHarian < $totalChecklistHarian) {
-                                $sisaChecklist = $totalChecklistHarian - $completedChecklistHarian;
-                                $persenSelesai = $totalChecklistHarian > 0 ? round(($completedChecklistHarian / $totalChecklistHarian) * 100) : 0;
-                                
-                                return response()->json([
-                                    'status' => false, 
-                                    'message' => 'Tidak dapat absen pulang! Selesaikan checklist shift Anda (' . $jamKerja->nama_jam_kerja . ') terlebih dahulu (' . $completedChecklistHarian . '/' . $totalChecklistHarian . ' selesai, ' . $persenSelesai . '% tersisa ' . $sisaChecklist . ' tugas)',
-                                    'notifikasi' => 'notifikasi_checklist_belum_lengkap'
-                                ], 400);
-                            }
-                        }
-                    }
-                }
-                // ========================================
-                // END VALIDASI CHECKLIST
-                // ========================================
+                // Validasi checklist dinonaktifkan - langsung ke absen pulang tanpa checklist
                 
                 if ($presensi_hariini && $presensi_hariini->jam_out != null) {
                     return response()->json(['status' => false, 'message' => 'Anda Sudah Absen Pulang Hari Ini', 'notifikasi' => 'notifikasi_sudahabsen'], 400);
@@ -894,6 +835,57 @@ class PresensiController extends Controller
             } catch (\Exception $e) {
                 return Redirect::back()->with(messageError($e->getMessage()));
             }
+        }
+    }
+
+    /**
+     * Force checkout - Allow absen pulang meskipun checklist belum selesai
+     */
+    public function forceCheckout(Request $request)
+    {
+        try {
+            $user = User::where('id', auth()->user()->id)->first();
+            $userkaryawan = Userkaryawan::where('id_user', $user->id)->first();
+            $karyawan = Karyawan::where('nik', $userkaryawan->nik)->first();
+
+            $tanggal_sekarang = date("Y-m-d");
+            $jam_sekarang = date("H:i:s");
+            $kode_jam_kerja = $request->kode_jam_kerja;
+            $lokasi = $request->lokasi;
+
+            $presensi_hariini = Presensi::where('nik', $karyawan->nik)
+                ->where('tanggal', $tanggal_sekarang)
+                ->first();
+
+            $jam_presensi = $tanggal_sekarang . " " . $jam_sekarang;
+
+            if ($presensi_hariini && $presensi_hariini->jam_in != null) {
+                // Update jam out
+                Presensi::where('id', $presensi_hariini->id)->update([
+                    'jam_out' => $jam_presensi,
+                    'lokasi_out' => $lokasi,
+                    'force_checkout' => 1
+                ]);
+
+                // Tambahkan notifikasi real-time
+                $presensi_updated = Presensi::find($presensi_hariini->id);
+                NotificationService::presensiNotification($presensi_updated, 'pulang');
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Absen pulang berhasil meskipun ada checklist yang belum selesai'
+                ]);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak ada presensi masuk hari ini'
+                ], 400);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
         }
     }
 }
