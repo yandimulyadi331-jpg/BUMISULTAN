@@ -1023,8 +1023,66 @@
     </div>
     @endif
 
+    <!-- CARD VIEW: Ruangan Grid -->
+    <div id="ruanganGridView" style="padding: 0 20px; margin-bottom: 25px;">
+        <div style="color: var(--text-secondary); font-size: 11px; font-weight: 700; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">
+            <i class="ti ti-layout-grid"></i> Pilih Ruangan
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px;">
+            @forelse($checklistsByRuangan as $ruanganGroup)
+                @php
+                    $progressPercent = $ruanganGroup['total'] > 0 ? round(($ruanganGroup['completed'] / $ruanganGroup['total']) * 100) : 0;
+                    $ruanganId = $ruanganGroup['ruangan_id'];
+                @endphp
+                <div class="ruangan-card" data-ruangan-id="{{ $ruanganId }}" style="cursor: pointer; background: var(--bg-primary); border-radius: 15px; padding: 20px; text-align: center; box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light); transition: all 0.3s ease; border: 2px solid transparent;">
+                    <div style="font-size: 36px; margin-bottom: 10px;">
+                        @if(stripos($ruanganGroup['ruangan_nama'], 'RTM') !== false)
+                            👥
+                        @elseif(stripos($ruanganGroup['ruangan_nama'], 'ICU') !== false)
+                            🏥
+                        @elseif(stripos($ruanganGroup['ruangan_nama'], 'IGD') !== false)
+                            🚑
+                        @elseif(stripos($ruanganGroup['ruangan_nama'], 'Kamar') !== false)
+                            🛏️
+                        @else
+                            🏢
+                        @endif
+                    </div>
+                    <h5 style="margin: 0 0 8px 0; color: var(--text-primary); font-weight: bold; font-size: 14px;">
+                        {{ $ruanganGroup['ruangan_nama'] }}
+                    </h5>
+                    <div style="background: linear-gradient(135deg, var(--badge-green) 0%, #52c77a 100%); color: white; padding: 6px 12px; border-radius: 12px; font-size: 18px; font-weight: bold; margin-bottom: 10px;">
+                        {{ $progressPercent }}%
+                    </div>
+                    <small style="color: var(--text-secondary); display: block;">
+                        {{ $ruanganGroup['completed'] }}/{{ $ruanganGroup['total'] }} selesai
+                    </small>
+                    @if($progressPercent == 100)
+                        <div style="margin-top: 8px; color: var(--badge-green); font-weight: bold;">
+                            <i class="ti ti-check-circle"></i> SELESAI
+                        </div>
+                    @endif
+                </div>
+            @empty
+                <div style="color: var(--text-secondary); padding: 20px; text-align: center;">
+                    Tidak ada ruangan
+                </div>
+            @endforelse
+        </div>
+    </div>
+
+    <!-- Toggle View Buttons -->
+    <div style="display: flex; gap: 10px; padding: 0 20px; margin-bottom: 20px; justify-content: center;">
+        <button id="toggleGridView" class="btn" style="background: var(--bg-primary); color: var(--badge-green); border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light); font-size: 12px;">
+            <i class="ti ti-layout-grid"></i> Grid View
+        </button>
+        <button id="toggleListView" class="btn" style="background: var(--bg-primary); color: var(--text-secondary); border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light); font-size: 12px;">
+            <i class="ti ti-list"></i> List View
+        </button>
+    </div>
+
     <!-- Filter Kategori -->
-    <div class="filter-container">
+    <div class="filter-container" id="filterCategoryContainer" style="display: none;">
         <div style="color: var(--text-secondary); font-size: 11px; font-weight: 700; padding: 0 20px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">
             <i class="ti ti-filter"></i> Kategori
         </div>
@@ -1037,10 +1095,23 @@
         </div>
     </div>
 
+    <!-- DETAIL VIEW: Task List (Hidden by default) -->
+    <div id="detailListView" style="display: none; padding: 0 20px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+            <button id="backToGridBtn" class="btn" style="background: var(--bg-primary); color: var(--text-secondary); border: none; width: 45px; height: 45px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);">
+                <i class="ti ti-arrow-left"></i>
+            </button>
+            <div style="flex: 1;">
+                <h3 id="selectedRuanganTitle" style="margin: 0; color: var(--text-primary); font-weight: bold;">Ruangan</h3>
+                <small id="selectedRuanganDesc" style="color: var(--text-secondary);">0/0 selesai</small>
+            </div>
+        </div>
+    </div>
+
     <!-- Checklist Items by Ruangan -->
     @if(isset($checklistsByRuangan) && !empty($checklistsByRuangan))
         @forelse($checklistsByRuangan as $ruanganGroup)
-        <div style="margin-bottom: 25px;">
+        <div class="ruangan-detail-section" data-ruangan-id="{{ $ruanganGroup['ruangan_id'] }}" style="display: none; margin-bottom: 25px; padding: 0 20px;">
             <!-- Ruangan Header -->
             <div style="background: var(--bg-primary); padding: 15px 20px; border-radius: 15px; margin-bottom: 15px; box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -1278,6 +1349,8 @@
                 <div class="empty-icon"><i class="ti ti-clipboard-off"></i></div>
                 <div class="empty-text">Tidak ada checklist {{ $tipe }} tersedia</div>
             </div>
+        @endforelse
+        </div>
         @endforelse
     @endif
 </div>
@@ -1575,6 +1648,85 @@ $(document).ready(function() {
                     $(this).remove();
                 });
             }
+        });
+    });
+
+    // =====================
+    // RUANGAN CARD NAVIGATION
+    // =====================
+    
+    // Click on ruangan card to show details
+    $('.ruangan-card').on('click', function() {
+        const ruanganId = $(this).data('ruangan-id');
+        const ruanganTitle = $(this).find('h5').text();
+        const completed = $(this).find('small').text();
+        
+        // Hide grid view
+        $('#ruanganGridView').fadeOut(300);
+        $('#filterCategoryContainer').fadeIn(300);
+        
+        // Show detail view
+        $('#detailListView').fadeIn(300);
+        $('#selectedRuanganTitle').text(ruanganTitle);
+        $('#selectedRuanganDesc').text(completed);
+        
+        // Show task list for selected ruangan
+        $('.ruangan-detail-section').fadeOut(300);
+        $(`.ruangan-detail-section[data-ruangan-id="${ruanganId}"]`).delay(300).fadeIn(300);
+        
+        // Scroll to top
+        $('html, body').animate({ scrollTop: 0 }, 500);
+    });
+    
+    // Back button to return to grid
+    $('#backToGridBtn').on('click', function() {
+        // Hide detail view
+        $('#detailListView').fadeOut(300);
+        $('#filterCategoryContainer').fadeOut(300);
+        
+        // Hide all task lists
+        $('.ruangan-detail-section').fadeOut(300);
+        
+        // Show grid view
+        $('#ruanganGridView').delay(300).fadeIn(300);
+        
+        // Scroll to top
+        $('html, body').animate({ scrollTop: 0 }, 500);
+    });
+    
+    // Toggle button handlers
+    $('#toggleGridView').on('click', function() {
+        $(this).css('color', 'var(--badge-green)');
+        $('#toggleListView').css('color', 'var(--text-secondary)');
+        
+        $('#detailListView').fadeOut(300);
+        $('#filterCategoryContainer').fadeOut(300);
+        $('.ruangan-detail-section').fadeOut(300);
+        $('#ruanganGridView').delay(300).fadeIn(300);
+    });
+    
+    $('#toggleListView').on('click', function() {
+        if ($('.ruangan-detail-section:visible').length > 0) {
+            // Already in list view
+            $(this).css('color', 'var(--badge-green)');
+            $('#toggleGridView').css('color', 'var(--text-secondary)');
+        } else {
+            alert('Pilih ruangan terlebih dahulu');
+        }
+    });
+    
+    // Hover effect on ruangan card
+    $('.ruangan-card').on('mouseenter', function() {
+        $(this).css({
+            'transform': 'translateY(-8px)',
+            'border-color': 'var(--badge-green)',
+            'box-shadow': '8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light), 0 0 20px rgba(76, 175, 80, 0.3)'
+        });
+    }).on('mouseleave', function() {
+        $(this).css({
+            'transform': 'translateY(0)',
+            'border-color': 'transparent',
+            'box-shadow': '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)'
         });
     });
 });
