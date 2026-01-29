@@ -1349,8 +1349,6 @@
                 <div class="empty-text">Tidak ada checklist {{ $tipe }} tersedia</div>
             </div>
         @endforelse
-        </div>
-        @endforelse
     @endif
 </div>
 
