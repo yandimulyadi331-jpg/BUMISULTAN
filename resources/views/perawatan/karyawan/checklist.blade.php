@@ -1246,7 +1246,6 @@
                 </div>
             @endforelse
         </div>
-        @empty
         @endforelse
     @else
         {{-- Fallback: Jika tidak ada grouped data, tampilkan dengan kategori saja --}}
