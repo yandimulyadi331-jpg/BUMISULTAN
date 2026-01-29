@@ -32,8 +32,9 @@
             <!-- Info Alert -->
             <div class="alert alert-info alert-dismissible fade show" role="alert">
                <i class="ti ti-info-circle me-2"></i>
-               <strong>Informasi:</strong> 
+               <strong>Informasi Pinjaman:</strong> 
                <ul class="mb-0 mt-2" style="padding-left: 20px;">
+                  <li><strong>Lihat Pinjaman Lama</strong> - Pilih "Semua Status" di filter untuk melihat semua pinjaman (aktif, lunas, dan riwayat lama)</li>
                   <li><strong>Formulir Kosong</strong> (tombol hijau di atas) - Template blanko untuk tukang yang ingin mengajukan pinjaman baru, bisa dicetak dan diisi manual.</li>
                   <li><strong>Formulir Terisi</strong> (tombol hijau di tabel) - Formulir yang sudah terisi dengan data pinjaman untuk dokumentasi.</li>
                </ul>
@@ -56,15 +57,17 @@
             <!-- Filter -->
             <div class="row mb-3">
                <div class="col-md-4">
+                  <label class="form-label small fw-bold">Filter Status Pinjaman</label>
                   <select class="form-select" id="filterStatus" onchange="filterData()">
-                     <option value="">Semua Status</option>
-                     <option value="aktif" {{ $status == 'aktif' ? 'selected' : '' }}>Aktif</option>
-                     <option value="lunas" {{ $status == 'lunas' ? 'selected' : '' }}>Lunas</option>
+                     <option value="">📋 Semua Status (Aktif + Lunas + Lama)</option>
+                     <option value="aktif" {{ $status == 'aktif' ? 'selected' : '' }}>✅ Aktif (Masih Cicilan)</option>
+                     <option value="lunas" {{ $status == 'lunas' ? 'selected' : '' }}>🎉 Lunas (Selesai)</option>
                   </select>
                </div>
                <div class="col-md-4">
+                  <label class="form-label small fw-bold">Filter Tukang</label>
                   <select class="form-select" id="filterTukang" onchange="filterData()">
-                     <option value="">Semua Tukang</option>
+                     <option value="">👥 Semua Tukang</option>
                      @foreach($tukangs as $t)
                         <option value="{{ $t->id }}">{{ $t->kode_tukang }} - {{ $t->nama_tukang }}</option>
                      @endforeach

@@ -98,6 +98,24 @@
                                 </div>
                             </div>
 
+                            <div class="mb-3">
+                                <label class="form-label">Jadwal Piket (Jam Kerja)</label>
+                                <select name="kode_jam_kerja" class="form-select @error('kode_jam_kerja') is-invalid @enderror">
+                                    <option value="">Tanpa Jadwal Piket (Semua Karyawan)</option>
+                                    @if(isset($jamKerjas))
+                                        @foreach($jamKerjas as $jam)
+                                            <option value="{{ $jam->kode_jam_kerja }}" {{ old('kode_jam_kerja', $master->kode_jam_kerja) == $jam->kode_jam_kerja ? 'selected' : '' }}>
+                                                ⏰ {{ $jam->nama_jam_kerja }} ({{ $jam->jam_masuk }} - {{ $jam->jam_pulang }})
+                                            </option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                                @error('kode_jam_kerja')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="form-hint">Jika dipilih, checklist ini hanya akan tampil untuk karyawan dengan jadwal piket yang sesuai</small>
+                            </div>
+
                             <!-- Jadwal Harian -->
                             <div id="jadwal_harian" style="display: none;">
                                 <div class="card bg-light mb-3">

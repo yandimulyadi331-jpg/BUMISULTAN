@@ -37,4 +37,11 @@ Route::prefix('notifications')->group(function () {
 Route::middleware('auth:sanctum')->prefix('checklist')->name('api.checklist.')->group(function () {
     Route::post('/status', [App\Http\Controllers\Api\ChecklistController::class, 'checkStatus'])->name('status');
     Route::post('/force-pulang', [App\Http\Controllers\Api\ChecklistController::class, 'forcePulang'])->name('force-pulang');
+    
+    // NEW ROUTES: Jadwal Piket Based Checklist
+    Route::get('/by-schedule', [App\Http\Controllers\Api\ChecklistController::class, 'getChecklistBySchedule'])->name('by-schedule');
+    Route::get('/by-jam-kerja', [App\Http\Controllers\Api\ChecklistController::class, 'getChecklistByJamKerja'])->name('by-jam-kerja');
+    Route::post('/complete', [App\Http\Controllers\Api\ChecklistController::class, 'completeChecklist'])->name('complete');
+    Route::get('/riwayat', [App\Http\Controllers\Api\ChecklistController::class, 'getRiwayatChecklist'])->name('riwayat');
+    Route::get('/jadwal-piket', [App\Http\Controllers\Api\ChecklistController::class, 'getJadwalPiketKaryawan'])->name('jadwal-piket');
 });

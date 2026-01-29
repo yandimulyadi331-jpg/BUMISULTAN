@@ -16,11 +16,16 @@ class PerawatanLog extends Model
         'user_id',
         'tanggal_eksekusi',
         'waktu_eksekusi',
+        'jam_ceklis',
+        'nama_karyawan',
+        'kode_jam_kerja',
         'status',
+        'status_validity',
         'catatan',
         'foto_bukti',
         'periode_key',
-        'points_earned'
+        'points_earned',
+        'last_reset_at'
     ];
 
     protected $casts = [
@@ -35,6 +40,14 @@ class PerawatanLog extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Relasi ke Jam Kerja (Jadwal Piket)
+     */
+    public function jamKerja()
+    {
+        return $this->belongsTo(Jamkerja::class, 'kode_jam_kerja', 'kode_jam_kerja');
     }
 
     public function scopeByPeriode($query, $periodeKey)

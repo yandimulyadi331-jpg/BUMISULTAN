@@ -19,6 +19,7 @@ class MasterPerawatan extends Model
         'urutan',
         'kategori',
         'ruangan_id',
+        'kode_jam_kerja',
         'is_active',
         'jam_mulai',
         'jam_selesai',
@@ -51,6 +52,14 @@ class MasterPerawatan extends Model
     public function ruangan()
     {
         return $this->belongsTo(Ruangan::class, 'ruangan_id');
+    }
+
+    /**
+     * Relasi ke Jam Kerja (Jadwal Piket)
+     */
+    public function jamKerja()
+    {
+        return $this->belongsTo(Jamkerja::class, 'kode_jam_kerja', 'kode_jam_kerja');
     }
 
     public function scopeActive($query)

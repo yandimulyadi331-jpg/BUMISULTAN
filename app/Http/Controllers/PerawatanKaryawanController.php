@@ -165,23 +165,30 @@ class PerawatanKaryawanController extends Controller
             });
         }
         
-        $checklists = $query->ordered()
+        $masters = $query->ordered()
             ->with(['logs' => function($query) use ($periodeKey) {
                 $query->where('periode_key', $periodeKey)
                       ->with('user:id,name');
             }, 'ruangan'])
             ->get();
         
+        // Buat array keyed untuk logs berdasarkan master_perawatan_id
+        $logs = [];
+        foreach ($masters as $master) {
+            $completedLog = $master->logs->where('status', 'completed')->first();
+            if ($completedLog) {
+                $logs[$master->id] = $completedLog;
+            }
+        }
+        
         // Hitung progress GLOBAL
-        $totalChecklist = $checklists->count();
-        $completedChecklist = $checklists->filter(function($item) {
-            return $item->logs->where('status', 'completed')->count() > 0;
-        })->count();
+        $totalChecklist = $masters->count();
+        $completedChecklist = count($logs);
         
         $progress = $totalChecklist > 0 ? round(($completedChecklist / $totalChecklist) * 100) : 0;
         
         // Group by Ruangan untuk tampilan yang lebih organized
-        $checklistsByRuangan = $checklists->groupBy(function($item) {
+        $mastersByRuangan = $masters->groupBy(function($item) {
             return $item->ruangan_id ?? 'tanpa-ruangan';
         })->map(function($items, $ruanganId) {
             return [
@@ -199,8 +206,9 @@ class PerawatanKaryawanController extends Controller
         
         return view('perawatan.karyawan.checklist', compact(
             'tipe',
-            'checklists',
-            'checklistsByRuangan',
+            'masters',
+            'logs',
+            'mastersByRuangan',
             'periodeKey',
             'totalChecklist',
             'completedChecklist',

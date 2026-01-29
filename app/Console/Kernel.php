@@ -28,6 +28,28 @@ class Kernel extends ConsoleKernel
             ->onFailure(function () {
                 \Log::error('Gagal mengirim notifikasi pinjaman jatuh tempo');
             });
+
+        // NEW: Classify perawatan by jadwal piket setiap 1 menit
+        $schedule->job(new \App\Jobs\ClassifyPerawatanBySchedule)
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onSuccess(function () {
+                \Log::info('ClassifyPerawatanBySchedule executed successfully');
+            })
+            ->onFailure(function () {
+                \Log::error('ClassifyPerawatanBySchedule failed');
+            });
+
+        // NEW: Reset perawatan by jadwal piket setiap 1 menit
+        $schedule->job(new \App\Jobs\ResetPerawatanBySchedule)
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onSuccess(function () {
+                \Log::info('ResetPerawatanBySchedule executed successfully');
+            })
+            ->onFailure(function () {
+                \Log::error('ResetPerawatanBySchedule failed');
+            });
     }
 
     /**

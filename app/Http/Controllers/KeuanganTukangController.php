@@ -6,6 +6,7 @@ use App\Models\Tukang;
 use App\Models\KeuanganTukang;
 use App\Models\PinjamanTukang;
 use App\Models\PotonganTukang;
+use App\Models\PotonganPinjamanPayrollDetail;
 use App\Models\KehadiranTukang;
 use App\Models\PembayaranGajiTukang;
 use Illuminate\Http\Request;
@@ -138,17 +139,43 @@ class KeuanganTukangController extends Controller
     /**
      * Toggle Auto Potong Pinjaman dari Gaji
      */
-    public function togglePotonganPinjaman($tukang_id)
+    public function togglePotonganPinjaman(Request $request, $tukang_id)
     {
         try {
             $tukang = Tukang::findOrFail($tukang_id);
-            $tukang->auto_potong_pinjaman = !$tukang->auto_potong_pinjaman;
+            $pinjamanAktif = PinjamanTukang::where('tukang_id', $tukang_id)
+                                           ->where('status', 'aktif')
+                                           ->where('sisa_pinjaman', '>', 0)
+                                           ->first();
+            
+            // Jika tidak ada pinjaman aktif, return error
+            if (!$pinjamanAktif) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada pinjaman aktif untuk tukang ini'
+                ], 400);
+            }
+            
+            // Toggle status potongan
+            $statusBaru = !$tukang->auto_potong_pinjaman;
+            
+            // Dapatkan minggu-tahun saat ini (ISO 8601)
+            $mingguTahun = $this->getMingguTahun(now());
+            
+            // Record history potongan
+            $pinjamanAktif->recordPotonganHistory(
+                tahun: $mingguTahun['tahun'],
+                minggu: $mingguTahun['minggu'],
+                status: $statusBaru ? 'DIPOTONG' : 'TIDAK_DIPOTONG',
+                toggleBy: auth()->user()->name ?? 'System',
+                alasan: $request->input('alasan_tidak_potong', null)
+            );
+            
+            // Update field auto_potong_pinjaman di model Tukang
+            $tukang->auto_potong_pinjaman = $statusBaru;
             $tukang->save();
             
-            $status = $tukang->auto_potong_pinjaman ? 'AKTIF' : 'NONAKTIF';
-            $message = "Potongan pinjaman otomatis untuk {$tukang->nama_tukang} sekarang {$status}";
-            
-            // ✅ RECALCULATE GAJI REAL-TIME
+            // Recalculate data tukang
             $dataRecalculated = [
                 'upah_harian' => 0,
                 'lembur' => 0,
@@ -158,8 +185,8 @@ class KeuanganTukangController extends Controller
             ];
             
             // Jika ada parameter periode, hitung ulang
-            if (request()->has('periode')) {
-                $periode = explode('|', request('periode'));
+            if ($request->has('periode')) {
+                $periode = explode('|', $request->input('periode'));
                 $sabtu = Carbon::parse($periode[0])->startOfDay();
                 $kamis = Carbon::parse($periode[1])->endOfDay();
                 
@@ -201,18 +228,35 @@ class KeuanganTukangController extends Controller
                 ];
             }
             
+            $status = $statusBaru ? 'AKTIF' : 'NONAKTIF';
+            $message = "Status potongan pinjaman untuk {$tukang->nama_tukang} sekarang {$status} (Minggu {$mingguTahun['minggu']}/{$mingguTahun['tahun']})";
+            
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'status' => $tukang->auto_potong_pinjaman,
-                'data' => $dataRecalculated
+                'status' => $statusBaru,
+                'data' => $dataRecalculated,
+                'minggu' => $mingguTahun
             ]);
+            
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengubah status: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Helper: Dapatkan minggu-tahun saat ini (ISO 8601)
+     */
+    private function getMingguTahun($date)
+    {
+        $carbon = Carbon::parse($date);
+        return [
+            'tahun' => (int) $carbon->isoFormat('Y'),
+            'minggu' => (int) $carbon->isoFormat('W'),
+        ];
     }
     
     /**
@@ -461,6 +505,8 @@ class KeuanganTukangController extends Controller
         
         $query = PinjamanTukang::with('tukang');
         
+        // Jika status kosong, tampilkan semua (aktif + lunas)
+        // Jika ada status, filter berdasarkan status
         if ($status) {
             $query->where('status', $status);
         }
@@ -601,7 +647,26 @@ class KeuanganTukangController extends Controller
                                      ->orderBy('tanggal', 'desc')
                                      ->get();
         
-        return view('keuangan-tukang.pinjaman.detail', compact('pinjaman', 'riwayatBayar'));
+        // NEW: Ambil riwayat potongan pinjaman per minggu (last 12 weeks)
+        $riwayatPotonganMinggu = $pinjaman->riwayatPotonganMinggu()
+                                          ->orderBy('minggu', 'desc')
+                                          ->orderBy('tahun', 'desc')
+                                          ->limit(12)
+                                          ->get();
+        
+        // NEW: Auto-generate riwayat jika belum ada (untuk minggu-minggu pinjaman aktif)
+        if ($riwayatPotonganMinggu->isEmpty() && $pinjaman->status == 'aktif') {
+            $pinjaman->tukang->autoRecordPotonganBulan(now()->year, now()->month);
+            
+            // Reload riwayat
+            $riwayatPotonganMinggu = $pinjaman->riwayatPotonganMinggu()
+                                              ->orderBy('minggu', 'desc')
+                                              ->orderBy('tahun', 'desc')
+                                              ->limit(12)
+                                              ->get();
+        }
+        
+        return view('keuangan-tukang.pinjaman.detail', compact('pinjaman', 'riwayatBayar', 'riwayatPotonganMinggu'));
     }
     
     /**

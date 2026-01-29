@@ -1608,13 +1608,99 @@
                             } else if (xhr.responseJSON.notifikasi == "notifikasi_sudahabsen") {
                                 notifikasi_sudahabsenpulang.play();
                             }
+                            
+                            // Handle incomplete checklist dengan allow_force_checkout
+                            if (xhr.responseJSON.reason === 'incomplete' && xhr.responseJSON.allow_force_checkout) {
+                                const percentageRemaining = 100 - (xhr.responseJSON.progress.percentage || 0);
+                                const tasksRemaining = xhr.responseJSON.progress.total - xhr.responseJSON.progress.completed;
+                                const checklistUrl = xhr.responseJSON.checklist_url || '';
+                                
+                                swal.fire({
+                                    icon: 'warning',
+                                    title: 'Oops...',
+                                    html: `
+                                        <p style="font-weight: bold; font-size: 16px;">Tidak dapat absen pulang!</p>
+                                        <p style="margin-top: 15px;">Selesaikan checklist shift Anda terlebih dahulu</p>
+                                        <p style="color: #666; font-size: 14px;">(${xhr.responseJSON.progress.completed}/${xhr.responseJSON.progress.total} selesai, ${percentageRemaining}% tersisa ${tasksRemaining} tugas)</p>
+                                    `,
+                                    showConfirmButton: true,
+                                    showDenyButton: true,
+                                    confirmButtonText: 'Selesaikan',
+                                    denyButtonText: 'Pulang',
+                                    confirmButtonColor: '#007bff',
+                                    denyButtonColor: '#dc3545',
+                                    allowOutsideClick: false,
+                                    allowEscapeKey: false
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        // Klik Selesaikan - redirect ke checklist
+                                        if (checklistUrl) {
+                                            window.location.href = checklistUrl;
+                                        }
+                                    } else if (result.isDenied) {
+                                        // Klik Pulang - force checkout
+                                        swal.fire({
+                                            icon: 'info',
+                                            title: 'Loading...',
+                                            allowOutsideClick: false,
+                                            allowEscapeKey: false,
+                                            didOpen: function() {
+                                                $.ajax({
+                                                    type: 'POST',
+                                                    url: "{{ route('presensi.force-checkout') }}",
+                                                    data: {
+                                                        _token: "{{ csrf_token() }}",
+                                                        image: image,
+                                                        lokasi: lokasi,
+                                                        lokasi_cabang: lokasi_cabang,
+                                                        kode_jam_kerja: "{{ $jam_kerja->kode_jam_kerja }}"
+                                                    },
+                                                    success: function(data) {
+                                                        if (data.status == true) {
+                                                            notifikasi_absenpulang.play();
+                                                            swal.fire({
+                                                                icon: 'success',
+                                                                title: 'Berhasil',
+                                                                text: data.message || 'Absen pulang berhasil',
+                                                                showConfirmButton: false,
+                                                                timer: 4000
+                                                            }).then(function() {
+                                                                window.location.href = '/dashboard';
+                                                            });
+                                                        }
+                                                    },
+                                                    error: function(error) {
+                                                        swal.fire({
+                                                            icon: 'error',
+                                                            title: 'Gagal',
+                                                            text: 'Gagal absen pulang. Silakan coba lagi.',
+                                                            showConfirmButton: true
+                                                        });
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    }
+                                });
+                                
+                                // Reset button state
+                                $("#absenmasuk").prop('disabled', false);
+                                $("#absenpulang").prop('disabled', false);
+                                $("#absenpulang").html(
+                                    '<ion-icon name="finger-print-outline" style="font-size: 24px !important"></ion-icon><span style="font-size:14px">Pulang</span>'
+                                );
+                                
+                                return;
+                            }
+                            
+                            // Default error handling
                             swal.fire({
                                 icon: 'error',
                                 title: 'Oops...',
                                 text: xhr.responseJSON.message,
                                 didClose: function() {
                                     $("#absenmasuk").prop('disabled', false);
-                                    $("#absenpulang").prop('disabled', true);
+                                    $("#absenpulang").prop('disabled', false);
                                     $("#absenpulang").html(
                                         '<ion-icon name="finger-print-outline" style="font-size: 24px !important"></ion-icon><span style="font-size:14px">Pulang</span>'
                                     );

@@ -180,67 +180,155 @@
             </div>
             @endif
 
-            <!-- Riwayat Pembayaran -->
-            <div class="card">
+            <!-- Laporan Cicilan Pinjaman (Detail) -->
+            <div class="card mb-4">
                <div class="card-header">
                   <h6 class="mb-0">
-                     <i class="ti ti-history me-2"></i>Riwayat Pembayaran Cicilan
+                     <i class="ti ti-report-money me-2"></i>Laporan Cicilan Pinjaman (Per Minggu)
                   </h6>
                </div>
                <div class="card-body">
                   <div class="table-responsive">
-                     <table class="table table-hover table-bordered">
+                     <table class="table table-hover table-bordered table-sm">
                         <thead class="table-dark">
                            <tr>
-                              <th width="5%">No</th>
-                              <th width="15%">Tanggal</th>
-                              <th width="20%">Jumlah Bayar</th>
-                              <th width="20%">Sisa Setelah Bayar</th>
+                              <th width="4%">No</th>
+                              <th width="10%">Cicilan Ke</th>
+                              <th width="13%">Tanggal Pembayaran</th>
+                              <th width="13%">Nominal Pinjaman</th>
+                              <th width="13%">Jumlah Cicilan</th>
+                              <th width="13%">Sisa Angsuran</th>
+                              <th width="12%">Status</th>
                               <th>Keterangan</th>
-                              <th width="15%">Dicatat Oleh</th>
                            </tr>
                         </thead>
                         <tbody>
-                           @forelse($riwayatBayar as $index => $bayar)
-                              <tr>
-                                 <td class="text-center">{{ $index + 1 }}</td>
-                                 <td>{{ \Carbon\Carbon::parse($bayar->tanggal)->format('d/m/Y H:i') }}</td>
-                                 <td class="text-end text-success fw-bold">
-                                    Rp {{ number_format($bayar->jumlah, 0, ',', '.') }}
-                                    @if(stripos($bayar->keterangan, 'otomatis') !== false || stripos($bayar->keterangan, 'auto') !== false)
-                                       <br><span class="badge bg-info" style="font-size: 10px;"><i class="ti ti-robot"></i> AUTO</span>
+                           @php
+                              // Build cicilan schedule dengan tracking sisa
+                              $cicilan_ke = 1;
+                              $nominal_pinjaman = $pinjaman->nominal ?? 0;
+                              $total_cicilan = $pinjaman->nominal / ($pinjaman->jumlah_cicilan ?? 1);
+                              $sisa_angsuran = $nominal_pinjaman;
+                              $cicilan_data = [];
+                              
+                              // Build dari riwayat potongan
+                              if($riwayatPotonganMinggu) {
+                                 foreach($riwayatPotonganMinggu as $r) {
+                                    $jumlah_cicilan = $r->status_potong == 'DIPOTONG' ? $r->nominal_cicilan : 0;
+                                    $sisa_angsuran -= $jumlah_cicilan;
+                                    
+                                    $cicilan_data[] = (object)[
+                                       'cicilan_ke' => $cicilan_ke,
+                                       'minggu' => $r->minggu,
+                                       'tahun' => $r->tahun,
+                                       'tanggal_mulai' => $r->tanggal_mulai,
+                                       'tanggal_selesai' => $r->tanggal_selesai,
+                                       'nominal_pinjaman' => $nominal_pinjaman,
+                                       'jumlah_cicilan' => $jumlah_cicilan,
+                                       'sisa_angsuran' => max(0, $sisa_angsuran),
+                                       'status' => $r->status_potong == 'DIPOTONG' ? 'BAYAR' : 'TUNDA',
+                                       'status_potong' => $r->status_potong,
+                                       'alasan' => $r->alasan_tidak_potong ?? '-',
+                                       'tanggal_sort' => $r->tanggal_mulai
+                                    ];
+                                    $cicilan_ke++;
+                                 }
+                              }
+                              
+                              // Sort ascending by tanggal (tua ke baru)
+                              usort($cicilan_data, function($a, $b) {
+                                 return strtotime($a->tanggal_sort) - strtotime($b->tanggal_sort);
+                              });
+                           @endphp
+                           
+                           @forelse($cicilan_data as $index => $cicilan)
+                              <tr class="{{ $cicilan->status == 'TUNDA' ? 'table-warning' : '' }}">
+                                 <td class="text-center fw-bold">{{ $index + 1 }}</td>
+                                 <td class="text-center fw-bold">
+                                    <span class="badge bg-primary">{{ $cicilan->cicilan_ke }}</span>
+                                 </td>
+                                 <td>
+                                    <strong>Minggu {{ $cicilan->minggu }}/{{ $cicilan->tahun }}</strong><br>
+                                    <small class="text-muted">{{ \Carbon\Carbon::parse($cicilan->tanggal_mulai)->format('d/m') }} - {{ \Carbon\Carbon::parse($cicilan->tanggal_selesai)->format('d/m/Y') }}</small>
+                                 </td>
+                                 <td class="text-end fw-bold">
+                                    Rp {{ number_format($cicilan->nominal_pinjaman, 0, ',', '.') }}
+                                 </td>
+                                 <td class="text-end fw-bold">
+                                    @if($cicilan->status == 'BAYAR')
+                                       <span class="text-success">Rp {{ number_format($cicilan->jumlah_cicilan, 0, ',', '.') }}</span>
+                                    @else
+                                       <span class="text-warning">Rp 0</span>
                                     @endif
                                  </td>
-                                 <td class="text-end text-{{ $bayar->saldo > 0 ? 'danger' : 'success' }}">
-                                    Rp {{ number_format($bayar->saldo ?? 0, 0, ',', '.') }}
-                                    @if($bayar->saldo == 0)
-                                       <br><span class="badge bg-success" style="font-size: 10px;"><i class="ti ti-check"></i> LUNAS</span>
+                                 <td class="text-end fw-bold">
+                                    <span class="{{ $cicilan->sisa_angsuran > 0 ? 'text-danger' : 'text-success' }}">
+                                       Rp {{ number_format($cicilan->sisa_angsuran, 0, ',', '.') }}
+                                    </span>
+                                 </td>
+                                 <td class="text-center">
+                                    @if($cicilan->status == 'BAYAR')
+                                       <span class="badge bg-success"><i class="ti ti-check"></i> BAYAR</span>
+                                    @else
+                                       <span class="badge bg-warning text-dark"><i class="ti ti-clock"></i> TUNDA</span>
                                     @endif
                                  </td>
                                  <td>
-                                    {{ $bayar->keterangan }}
-                                    @if(stripos($bayar->keterangan, 'potongan gaji') !== false)
-                                       <br><small class="text-muted"><i class="ti ti-calendar"></i> Dipotong dari gaji mingguan</small>
+                                    @if($cicilan->status == 'TUNDA')
+                                       <small class="text-muted"><i class="ti ti-alert-circle"></i> {{ $cicilan->alasan }}</small><br>
+                                       <span class="badge bg-warning text-dark" style="font-size: 9px;"><i class="ti ti-toggle-off"></i> Toggle Non-Aktif</span>
+                                    @else
+                                       <small class="text-muted">-</small>
                                     @endif
                                  </td>
-                                 <td>{{ $bayar->dicatat_oleh }}</td>
                               </tr>
                            @empty
                               <tr>
-                                 <td colspan="6" class="text-center">Belum ada pembayaran</td>
+                                 <td colspan="8" class="text-center text-muted py-4">Belum ada riwayat cicilan</td>
                               </tr>
                            @endforelse
+                           
+                           @if($cicilan_data)
+                           <tr class="table-light fw-bold">
+                              <td colspan="4" class="text-end">Total Terbayar:</td>
+                              <td class="text-end">
+                                 @php
+                                    $total_bayar = collect($cicilan_data)->where('status', 'BAYAR')->sum('jumlah_cicilan');
+                                 @endphp
+                                 <span class="text-success">Rp {{ number_format($total_bayar, 0, ',', '.') }}</span>
+                              </td>
+                              <td class="text-end">
+                                 <span class="text-danger">Rp {{ number_format(end($cicilan_data)->sisa_angsuran, 0, ',', '.') }}</span>
+                              </td>
+                              <td colspan="2"></td>
+                           </tr>
+                           @endif
                         </tbody>
-                        @if($riwayatBayar->count() > 0)
-                           <tfoot class="table-light">
-                              <tr>
-                                 <th colspan="2" class="text-end">Total Terbayar:</th>
-                                 <th class="text-end text-success">Rp {{ number_format($riwayatBayar->sum('jumlah'), 0, ',', '.') }}</th>
-                                 <th colspan="3"></th>
-                              </tr>
-                           </tfoot>
-                        @endif
                      </table>
+                  </div>
+                  
+                  <!-- Summary Info -->
+                  <div class="row mt-3">
+                     <div class="col-md-6">
+                        <div class="alert alert-info mb-0">
+                           <small>
+                              <strong><i class="ti ti-info-circle"></i> Info:</strong><br>
+                              • <strong>Status BAYAR</strong> = Potongan aktif di minggu tersebut<br>
+                              • <strong>Status TUNDA</strong> = Toggle non-aktif → akan mengakumulasi sisa pinjaman<br>
+                              • Sisa Angsuran terupdate otomatis berdasarkan status cicilan
+                           </small>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="alert alert-success mb-0">
+                           <small>
+                              <strong><i class="ti ti-coin"></i> Ringkasan:</strong><br>
+                              • Total Pinjaman: <strong>Rp {{ number_format($nominal_pinjaman, 0, ',', '.') }}</strong><br>
+                              • Total Terbayar: <strong>Rp {{ number_format(collect($cicilan_data)->where('status', 'BAYAR')->sum('jumlah_cicilan'), 0, ',', '.') }}</strong><br>
+                              • Sisa Angsuran: <strong>Rp {{ number_format($cicilan_data ? end($cicilan_data)->sisa_angsuran : $nominal_pinjaman, 0, ',', '.') }}</strong>
+                           </small>
+                        </div>
+                     </div>
                   </div>
                </div>
             </div>

@@ -230,11 +230,26 @@
                                 <label class="form-check-label flex-grow-1 cursor-pointer" for="checklist_{{ $master->id }}">
                                     <div class="d-flex align-items-center gap-2">
                                         <strong>{{ $master->nama_kegiatan }}</strong>
+                                        @if($master->jam_mulai)
+                                            <span class="badge bg-info">
+                                                <i class="ti ti-clock me-1"></i>{{ \Carbon\Carbon::createFromFormat('H:i:s', $master->jam_mulai)->format('H:i') }} - {{ \Carbon\Carbon::createFromFormat('H:i:s', $master->jam_selesai)->format('H:i') }}
+                                            </span>
+                                        @endif
                                         @if($master->points)
                                             @php
                                                 $pointColor = $master->points <= 3 ? 'success' : ($master->points <= 7 ? 'warning' : 'danger');
                                             @endphp
                                             <span class="badge bg-{{ $pointColor }}">⭐ {{ $master->points }} pts</span>
+                                        @endif
+                                        @if($isChecked && $logData)
+                                            <span class="badge bg-light text-dark">
+                                                @if($logData->user)
+                                                    <i class="ti ti-user me-1"></i>{{ $logData->user->name }}
+                                                @endif
+                                                @if($logData->waktu_eksekusi)
+                                                    <i class="ti ti-clock ms-2 me-1"></i>{{ \Carbon\Carbon::createFromFormat('H:i:s', $logData->waktu_eksekusi)->format('H:i') }}
+                                                @endif
+                                            </span>
                                         @endif
                                     </div>
                                     @if($master->deskripsi)
@@ -243,6 +258,11 @@
                                     @if($master->point_description)
                                         <div class="small text-muted" style="font-style: italic;">
                                             <i class="ti ti-info-circle"></i> {{ $master->point_description }}
+                                        </div>
+                                    @endif
+                                    @if($master->jam_mulai)
+                                        <div class="small text-muted mt-1">
+                                            <i class="ti ti-calendar-check me-1"></i>Siap dari: <strong>{{ \Carbon\Carbon::createFromFormat('H:i:s', $master->jam_mulai)->format('H:i') }}</strong>
                                         </div>
                                     @endif
                                 </label>
@@ -302,11 +322,26 @@
                                 <div class="flex-grow-1">
                                     <div class="d-flex align-items-center gap-2">
                                         <h6 class="mb-0 {{ $isChecked ? 'text-success' : '' }}">{{ $master->nama_kegiatan }}</h6>
+                                        @if($master->jam_mulai)
+                                            <span class="badge bg-info">
+                                                <i class="ti ti-clock me-1"></i>{{ \Carbon\Carbon::createFromFormat('H:i:s', $master->jam_mulai)->format('H:i') }} - {{ \Carbon\Carbon::createFromFormat('H:i:s', $master->jam_selesai)->format('H:i') }}
+                                            </span>
+                                        @endif
                                         @if($master->points)
                                             @php
                                                 $pointColor = $master->points <= 3 ? 'success' : ($master->points <= 7 ? 'warning' : 'danger');
                                             @endphp
                                             <span class="badge bg-{{ $pointColor }}">⭐ {{ $master->points }} pts</span>
+                                        @endif
+                                        @if($isChecked && $logData)
+                                            <span class="badge bg-light text-dark">
+                                                @if($logData->user)
+                                                    <i class="ti ti-user me-1"></i>{{ $logData->user->name }}
+                                                @endif
+                                                @if($logData->waktu_eksekusi)
+                                                    <i class="ti ti-clock ms-2 me-1"></i>{{ \Carbon\Carbon::createFromFormat('H:i:s', $logData->waktu_eksekusi)->format('H:i') }}
+                                                @endif
+                                            </span>
                                         @endif
                                     </div>
                                     @if($master->deskripsi)
@@ -315,6 +350,11 @@
                                     @if($master->point_description)
                                         <p class="text-muted small mb-1" style="font-style: italic;">
                                             <i class="ti ti-info-circle"></i> {{ $master->point_description }}
+                                        </p>
+                                    @endif
+                                    @if($master->jam_mulai)
+                                        <p class="text-muted small mb-1">
+                                            <i class="ti ti-calendar-check"></i> Siap dari: <strong>{{ \Carbon\Carbon::createFromFormat('H:i:s', $master->jam_mulai)->format('H:i') }}</strong>
                                         </p>
                                     @endif
                                 </div>
